@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="favicon.png">
+<title>Criar conta grátis — bday.fm</title>
+<meta name="description" content="Crie sua conta gratuita no bday.fm e comece a celebrar seus momentos especiais recebendo presentes digitais de quem você ama.">
+<meta property="og:title" content="Criar conta grátis — bday.fm">
+<meta property="og:description" content="Crie sua conta gratuita no bday.fm e comece a celebrar seus momentos especiais.">
+<meta property="og:image" content="og-image.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tailwind-prod.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-white">
+
+<div class="demo-banner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 inline-block align-[-2px] mr-1"><path d="M9 2v6L4 20a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2L15 8V2"/><path d="M9 2h6"/><line x1="8" y1="14" x2="16" y2="14"/></svg> <b>Protótipo de demonstração</b> — dados fictícios, nenhum pagamento ou ação aqui é real.</div>
+
+<header class="sticky top-0 z-50 bg-white/85 backdrop-blur border-b border-gray-100">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2 font-extrabold text-lg">
+      <img src="logo-full.png" alt="bday.fm" class="h-8 w-auto object-contain">
+    </a>
+    <a href="login.html" class="text-sm font-semibold text-slate-500 hover:text-purple-700">Já tenho conta →</a>
+  </div>
+</header>
+
+<main class="max-w-md mx-auto px-5 sm:px-8 py-14">
+  <div class="text-center reveal">
+    <div class="flex items-center justify-center mx-auto mb-3">
+      <img src="logo-full.png" alt="bday.fm" class="h-14 w-auto object-contain">
+    </div>
+    <h1 class="text-2xl font-extrabold">Crie sua conta grátis</h1>
+    <p class="text-slate-500 mt-2 text-sm">Leva menos de 1 minuto — sem cartão de crédito.</p>
+  </div>
+
+  <form id="signupForm" class="card p-6 sm:p-8 mt-8 space-y-4 reveal" novalidate>
+    <div>
+      <label class="block text-sm font-semibold mb-1">Nome completo</label>
+      <input required name="nome" type="text" placeholder="Como te chamam?" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-purple-400">
+      <p class="err text-xs text-red-500 mt-1 hidden">Digite seu nome.</p>
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-1">Nome de usuário</label>
+      <div class="flex items-center border border-gray-200 rounded-xl px-3 py-2.5 focus-within:border-purple-400">
+        <span class="text-slate-400 text-sm">bday.fm/</span>
+        <input required name="usuario" type="text" placeholder="seunome" class="outline-none flex-1 min-w-0 text-sm ml-1">
+      </div>
+      <p class="err text-xs text-red-500 mt-1 hidden">Escolha um nome de usuário (só letras, números e ponto).</p>
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-1">E-mail</label>
+      <input required name="email" type="email" placeholder="voce@email.com" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-purple-400">
+      <p class="err text-xs text-red-500 mt-1 hidden">Digite um e-mail válido.</p>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="block text-sm font-semibold mb-1">Data de nascimento</label>
+        <input required name="nascimento" type="date" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-purple-400">
+        <p class="err text-xs text-red-500 mt-1 hidden">Informe sua data de nascimento.</p>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1">Senha</label>
+        <input required name="senha" type="password" minlength="6" placeholder="mín. 6 caracteres" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-purple-400">
+        <p class="err text-xs text-red-500 mt-1 hidden">Mínimo de 6 caracteres.</p>
+      </div>
+    </div>
+    <label class="flex items-start gap-2 text-xs text-slate-500 pt-1">
+      <input required type="checkbox" class="mt-0.5">
+      Eu li e concordo com os <a href="termos.html" target="_blank" class="text-purple-700 underline">Termos de Uso</a> e a <a href="privacidade.html" target="_blank" class="text-purple-700 underline">Política de Privacidade</a>.
+    </label>
+    <button type="submit" class="btn-primary w-full rounded-xl px-6 py-3 mt-2">Criar minha conta</button>
+    <p class="text-center text-xs text-slate-400">Ao continuar, você concorda em receber e-mails sobre seu perfil e presentes recebidos.</p>
+  </form>
+</main>
+
+<script src="users.js"></script>
+<script src="auth.js"></script>
+<script src="script.js"></script>
+<script>
+  const form = document.getElementById('signupForm');
+  // Se o usuário já escolheu um @ na home, vem prefiltrado aqui via ?usuario=
+  const prefilledUsuario = new URLSearchParams(window.location.search).get('usuario');
+  if (prefilledUsuario) { form.querySelector('[name="usuario"]').value = prefilledUsuario; }
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    let valid = true;
+    form.querySelectorAll('[required]').forEach(input => {
+      const errEl = input.closest('div')?.querySelector('.err') || input.parentElement.parentElement.querySelector('.err');
+      const ok = input.type === 'checkbox' ? input.checked : input.value.trim().length > 0 && input.checkValidity();
+      if (!ok) {
+        valid = false;
+        input.classList.add('border-red-400');
+        if (errEl) errEl.classList.remove('hidden');
+      } else {
+        input.classList.remove('border-red-400');
+        if (errEl) errEl.classList.add('hidden');
+      }
+    });
+    if (!valid) { showToast('Confira os campos destacados em vermelho.'); return; }
+
+    const nome = bdaySanitize(form.elements.nome.value);
+    const emailVal = form.elements.email.value.trim().toLowerCase();
+    const nascimento = form.elements.nascimento.value;
+    const usuarioDigitado = form.elements.usuario.value.trim();
+
+    // Cadastro real: cria a conta no servidor (senha protegida com hash no banco).
+    const btn = form.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: nome,
+        email: emailVal,
+        password: form.elements.senha.value,
+        birthdate: nascimento,
+        username: usuarioDigitado
+      })
+    }).then(async (res) => {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Não foi possível criar a conta. Tente novamente.');
+        btn.disabled = false;
+        return;
+      }
+      authLogin(data.slug); // mantém o comportamento visual do header/menus
+      showToast(`Conta bday.fm/${data.slug} criada com sucesso!`);
+      setTimeout(() => { window.location.href = `perfil.html?user=${data.slug}`; }, 900);
+    }).catch(() => {
+      showToast('Falha de conexão. Tente novamente.');
+      btn.disabled = false;
+    });
+  });
+</script>
+</body>
+</html>

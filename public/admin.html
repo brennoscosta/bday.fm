@@ -1,0 +1,2215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="favicon.png">
+<title>bday.fm — Painel de Administração</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tailwind-prod.css">
+<link rel="stylesheet" href="style.css">
+<script src="users.js"></script>
+<script src="auth.js"></script>
+<script>
+  // Guard: só a conta administrativa entra aqui. Roda o quanto antes.
+  (function(){
+    var s = authGetSession();
+    if (!s || s.slug !== 'admin') { window.location.replace('login.html?next=admin.html'); }
+  })();
+</script>
+<script src="icons.js"></script>
+<script src="script.js"></script>
+<style>
+  /* ---- Tema do painel (identidade do site novo + modo escuro) ---- */
+  :root{
+    --adm-bg:#F8FAFC; --adm-card:#ffffff; --adm-line:#EEF0F6; --adm-ink:#0F172A;
+    --adm-gray:#64748B; --adm-soft:#F1F5F9; --adm-side:#ffffff;
+  }
+  body.dark{
+    --adm-bg:#0B1120; --adm-card:#101A2E; --adm-line:#1E293B; --adm-ink:#E2E8F0;
+    --adm-gray:#94A3B8; --adm-soft:#16223A; --adm-side:#0D1526;
+    color-scheme: dark;
+  }
+  body{ background:var(--adm-bg); color:var(--adm-ink); }
+  .adm-card{ background:var(--adm-card); border:1px solid var(--adm-line); border-radius:18px; }
+  .adm-muted{ color:var(--adm-gray); }
+  .adm-soft{ background:var(--adm-soft); }
+  .adm-line{ border-color:var(--adm-line) !important; }
+  .adm-input{ background:var(--adm-card); border:1px solid var(--adm-line); color:var(--adm-ink); border-radius:12px; padding:8px 12px; font-size:13px; outline:none; width:100%; }
+  .adm-input:focus{ border-color:#A78BFA; }
+  /* Sidebar */
+  #admSide{ background:var(--adm-side); border-right:1px solid var(--adm-line); }
+  .side-link{ display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:12px; font-size:13.5px; font-weight:500; color:var(--adm-gray); cursor:pointer; transition:all .15s ease; white-space:nowrap; }
+  .side-link:hover{ color:#7C3AED; background:rgba(124,58,237,.06); }
+  .side-link.active{ color:#7C3AED; background:linear-gradient(90deg, rgba(124,58,237,.10), rgba(236,72,153,.08)); font-weight:700; }
+  .side-link svg{ width:16px; height:16px; flex:none; }
+  /* Badges de status */
+  .badge{ display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; padding:2px 10px; border-radius:999px; }
+  .badge-green{ background:#DCFCE7; color:#15803D; } body.dark .badge-green{ background:#14532D; color:#86EFAC; }
+  .badge-amber{ background:#FEF3C7; color:#B45309; } body.dark .badge-amber{ background:#78350F; color:#FCD34D; }
+  .badge-red{ background:#FEE2E2; color:#B91C1C; } body.dark .badge-red{ background:#7F1D1D; color:#FCA5A5; }
+  .badge-purple{ background:#F3E8FF; color:#7C3AED; } body.dark .badge-purple{ background:#3B0764; color:#D8B4FE; }
+  .badge-blue{ background:#DBEAFE; color:#1D4ED8; } body.dark .badge-blue{ background:#1E3A8A; color:#93C5FD; }
+  /* Tabelas */
+  .adm-table{ width:100%; font-size:13px; }
+  .adm-table th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--adm-gray); font-weight:700; padding:10px 12px; border-bottom:1px solid var(--adm-line); }
+  .adm-table td{ padding:10px 12px; border-bottom:1px solid var(--adm-line); vertical-align:middle; }
+  .adm-table tr:last-child td{ border-bottom:none; }
+  .adm-table tbody tr:hover{ background:var(--adm-soft); }
+  /* Botões de ação pequenos */
+  .act-btn{ width:28px; height:28px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; color:var(--adm-gray); cursor:pointer; transition:all .12s; }
+  .act-btn:hover{ background:var(--adm-soft); color:#7C3AED; }
+  .act-btn.danger:hover{ color:#DC2626; }
+  .act-btn svg{ width:14px; height:14px; }
+  /* Abas internas */
+  .adm-tab{ font-size:12.5px; font-weight:600; padding:6px 14px; border-radius:10px; color:var(--adm-gray); cursor:pointer; }
+  .adm-tab.active{ background:linear-gradient(90deg,#7C3AED,#EC4899); color:#fff; }
+  /* Toggle */
+  .adm-toggle{ width:36px; height:20px; border-radius:999px; background:#CBD5E1; position:relative; cursor:pointer; transition:background .15s; flex:none; }
+  .adm-toggle.on{ background:linear-gradient(90deg,#7C3AED,#EC4899); }
+  .adm-toggle::after{ content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; transition:left .15s; }
+  .adm-toggle.on::after{ left:18px; }
+  .section-panel{ display:none; }
+  .section-panel.active{ display:block; }
+  @media (max-width: 900px){
+    #admSide{ position:fixed; z-index:60; transform:translateX(-100%); transition:transform .2s; }
+    #admSide.open{ transform:translateX(0); }
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- Topbar -->
+<header class="sticky top-0 z-50 border-b adm-line" style="background:var(--adm-card)">
+  <div class="h-14 flex items-center gap-3 px-4 sm:px-6">
+    <button id="admMenuBtn" class="act-btn md:hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+    <a href="index.html" class="flex items-center gap-2">
+      <img src="logo-full.png" alt="bday.fm" class="h-6 w-auto object-contain">
+    </a>
+    <span class="badge badge-purple">Painel Admin</span>
+    <div class="relative flex-1 max-w-md mx-2 hidden sm:block">
+      <input id="globalSearch" class="adm-input w-full" style="padding-left:32px" placeholder="Busca global: nome, e-mail, BDAY, ID, PIX, CPF, presente...">
+      <span class="absolute left-2.5 top-1/2 -translate-y-1/2 adm-muted"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="w-4 h-4"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <div id="globalSearchResults" class="hidden absolute top-full left-0 right-0 mt-1 adm-card shadow-xl z-[80] max-h-96 overflow-y-auto p-1.5"></div>
+    </div>
+    <div class="ml-auto flex items-center gap-2 text-sm">
+      <a href="feed.html?enter=admin" title="Ver o site logado como admin (saldo ilimitado para testes; fica logado ao clicar nas outras páginas)" class="adm-muted hover:text-purple-600 text-[13px] font-semibold hidden sm:block">Ver site</a>
+      <span class="adm-muted hidden sm:block">·</span>
+      <span class="text-[13px] font-semibold adm-muted hidden sm:block">admin@bday.fm</span>
+      <div class="w-8 h-8 rounded-full grad-bg text-white flex items-center justify-center text-xs font-bold">A</div>
+    </div>
+  </div>
+</header>
+
+<div class="flex">
+  <!-- Sidebar -->
+  <aside id="admSide" class="w-56 shrink-0 h-[calc(100vh-56px)] sticky top-14 overflow-y-auto py-4 px-3">
+    <nav id="admNav" class="space-y-0.5"></nav>
+    <div class="border-t adm-line mt-4 pt-4 space-y-0.5">
+      <div class="side-link" id="darkToggleLink"></div>
+      <div class="side-link" id="logoutLink" style="color:#DC2626"></div>
+    </div>
+  </aside>
+
+  <!-- Conteúdo -->
+  <main class="flex-1 min-w-0 p-4 sm:p-6" id="admMain"></main>
+</div>
+
+<script>
+/* =====================================================================
+   bday.fm — Painel de Administração (protótipo, dados de demonstração)
+   ===================================================================== */
+
+// ---------- Helpers ----------
+const fmtBRL = v => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const el = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
+const I = (svg, cls) => (typeof iconSize === 'function' ? iconSize(svg, cls || 'w-4 h-4') : svg);
+function admGet(key, fallback){ try { const v = JSON.parse(localStorage.getItem('bdayfm_admin_' + key)); return v === null || v === undefined ? fallback : v; } catch(e){ return fallback; } }
+function admSet(key, value){ try { localStorage.setItem('bdayfm_admin_' + key, JSON.stringify(value)); } catch(e){} }
+
+// ---------- Ícones do painel (linha, mesmos traços do site) ----------
+const AI = {
+  dash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+  users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  gift: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4"/><path d="M12 8v13"/><path d="M19 12v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8"/><path d="M16.5 8a2.5 2.5 0 0 0 0-5C14 3 12 8 12 8"/></svg>',
+  bank: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 21 8 3 8"/></svg>',
+  report: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>',
+  send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
+  card: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
+  sms: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  track: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+  params: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  support: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  tools: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+  hook: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 16.98h-5.99c-1.1 0-1.95.94-2.48 1.9A4 4 0 0 1 2 17c.01-.7.2-1.4.57-2"/><path d="m6 17 3.13-5.78c.53-.97.1-2.18-.5-3.1a4 4 0 1 1 6.89-4.06"/><path d="m12 6 3.13 5.73C15.66 12.7 16.9 13 18 13a4 4 0 0 1 0 8"/></svg>',
+  bot: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+  pages: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>',
+  moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+  sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+  exit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
+  eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  money: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  spark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg>',
+  seal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1.6l2.5 1.9 3.1-.4 1.2 2.9 2.9 1.2-.4 3.1 1.9 2.5-1.9 2.5.4 3.1-2.9 1.2-1.2 2.9-3.1-.4-2.5 1.9-2.5-1.9-3.1.4-1.2-2.9-2.9-1.2.4-3.1L1.3 12l1.9-2.5-.4-3.1 2.9-1.2 1.2-2.9 3.1.4z"/><path d="M8.5 12.4l2.3 2.3 4.7-5"/></svg>',
+};
+
+const SEAL_BLUE = '<svg viewBox="0 0 24 24" class="w-4 h-4 inline-block align-[-3px]"><path fill="#3B82F6" d="M12 1.6l2.5 1.9 3.1-.4 1.2 2.9 2.9 1.2-.4 3.1 1.9 2.5-1.9 2.5.4 3.1-2.9 1.2-1.2 2.9-3.1-.4-2.5 1.9-2.5-1.9-3.1.4-1.2-2.9-2.9-1.2.4-3.1L1.3 12l1.9-2.5-.4-3.1 2.9-1.2 1.2-2.9 3.1.4z"/><path fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M8.5 12.4l2.3 2.3 4.7-5"/></svg>';
+const AI_EXTRA = {
+  ledger: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h3M7 11h6"/><path d="M16 11l2 2 3-3.5"/></svg>',
+  audit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9.5 12l2 2 3.5-4"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  archive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+};
+Object.assign(AI, AI_EXTRA);
+
+// ---- Ícones de presente (SVG de linha, mesmo traço da identidade do site) ----
+const GIFT_SVG = {
+  presente: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8"/><path d="M16.5 8a2.5 2.5 0 0 0 0-5C14 3 12 8 12 8"/>',
+  patinho: '<circle cx="8.5" cy="8" r="3.5"/><path d="M5 8H3.2"/><path d="M11.8 9.5c2.6 1.2 5.7 1.4 8.2.3-.6 4.2-2.6 7.4-6.3 8.7H9c-3.6 0-5.8-2.1-5.8-5 0-1.2.5-2.3 1.3-3.1"/><circle cx="7.6" cy="7.3" r=".3" fill="currentColor"/>',
+  bolo: '<path d="M4 13h16v7H4z"/><path d="M4 16.2c2 1.4 4-1.4 6 0s4-1.4 6 0 4 0 4 0"/><path d="M12 13V9"/><path d="M12 7.5c-.7 0-1.2-.8-1.2-1.5 0-.9 1.2-2 1.2-2s1.2 1.1 1.2 2c0 .7-.5 1.5-1.2 1.5z"/>',
+  chinelo: '<ellipse cx="12" cy="12.5" rx="5.5" ry="8.5"/><path d="M12 8.5L8.8 13M12 8.5l3.2 4.5M12 8.5V7"/>',
+  relogio: '<circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.5 2"/><path d="M5.5 4.5L3.5 6.5M18.5 4.5l2 2"/>',
+  cueca: '<path d="M4 6h16v4.5c0 1.5-1 2.5-2.5 2.5H15c-1.7 0-3-1.6-3-3.2 0 1.6-1.3 3.2-3 3.2H6.5C5 13 4 12 4 10.5z"/><path d="M4 8.8c5.2 1.4 10.8 1.4 16 0"/><path d="M9 10.8h.01M15 10.8h.01M12 6.5h.01"/>',
+  buzina: '<path d="M4.5 20.5L9.5 6.5l8.5 8.5z"/><path d="M14 4.5h.01M18.5 3h.01M20.5 7.5h.01M21 12h.01"/><path d="M14.8 7.2c1.2-1.2 3-1.2 4.2 0"/>',
+  'bolo-derretido': '<path d="M4 8h16v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M4 11c1.5 2.3 3-.9 4.5 1.4s3-.9 4.5 1.3 3-.7 4-0 3-1.2 3-1.2"/><path d="M8.5 8V6M12 8V5M15.5 8V6"/>',
+  camisa: '<path d="M8 3l4 3 4-3 4.5 4-2.5 2.5V21h-12V9.5L3.5 7z"/><path d="M12 6v5"/><path d="M12 14h.01M12 17.5h.01"/>',
+  copo: '<path d="M7 3h10l-1.5 18h-7z"/><path d="M9.5 7.5l2.5 2-1.8 2.4 2 2.1"/>',
+  fantasma: '<path d="M12 3a7 7 0 0 1 7 7v11l-2.4-2-2.3 2-2.3-2-2.3 2-2.3-2L5 21V10a7 7 0 0 1 7-7z"/><path d="M9.5 10h.01M14.5 10h.01"/>',
+  cupcake: '<path d="M6.5 12h11l-1.5 8h-8z"/><path d="M6.5 12A3 3 0 0 1 5.4 6.3 5 5 0 0 1 12 4a5 5 0 0 1 6.6 2.3A3 3 0 0 1 17.5 12"/><path d="M10 14.5l-.4 3.5M14 14.5l.4 3.5"/>',
+  trombeta: '<path d="M21 4.5c-3 2.2-6 3.5-10 3.5H7.5v8H11c4 0 7 1.3 10 3.5z"/><path d="M7.5 8H4.5a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h3"/><path d="M11 8.2v7.6"/>',
+  pulseira: '<circle cx="12" cy="13" r="6.5"/><circle cx="12" cy="6" r="1.1"/><circle cx="18" cy="9.5" r="1.1"/><circle cx="18" cy="16.5" r="1.1"/><circle cx="12" cy="20" r="1.1"/><circle cx="6" cy="16.5" r="1.1"/><circle cx="6" cy="9.5" r="1.1"/>',
+  calculadora: '<rect x="5" y="3" width="14" height="18" rx="2"/><rect x="8" y="6" width="8" height="3.5" rx=".5"/><path d="M8.5 13.5h.01M12 13.5h.01M15.5 13.5h.01M8.5 17h.01M12 17h.01M15.5 17h.01"/>',
+  shampoo: '<path d="M9 8.5h6V20a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1z"/><path d="M10.5 8.5v-2h3v2"/><path d="M10 4h6.5"/><path d="M9 13h6"/>',
+  fone: '<path d="M4 14.5v-2.5a8 8 0 0 1 16 0v2.5"/><rect x="3" y="14.5" width="4" height="6" rx="1.5"/><rect x="17" y="14.5" width="4" height="6" rx="1.5"/>',
+  pote: '<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M2.8 9h18.4"/><path d="M6.5 9l1-3.5h9l1 3.5"/><path d="M9 14h6"/>',
+  controle: '<path d="M7 8h10a5 5 0 0 1 5 5c0 2.6-2 5-4 4l-2.5-2.2h-7L6 17c-2 1-4-1.4-4-4a5 5 0 0 1 5-5z"/><path d="M8 11v3.5M6.2 12.8h3.6"/><path d="M16 11.5h.01M18.2 13.2h.01"/>',
+  diamante: '<path d="M6 3.5h12l4 5.5-10 11.5L2 9z"/><path d="M2 9h20M9 3.5L12 9l3-5.5M6 9l6 11.5M18 9l-6 11.5"/>',
+  coracao: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z"/>',
+  buque: '<path d="M8.5 13.5L12 22l3.5-8.5"/><circle cx="7" cy="9" r="2.3"/><circle cx="12" cy="6.8" r="2.3"/><circle cx="17" cy="9" r="2.3"/><path d="M7.8 11.2l3.2 2M16.2 11.2l-3.2 2M12 9.1v4"/>',
+  vale: '<path d="M6 7h12l1.2 14H4.8z"/><path d="M9 10V6a3 3 0 0 1 6 0v4"/>',
+  caneca: '<path d="M5 8.5h11V18a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/><path d="M16 10.5h2a3 3 0 0 1 0 6h-2"/><path d="M7 5.5c.5-1 1.5-1.2 2-2.2M11 5.5c.5-1 1.5-1.2 2-2.2"/>',
+  'biscoito': "<path d=\"M12 3a9 9 0 1 0 9 9c-1.4 0-2.6-.6-3-2a3 3 0 0 1-3-3c0-1.3-.8-2.6-3-4z\"/><circle cx=\"8.5\" cy=\"12.5\" r=\"1\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"12\" cy=\"16.5\" r=\"1\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"15.5\" cy=\"11.5\" r=\"1\" fill=\"currentColor\" stroke=\"none\"/>",
+  'coroa-festa': "<path d=\"M3 8l4 4 5-7 5 7 4-4-2 11H5L3 8z\"/><line x1=\"5\" y1=\"21\" x2=\"19\" y2=\"21\"/>",
+  'cafe': "<path d=\"M4 9h13v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V9z\"/><path d=\"M17 10h1.5a2.5 2.5 0 0 1 0 5H17\"/><path d=\"M8 2c0 1-1 1-1 2s1 1 1 2\"/><path d=\"M12 2c0 1-1 1-1 2s1 1 1 2\"/>",
+  'chapeu': "<path d=\"M12 3l7 15H5z\"/><circle cx=\"12\" cy=\"3\" r=\"1.4\" fill=\"currentColor\" stroke=\"none\"/><path d=\"M8 13l1.5-1.5M12 15v-2M16 13l-1.5-1.5\"/>",
+  'kit-confete': "<rect x=\"3\" y=\"3\" width=\"4\" height=\"4\" rx=\"1\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"18\" cy=\"5\" r=\"2\" fill=\"currentColor\" stroke=\"none\"/><rect x=\"16\" y=\"15\" width=\"4\" height=\"4\" rx=\"1\" fill=\"currentColor\" stroke=\"none\" transform=\"rotate(20 18 17)\"/><circle cx=\"5\" cy=\"17\" r=\"2\" fill=\"currentColor\" stroke=\"none\"/><path d=\"M9 9l6 6M11 4l1 3M20 10l-3 1M4 20l3-1\"/>",
+  'bolo-andares': "<path d=\"M20 21v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6\"/><path d=\"M4 21h16\"/><path d=\"M12 13V9\"/><path d=\"M12 9c-.8 0-1.4-.9-1.4-1.7C10.6 6.2 12 5 12 5s1.4 1.2 1.4 2.3C13.4 8.1 12.8 9 12 9z\"/><path d=\"M7 13c0-1 1-1.4 2-1s1.3 1 2.3 1 1.3-1 2.3-1 2 .4 2 1.4\"/>",
+  'vale-compras': "<rect x=\"2\" y=\"5\" width=\"20\" height=\"14\" rx=\"2\"/><line x1=\"2\" y1=\"10\" x2=\"22\" y2=\"10\"/>",
+  'pao': "<path d=\"M3 15c1-6 6-10 11-10 4 0 7 2 7 4-3 0-5 1-6 3-1-1-3-1-4 0-1-2-3-2-4-1-1 1-1 3-1 4-1 1-2 1-3 0z\"/>",
+  'flor': "<circle cx=\"12\" cy=\"12\" r=\"2.5\"/><path d=\"M12 4a3 3 0 0 1 0 6 3 3 0 0 1 0-6z\"/><path d=\"M12 14a3 3 0 0 1 0 6 3 3 0 0 1 0-6z\"/><path d=\"M4 12a3 3 0 0 1 6 0 3 3 0 0 1-6 0z\"/><path d=\"M14 12a3 3 0 0 1 6 0 3 3 0 0 1-6 0z\"/><line x1=\"12\" y1=\"19\" x2=\"12\" y2=\"22\"/>",
+  balao: '<path d="M12 16c3.3 0 6-3.1 6-7s-2.7-6-6-6-6 2.1-6 6 2.7 7 6 7z"/><path d="M11 16l1 2 1-2"/><path d="M12 18c0 2-1.5 2.5-1.5 4"/>',
+};
+function giftIconSvg(key, cls){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="' + (cls || 'w-5 h-5') + '">' + (GIFT_SVG[key] || GIFT_SVG.presente) + '</svg>';
+}
+function giftTile(key, sizeCls, iconCls){
+  return '<div class="' + (sizeCls || 'w-12 h-12') + ' rounded-xl grad-bg text-white flex items-center justify-center shrink-0" style="box-shadow:0 6px 14px -6px rgba(124,58,237,.5)">' + giftIconSvg(key, iconCls || 'w-6 h-6') + '</div>';
+}
+// Migração: catálogos salvos antes desta versão ainda guardavam emoji
+const EMOJI_TO_ICON = { '🦆':'patinho','🎂':'bolo','🩴':'chinelo','⏰':'relogio','🩲':'cueca','📯':'buzina','🍰':'bolo-derretido','👔':'camisa','🥂':'copo','👻':'fantasma','🧁':'cupcake','🎺':'trombeta','📿':'pulseira','🧮':'calculadora','🧴':'shampoo','🎧':'fone','🥡':'pote','🎮':'controle','💎':'diamante','❤️':'coracao','💐':'buque','🛍️':'vale','🍺':'caneca','🎁':'presente' };
+
+const ROLES = [['user','Usuário'],['parceiro','Parceiro'],['gerente','Gerente'],['admin','Administrador']];
+const ROLE_BADGE = { admin: 'badge-red', gerente: 'badge-blue', parceiro: 'badge-amber' };
+function getRoles(){ return admGet('roles', { creativeideia4: 'parceiro' }); }
+function setRole(handle, role){
+  const r = getRoles(); r[handle] = role; admSet('roles', r);
+  const label = (ROLES.find(x => x[0] === role) || ['','Usuário'])[1];
+  audit('Alterou cargo', '@' + handle, 'Novo cargo: ' + label);
+  showToast('@' + handle + ' agora é ' + label + '.');
+  if (currentSection === 'usuarios') renderUserRows();
+}
+
+// ---------- Dados de demonstração ----------
+const ADMIN_USERS = (() => {
+  const extra = [
+    ['Jerferson Consultor','consultoriajerferson@gmail.com','jag','12 de julho', 0],
+    ['Creative Ideia','creativeideia4@gmail.com','creativeideia4','2 de março', 0],
+    ['Lui Mori Milanez','lui.m@aluno.ifsc.edu.br','luim','2 de dezembro', 0],
+    ['Gabriel Oliveira','otawan44@gmail.com','otawan44','31 de dezembro', 0],
+    ['Carolina De Sousa','desousacarolina665@gmail.com','carolinadesousa','2 de novembro', 0],
+    ['Jamylle Vasconcelos','jamyllevasconcelossilva@gmail.com','myllevscx','28 de fevereiro', 0],
+    ['João Vitor de Oliveira','joaovitoroliveiraaires9@gmail.com','joaovitor123','26 de setembro', 0],
+    ['Mateus Augusto','mateusx0539@gmail.com','mateusssx08','5 de novembro', 0],
+    ['Julia Fernandes','ingridmontenegrocastellanj@gmail.com','letysilvam','5 de novembro', 0],
+    ['Gislane Gurgel','gislanejaneiro@gmail.com','gislanegurgel','18 de novembro', 4],
+    ['Evellym Biatriz','evellymbiatriz@gmail.com','evellym','27 de outubro', 0],
+    ['Maria Josefa','mariamjs456.1@gmail.com','mariamjs4561','23 de junho', 0],
+    ['Rogerio Reale','rogerioreale50@gmail.com','deus113','1 de abril', 0],
+    ['Viviane Martins','vivikamedeiros2@gmail.com','vikmm','21 de novembro', 0],
+    ['Ezequiel Laux','ezequiellauxbonacheski345@gmail.com','ezequiellb','14 de fevereiro', 0],
+    ['Sabrina da Rosa','darosasabrina77@gmail.com','darosasabrina77','10 de dezembro', 0],
+    ['Cleverton Santos','santoscleverton826@gmail.com','cleverton','4 de novembro', 0],
+    ['Mariana Tuane','ferreiradesouzamaroatuane@gmail.com','mary','22 de outubro', 0],
+    ['Larissa Camile','laricamile20@gmail.com','lara','7 de dezembro', 0],
+    ['Ruan Carlos dos Santos','lugaryui@gmail.com','ruan','3 de novembro', 4],
+    ['Luciano Souto Vieira','soutoluciano11@gmail.com','junior','28 de novembro', 11.99],
+    ['Erica Santos','ericasantosoliveira70@gmail.com','ericasantosoliveira70','31 de dezembro', 0],
+    ['Lorena Amaral','lorenasantosamaral18@gmail.com','lorenasantosamaral18','31 de dezembro', 0],
+    ['Tainara Pereira','taynaram367@gmail.com','thayna19','19 de outubro', 0],
+    ['Mônica Luiza','mo2348927@gmail.com','monicaluiza','17 de março', 0],
+    ['Victor Hugo','hugopd818@gmail.com','victor','19 de maio', 0],
+    ['Brenda Souza','brenda.ssouza17@gmail.com','brendasouza18','28 de janeiro', 0],
+    ['Laissa Vitória','vulgoalerquina922@gmail.com','lindalaissa','27 de outubro', 0],
+  ].map((r, i) => ({ name: r[0], email: r[1], handle: r[2], bday: r[3], saldo: r[4], cadastro: i < 3 ? '13/07/2026' : '04/11/2025', verified: r[2] === 'creativeideia4' }));
+  const demo = Object.keys(USERS).map(slug => ({
+    name: USERS[slug].name, email: slug + '@bday.fm', handle: slug,
+    bday: USERS[slug].status || '—', saldo: USERS[slug].received || 0, cadastro: '01/07/2026', verified: slug === 'ana',
+  }));
+  const todos = demo.concat(extra);
+  // Dois perfis de demonstração sempre fazem aniversário HOJE (para as notificações do dia)
+  const MESES_PT = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const HOJE_STR = new Date().getDate() + ' de ' + MESES_PT[new Date().getMonth()];
+  const mj = todos.find(u => u.handle === 'mariamjs4561'); if (mj) mj.bday = HOJE_STR;
+  const vh = todos.find(u => u.handle === 'victor'); if (vh) vh.bday = HOJE_STR;
+  todos.HOJE_STR = HOJE_STR;
+  return todos;
+})();
+
+const ADMIN_GIFTS = [
+  ['Biscoito da Sorte', 'Uma mensagem doce para começar bem o dia.', 12.00, 'Popular', 'biscoito', 214],
+  ['Balão de Festa', 'Clássico e alegre — favorito das multidões.', 8.00, 'Popular', 'balao', 1284],
+  ['Coroa de Aniversariante', 'Porque a pessoa merece se sentir realeza hoje.', 25.00, 'Especial', 'coroa-festa', 96],
+  ['Vale Café', 'Simples, direto e sempre bem-vindo.', 6.00, 'Econômico', 'cafe', 342],
+  ['Chapéu de Festa Dourado', 'Um toque especial sem pesar no bolso.', 18.00, 'Valioso', 'chapeu', 187],
+  ['Kit Confete', 'Para explodir de alegria no feed dela.', 10.00, 'Popular', 'kit-confete', 251],
+  ['Bolo Surpresa 3 Andares', 'Para quem quer mandar bem no presente principal.', 32.00, 'Especial', 'bolo-andares', 168],
+  ['Vale Compras R$5', 'Cabe no bolso e no coração.', 5.00, 'Econômico', 'vale-compras', 412],
+  ['Vale Pão — Padaria Doce Lar', 'Parceiro local. Resgate presencial com código enviado por WhatsApp.', 15.00, 'Presente Físico', 'pao', 38],
+  ['Buquê Pequeno — Floricultura Bela Flor', 'Parceiro local. Entrega ou retirada combinada por WhatsApp.', 45.00, 'Presente Físico', 'flor', 52],
+  ['Cappuccino Especial — Cafeteria Grão', 'Parceiro local. Resgate presencial com código enviado por WhatsApp.', 14.00, 'Presente Físico', 'caneca', 61],
+  ['Bolo de Pote — Doceria Da Vovó', 'Parceiro local. Entrega ou retirada combinada por WhatsApp.', 22.00, 'Presente Físico', 'pote', 44],
+].map((g, i) => ({ id: i + 1, name: g[0], desc: g[1], price: g[2], categoria: g[3], icone: g[4], vendidosBase: g[5] }));
+
+const ADMIN_SAQUES = [
+  { id: 32, user: 'user-32', valor: 83.60, data: '06/05/2025 23:40', status: 'Aprovado', suspeita: 0 },
+  { id: 24, user: 'user-24', valor: 9176.00, data: '29/04/2025 20:50', status: 'Aprovado', suspeita: 52 },
+  { id: 24, user: 'user-24', valor: 400.00, data: '28/04/2025 21:51', status: 'Aprovado', suspeita: 0 },
+  { id: 24, user: 'user-24', valor: 53.00, data: '25/04/2025 15:41', status: 'Aprovado', suspeita: 0 },
+  { id: 4,  user: 'user-4',  valor: 250.00, data: '25/04/2025 08:37', status: 'Aprovado', suspeita: 0 },
+  { id: 4,  user: 'user-4',  valor: 100.00, data: '25/04/2025 08:03', status: 'Aprovado', suspeita: 0 },
+  { id: 4,  user: 'user-4',  valor: 50.00, data: '25/04/2025 08:01', status: 'Aprovado', suspeita: 0 },
+  { id: 51, user: 'gislanegurgel', valor: 34.00, data: '14/07/2026 10:12', status: 'Pendente', suspeita: 8 },
+  { id: 68, user: 'ruan', valor: 120.00, data: '15/07/2026 18:33', status: 'Pendente', suspeita: 23 },
+  { id: 24, user: 'user-24', valor: 100.00, data: '25/04/2025 07:57', status: 'Aprovado', suspeita: 0 },
+  { id: 24, user: 'user-24', valor: 57.00, data: '25/04/2025 07:57', status: 'Aprovado', suspeita: 0 },
+];
+
+const PRESENTE_INFO = {
+  'Vale Compras R$5': { icone: 'vale-compras', valor: 5.00 },
+  'Bolo Surpresa 3 Andares': { icone: 'bolo-andares', valor: 32.00 },
+  'Vale Café': { icone: 'cafe', valor: 6.00 },
+};
+const ADMIN_ENVIOS = [
+  ['13/07/2026 12:14','Torpedo','@creativeideia4','@thaina','ola, parabens e DEus abencoe'],
+  ['04/11/2025 02:47','Torpedo','@vih18ataide06','@fabiana','....'],
+  ['03/11/2025 14:17','Presente','@user','@cleidelayne','Vale Compras R$5'],
+  ['27/05/2025 10:23','Presente','@luanalima','@dionelzientara','Vale Compras R$5'],
+  ['15/05/2025 13:08','Torpedo','@15052005','@15052005','Obrigado'],
+  ['15/05/2025 12:58','Torpedo','@15052005','@andressasoares','Oi'],
+  ['15/05/2025 12:57','Torpedo','@gracianalima56','@ihellenpereira','Parabéns te desejo toda felicidade do mundo linda que Deus abençoe sua vida hoje e sempre'],
+  ['15/05/2025 12:56','Torpedo','@gracianalima56','@ihellenpereira','Tudo bem linda'],
+  ['08/05/2025 19:36','Torpedo','@tht','@rafaella','Feliz aniversário 🎂🎉'],
+  ['08/05/2025 19:36','Torpedo','@tht','@jaiciane','Feliz aniversário 🎉🎉'],
+  ['08/05/2025 00:06','Torpedo','@giovanna2301','@jaiciane','Parabéns 🎉 felicidades'],
+  ['06/05/2025 23:41','Presente','@amucosta','@mariabeatriz','Bolo Surpresa 3 Andares'],
+  ['06/05/2025 23:17','Presente','@lorena','@mariabeatriz','Vale Compras R$5'],
+  ['06/05/2025 13:57','Presente','@eloina','@mariabeatriz','Vale Café'],
+  ['06/05/2025 13:21','Torpedo','@angela','@nicolly','Feliz aniversário querida! Que Deus possa abençoar grandemente sua vida'],
+  ['06/05/2025 13:20','Torpedo','@angela','@evelynsa9205','Feliz aniversário querida! Que Deus possa abençoar grandemente sua vida'],
+  ['06/05/2025 13:19','Torpedo','@angela','@mariabeatriz','Feliz aniversário querida! Que Deus possa abençoar grandemente sua vida'],
+  ['06/05/2025 13:19','Torpedo','@angela','@jessica','Feliz aniversário querida! Que Deus possa abençoar grandemente sua vida'],
+].map((r, i) => {
+  const info = r[1] === 'Presente' ? (PRESENTE_INFO[r[4]] || { icone: 'presente', valor: 0 }) : null;
+  return { id: 'E-' + (1043 - i), data: r[0], tipo: r[1], de: r[2], para: r[3], conteudo: r[4],
+    icone: info ? info.icone : null, valor: info ? info.valor : null,
+    bday: r[1] === 'Presente' ? (i % 2 ? 'Bday: viagem de aniversário' : 'Casamento João e Maria') : null,
+    status: i % 3 === 0 ? 'Visualizado' : 'Entregue', origem: i % 4 === 0 ? 'App iOS' : i % 4 === 1 ? 'Web' : 'App Android' };
+});
+
+const ADMIN_DEPOSITOS = [
+  { id: 235, user: '@ruan', valor: 100000.00, data: '04/11/2025 18:06:57', ref: 'deposit-1149-1762290417718', status: 'Pendente' },
+  { id: 234, user: '@user', valor: 5.99, data: '03/11/2025 14:18:38', ref: '131738290335', status: 'Completado' },
+  { id: 233, user: '@user', valor: 4.00, data: '03/11/2025 10:58:42', ref: '131711834021', status: 'Completado' },
+  { id: 232, user: '@user', valor: 3.00, data: '03/11/2025 10:58:12', ref: 'deposit-1076-1762178292225', status: 'Pendente' },
+  { id: 231, user: '@user', valor: 1.00, data: '03/11/2025 10:56:48', ref: '132310142188', status: 'Completado' },
+  { id: 230, user: '@brenonuvem', valor: 2.00, data: '03/11/2025 10:41:10', ref: '131709685103', status: 'Completado' },
+  { id: 229, user: '@brenonuvem', valor: 1.00, data: '27/10/2025 16:58:52', ref: 'deposit-24-1761595132885', status: 'Pendente' },
+  { id: 228, user: '@brenonuvem', valor: 600.00, data: '11/10/2025 18:03:45', ref: 'deposit-24-1760216625248', status: 'Pendente' },
+  { id: 227, user: '@brenonuvem', valor: 10.00, data: '10/06/2025 14:50:42', ref: 'deposit-24-1749577842499', status: 'Pendente' },
+  { id: 226, user: '@brenonuvem', valor: 1.00, data: '10/06/2025 13:08:52', ref: 'deposit-24-1749571732250', status: 'Pendente' },
+];
+
+const ADMIN_SUPORTE = [
+  { titulo: 'O ano errado', de: 'Carolina De Sousa (desousacarolina665@gmail.com)', fone: '19996127863', msg: '[Mensagem enviada pelo usuário ID: 1168, @carolinadesousa] Eu coloquei o ano errado', data: '05/11/2025, 18:05', nova: true },
+  { titulo: 'Gggvn', de: 'Luciano Souto Vieira Junior (soutoluciano11@gmail.com)', fone: '', msg: '[Mensagem enviada pelo usuário ID: 1145, @junior] Vcvvbjbvm vnn. Nm bn b', data: '04/11/2025, 16:05', nova: true },
+  { titulo: 'Família', de: 'Luana da Motta Ramos (lua1992mottaramos@gmail.com)', fone: '41985363981', msg: '[Mensagem enviada pelo usuário ID: 1118, @luanamotta90] Gostaria de falar dos valores familiares', data: '04/11/2025, 06:57', nova: true },
+  { titulo: 'Aniversario', de: 'Gianna C P Fujarra (fujarragianna3@gmail.com)', fone: '43986018269', msg: '[Mensagem enviada pelo usuário ID: 1088, @glifujarraa] Quero ganha pix hoho', data: '03/11/2025, 19:26', nova: true },
+  { titulo: 'Festa', de: 'Dulcymaria Arruda Brito (dulcymaria62@gmail.com)', fone: '81997474874', msg: '[Mensagem enviada pelo usuário ID: 1058, @duh19] Ooe te bem quero mas informações', data: '10/05/2025, 10:59', nova: false },
+  { titulo: 'Qualquer coisa', de: 'Raiele Santos (raielesantos503@gmail.com)', fone: '94992237626', msg: '[Mensagem enviada pelo usuário ID: 1044, @raielesantos503] Mas eu gosto de filme músicas série de tudo um pouco', data: '10/05/2025, 09:08', nova: true },
+  { titulo: 'Com 24 anos eu fui mãe', de: 'Fabiana Luiz dos Santos (fabianaluizdossantos932@gmail.com)', fone: '11948071685', msg: '[Mensagem enviada pelo usuário ID: 1035, @yasmim199] Eu sou mãe de primeira viagem ea minha única filha faleceu e não tenho mais felicidade nem uma mais graças a Deus eu tenho a minha mãe do meu lado 😢❤️❤️', data: '09/05/2025, 19:16', nova: true },
+  { titulo: 'Muda data de aniversário', de: 'Glendha Milenna Silva Santos (smyllena2017@gmail.com)', fone: '74999947921', msg: '[Mensagem enviada pelo usuário ID: 984, @milena21] Quero muda data do aniversário,errei', data: '08/05/2025, 13:32', nova: true },
+];
+
+const ADMIN_KB = [
+  ['O que é o bday.fm?', 'O bday.fm é uma plataforma social onde você cria sua conta gratuita, compartilha seu perfil e recebe presentes virtuais que se convertem em dinheiro real via PIX.', ['o que é','como funciona','plataforma','site','app']],
+  ['Como receber presentes?', 'Compartilhe seu perfil com amigos e familiares. Quando alguém te enviar um presente virtual, o valor é automaticamente convertido em saldo que pode ser sacado via PIX.', ['receber presente','ganhar presente','como recebo']],
+  ['Como divulgar meu perfil?', 'Compartilhe seu link pessoal no WhatsApp, Instagram, Facebook e outras redes sociais. Quanto mais pessoas conhecerem seu perfil, mais presentes você pode receber.', ['divulgar','compartilhar','link','redes sociais']],
+  ['Quais formas de pagamento são aceitas?', 'Aceitamos pagamento via PIX através do Mercado Pago. É rápido, seguro e os créditos são adicionados automaticamente.', ['pagamento','pix','mercado pago']],
+  ['Quanto tempo demora para receber meu saque?', 'Os saques são processados em até 48 horas úteis. Você receberá o dinheiro diretamente na sua chave PIX.', ['quanto tempo','prazo','tempo de saque']],
+  ['O bday.fm é seguro?', 'Sim! Utilizamos criptografia de dados e pagamentos processados pelo Mercado Pago (plataforma confiável). Seus dados pessoais são protegidos e nunca compartilhados com terceiros.', ['seguro','segurança','golpe','fraude']],
+  ['Existe taxa para sacar?', 'A plataforma retém 20% do valor dos presentes como taxa de serviço. O valor que você vê no seu saldo já está com essa taxa aplicada.', ['taxa','desconto','comissão','percentual']],
+  ['Qual o valor mínimo para saque?', 'O valor mínimo para saque é R$ 10,00. Você pode acumular presentes e sacar quando atingir esse valor.', ['mínimo saque','valor mínimo']],
+  ['Como sacar meu saldo?', 'Para sacar: acesse seu perfil, clique em "Sacar", informe sua chave PIX e o valor. O saque é processado em até 48 horas úteis.', ['sacar','saque','retirar dinheiro']],
+  ['Como editar meu perfil?', 'Acesse seu perfil e clique em "Editar perfil": você poderá alterar foto do perfil, foto de capa, biografia e nome de exibição.', ['editar perfil','mudar foto','bio']],
+  ['Posso ter mais de uma conta?', 'Por questões de segurança e prevenção de fraudes, cada pessoa deve ter apenas uma conta no bday.fm.', ['duas contas','várias contas']],
+  ['Como cancelar minha conta?', 'Se deseja cancelar sua conta, entre em contato com o suporte através do chat. Recomendamos sacar todo o seu saldo antes de solicitar o cancelamento.', ['cancelar conta','excluir perfil']],
+];
+
+const ADMIN_CHATS = [
+  { nome: 'Anônimo', user: null, msgs: 5, data: '13/07/2026 12:15' },
+  { nome: 'Brenno de Souza Costa', user: '@brenonuvem', msgs: 23, data: '22/05/2026 07:59' },
+  { nome: 'Anônimo', user: null, msgs: 45, data: '29/11/2025 18:44' },
+  { nome: 'Anônimo', user: null, msgs: 6, data: '12/11/2025 23:22' },
+  { nome: 'Anônimo', user: null, msgs: 15, data: '09/11/2025 22:43' },
+  { nome: 'Mateus Augusto', user: '@mateusssx08', msgs: 6, data: '05/11/2025 14:22' },
+  { nome: 'Julia Fernandes', user: '@letysilvam', msgs: 2, data: '05/11/2025 09:47' },
+];
+
+const ADMIN_PAGES = [
+  ['index.html','Página inicial'], ['explorar.html','Explorar perfis'], ['feed.html','Feed'],
+  ['presentes.html','Enviar presentes'], ['perfil.html?user=ana','Perfil (exemplo: Ana)'], ['carteira.html','Carteira'],
+  ['loja.html','Loja'], ['recap.html','Recap'], ['cadastro.html','Cadastro'], ['login.html','Login'],
+  ['sobre.html','Sobre'], ['termos.html','Termos de uso'], ['privacidade.html','Privacidade'], ['404.html','Página 404'],
+];
+
+const CHART_DAYS = [
+  ['09/07', 1], ['10/07', 3], ['11/07', 2], ['12/07', 4], ['13/07', 2], ['14/07', 3], ['15/07', 5],
+];
+const CHART_POPULARES = [
+  ['Balão de Festa', 30, '#7C3AED'], ['Vale Compras R$5', 22, '#EC4899'], ['Vale Café', 19, '#F59E0B'],
+  ['Kit Confete', 15, '#10B981'], ['Outros', 14, '#94A3B8'],
+];
+
+// ==================== CAMADA OPERACIONAL (demo com rastreabilidade) ====================
+
+// ---- Celebrações (BDAYs) ----
+const ADMIN_BDAYS = [
+  { id: 'BD-101', titulo: 'Casamento João e Maria', dono: '@mariabeatriz', categoria: 'Casamento', arrecadado: 250, meta: 500, status: 'Ativa', acessos: 1240 },
+  { id: 'BD-102', titulo: 'Bday: viagem de aniversário', dono: '@ana', categoria: 'Aniversário', arrecadado: 260, meta: 500, status: 'Ativa', acessos: 3105 },
+  { id: 'BD-103', titulo: 'Chá de bebê da Lorena', dono: '@lorenasantosamaral18', categoria: 'Chá de bebê', arrecadado: 180, meta: 300, status: 'Finalizada', acessos: 890 },
+  { id: 'BD-104', titulo: 'Formatura do Ruan', dono: '@ruan', categoria: 'Formatura', arrecadado: 610, meta: 800, status: 'Ativa', acessos: 2404 },
+  { id: 'BD-105', titulo: 'Nova casa da Gislane', dono: '@gislanegurgel', categoria: 'Nova casa', arrecadado: 95, meta: 400, status: 'Expirada', acessos: 310 },
+  { id: 'BD-106', titulo: 'Intercâmbio da Julia', dono: '@letysilvam', categoria: 'Intercâmbio', arrecadado: 445, meta: 1200, status: 'Ativa', acessos: 1877 },
+];
+
+// ---- Razão financeira (ledger) — cada linha sabe de qual usuário, BDAY e presente veio ----
+// Gerada de forma determinística (PRNG com semente fixa), com datas relativas a agora,
+// para o extrato ficar sempre "vivo" sem backend.
+function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const LEDGER = (() => {
+  const rnd = mulberry32(20260716);
+  const enviadores = ['@maria', '@lucas', '@pedro', '@rafael', '@marina', '@joao', '@thaina', '@mauricio', '@carolina', '@creativeideia4', '@junior', '@gislanegurgel', '@ruan', '@brenonuvem'];
+  const presentesLista = ['vale-compras|Vale Compras R$5|5', 'balao|Balão de Festa|8', 'biscoito|Biscoito da Sorte|12', 'cafe|Vale Café|6', 'bolo-andares|Bolo Surpresa 3 Andares|32', 'coroa-festa|Coroa de Aniversariante|25', 'kit-confete|Kit Confete|10', 'caneca|Cappuccino Especial|14', 'chapeu|Chapéu de Festa Dourado|18', 'pote|Bolo de Pote|22'];
+  const rows = [];
+  const agora = Date.now();
+  let t = agora;
+  let n = 1090;
+  const TAXA = () => admGet('taxa', 20) / 100;
+  // eventos especiais espalhados entre os presentes
+  const especiais = [
+    { tipo: 'Saque', dir: 'out', usuario: '@ana', valor: 120, obs: 'Pix aprovado' },
+    { tipo: 'Bonificação', dir: 'out', usuario: '@creativeideia4', valor: 15, obs: 'Campanha de indicação' },
+    { tipo: 'Reembolso', dir: 'out', usuario: '@junior', valor: 11.99, obs: 'Presente cancelado pelo remetente' },
+    { tipo: 'Saque', dir: 'out', usuario: '@ruan', valor: 250, obs: 'Pix aprovado' },
+    { tipo: 'Estorno', dir: 'in', usuario: '@gislanegurgel', valor: 34, obs: 'Chargeback revertido a favor da plataforma' },
+    { tipo: 'Crédito', dir: 'in', usuario: '@brenonuvem', valor: 600, obs: 'Depósito via Mercado Pago' },
+    { tipo: 'Débito', dir: 'out', usuario: '—', valor: 89.9, obs: 'Tarifa mensal Mercado Pago' },
+    { tipo: 'Saque', dir: 'out', usuario: '@mariabeatriz', valor: 83.6, obs: 'Pix aprovado' },
+  ];
+  let e = 0;
+  for (let i = 0; i < 64; i++) {
+    t -= Math.floor(rnd() * 16 + 2) * 3600 * 1000; // recua 2–18h por linha (~30 dias no total)
+    if (i > 3 && i % 8 === 5 && e < especiais.length) {
+      const sp = especiais[e++];
+      rows.push({ id: 'MV-' + (n--), ms: t, tipo: sp.tipo, dir: sp.dir, origem: sp.obs, usuario: sp.usuario, bday: '—', presente: '—', valor: sp.valor, taxa: 0, status: i % 11 === 5 ? 'Pendente' : 'Concluída' });
+      continue;
+    }
+    const bd = ADMIN_BDAYS[Math.floor(rnd() * ADMIN_BDAYS.length)];
+    const pr = presentesLista[Math.floor(rnd() * presentesLista.length)].split('|');
+    const de = enviadores[Math.floor(rnd() * enviadores.length)];
+    const valor = parseFloat(pr[2]);
+    const taxa = +(valor * TAXA()).toFixed(2);
+    rows.push({ id: 'MV-' + (n--), ms: t, tipo: 'Presente', dir: 'in', origem: de + ' enviou ' + pr[1], usuario: bd.dono, bday: bd.titulo, presente: pr[1], presenteIcone: pr[0], valor, taxa, status: 'Concluída' });
+    rows.push({ id: 'MV-' + (n--), ms: t + 1000, tipo: 'Taxa', dir: 'in', origem: 'Comissão da plataforma (' + admGet('taxa', 20) + '%) sobre ' + pr[1], usuario: bd.dono, bday: bd.titulo, presente: pr[1], presenteIcone: pr[0], valor: taxa, taxa: 0, status: 'Concluída' });
+  }
+  rows.sort((a, b) => a.ms - b.ms);
+  let saldo = 11250.00;
+  rows.forEach(r => { saldo += (r.dir === 'in' ? r.valor : -r.valor); r.saldoApos = +saldo.toFixed(2); });
+  rows.reverse(); // mais recente primeiro
+  return rows;
+})();
+const fmtData = ms => { const d = new Date(ms); return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); };
+
+// ---- Dados bancários/pessoais dos solicitantes de saque (demo) ----
+const SAQUE_USERS = {
+  'user-32': { nome: 'Carolina De Sousa', email: 'desousacarolina665@gmail.com', cpf: '083.514.226-70', pix: 'desousacarolina665@gmail.com', banco: 'Nubank (260)' },
+  'user-24': { nome: 'Brenno de Souza Costa', email: 'brenonuvem@gmail.com', cpf: '112.907.348-55', pix: '+55 79 99680-0626', banco: 'Mercado Pago (323)' },
+  'user-4':  { nome: 'Ana Beatriz', email: 'ana@bday.fm', cpf: '045.771.902-30', pix: 'ana@bday.fm', banco: 'Itaú (341)' },
+  'gislanegurgel': { nome: 'Gislane Gurgel Janeiro', email: 'gislanejaneiro@gmail.com', cpf: '901.442.375-18', pix: '901.442.375-18', banco: 'Caixa (104)' },
+  'ruan': { nome: 'Ruan Carlos dos Santos', email: 'lugaryui@gmail.com', cpf: '277.630.114-92', pix: 'lugaryui@gmail.com', banco: 'Banco do Brasil (001)' },
+};
+// Origem do saldo de um saque: quais BDAYs/presentes formaram o valor (determinístico por uid)
+function origemDoSaldo(s){
+  const rnd = mulberry32(4000 + s.uid);
+  const catalogo = [['vale-compras', 'Vale Compras R$5', 5], ['balao', 'Balão de Festa', 8], ['biscoito', 'Biscoito da Sorte', 12], ['cafe', 'Vale Café', 6], ['bolo-andares', 'Bolo Surpresa 3 Andares', 32], ['coroa-festa', 'Coroa de Aniversariante', 25], ['kit-confete', 'Kit Confete', 10], ['flor', 'Buquê Pequeno', 45]];
+  const enviadores = ['Maria', 'Lucas', 'Pedro', 'Rafael', 'Marina', 'João', 'Thainá', 'Carolina', 'Camila', 'Diego'];
+  const bruto = +(s.valor / (1 - admGet('taxa', 20) / 100)).toFixed(2); // valor solicitado é líquido
+  const nBdays = s.valor > 300 ? 2 : 1;
+  const bdays = [];
+  let restante = bruto;
+  for (let b = 0; b < nBdays; b++) {
+    const bd = ADMIN_BDAYS[Math.floor(rnd() * ADMIN_BDAYS.length)];
+    const alvo = b === nBdays - 1 ? restante : +(restante * (0.4 + rnd() * 0.3)).toFixed(2);
+    const gifts = [];
+    let acc = 0;
+    while (acc < alvo - 5 && gifts.length < 7) {
+      const candidatos = catalogo.filter(c => c[2] <= alvo - acc);
+      if (!candidatos.length) break;
+      const [gi, gn, gv] = candidatos[Math.floor(rnd() * candidatos.length)];
+      const quem = enviadores[Math.floor(rnd() * enviadores.length)];
+      gifts.push({ quem, icone: gi, presente: gn, valor: gv });
+      acc = +(acc + gv).toFixed(2);
+    }
+    const ajuste = +(alvo - acc).toFixed(2);
+    if (Math.abs(ajuste) > 0.01) gifts.push({ quem: enviadores[Math.floor(rnd() * enviadores.length)], icone: 'presente', presente: 'Presente personalizado', valor: Math.abs(ajuste) });
+    bdays.push({ bday: bd.titulo, id: bd.id, gifts, total: alvo });
+    restante = +(restante - alvo).toFixed(2);
+  }
+  return { bruto, bdays };
+}
+
+// ---- Auditoria administrativa ----
+function getAudit(){
+  return admGet('audit', [
+    { quem: 'admin@bday.fm', acao: 'Login no painel', alvo: 'Sessão', detalhe: 'Acesso via web', ip: '187.54.102.33', quando: fmtData(Date.now() - 26 * 3600 * 1000) },
+    { quem: 'admin@bday.fm', acao: 'Alterou parâmetro', alvo: 'Taxa de comissão', detalhe: '5% → 20%', ip: '187.54.102.33', quando: fmtData(Date.now() - 25 * 3600 * 1000) },
+    { quem: 'gerente@bday.fm', acao: 'Aprovou saque', alvo: 'ID 32 · user-32', detalhe: 'R$ 83,60 via Pix', ip: '201.17.88.204', quando: fmtData(Date.now() - 20 * 3600 * 1000) },
+  ]);
+}
+function audit(acao, alvo, detalhe){
+  const log = getAudit();
+  log.unshift({ quem: 'admin@bday.fm', acao, alvo, detalhe: detalhe || '—', ip: '187.54.102.33', quando: fmtData(Date.now()) });
+  admSet('audit', log.slice(0, 400));
+}
+
+// ---- Exportação (CSV / Excel / PDF) ----
+function baixarArquivo(nome, mime, conteudo){
+  try {
+    const blob = new Blob(["\uFEFF" + conteudo], { type: mime });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = nome;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    showToast('Arquivo ' + nome + ' gerado.');
+  } catch (e) { showToast('Não foi possível gerar o arquivo neste navegador.'); }
+}
+function exportRows(fmt, titulo, header, rows){
+  const nome = titulo.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  if (fmt === 'csv') {
+    const csv = [header].concat(rows).map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(';')).join('\n');
+    baixarArquivo(nome + '.csv', 'text/csv;charset=utf-8', csv);
+  } else if (fmt === 'excel') {
+    const tabela = '<table><tr>' + header.map(h => '<th>' + h + '</th>').join('') + '</tr>' +
+      rows.map(r => '<tr>' + r.map(c => '<td>' + String(c) + '</td>').join('') + '</tr>').join('') + '</table>';
+    baixarArquivo(nome + '.xls', 'application/vnd.ms-excel', '<html><head><meta charset="UTF-8"></head><body><h3>' + titulo + '</h3>' + tabela + '</body></html>');
+  } else {
+    const w = window.open('', '_blank');
+    if (!w) { showToast('Libere pop-ups para exportar em PDF.'); return; }
+    w.document.write('<html><head><title>' + titulo + '</title><style>body{font-family:Inter,system-ui,sans-serif;padding:24px} h2{color:#7C3AED} table{border-collapse:collapse;width:100%;font-size:12px} th,td{border:1px solid #ddd;padding:6px 8px;text-align:left} th{background:#F3E8FF}</style></head><body><h2>bday.fm — ' + titulo + '</h2><p>Gerado em ' + fmtData(Date.now()) + '</p><table><tr>' + header.map(h => '<th>' + h + '</th>').join('') + '</tr>' + rows.map(r => '<tr>' + r.map(c => '<td>' + String(c) + '</td>').join('') + '</tr>').join('') + '</table></body></html>');
+    w.document.close(); w.focus(); w.print();
+  }
+  audit('Exportou relatório', titulo, fmt.toUpperCase());
+}
+function exportBar(titulo){
+  return `<div class="flex items-center gap-1.5">
+    <span class="text-[11px] adm-muted font-semibold mr-1">Exportar:</span>
+    ${['csv','excel','pdf'].map(f => `<button class="adm-card px-2.5 py-1 text-[11px] font-bold uppercase inline-flex items-center gap-1" onclick="exportarAtual('${f}')">${I(AI.download, 'w-3 h-3')} ${f}</button>`).join('')}
+  </div>`;
+}
+let exportarAtual = () => showToast('Nada para exportar aqui.');
+
+// ---------- Definição das seções ----------
+const SECTIONS = [
+  { id: 'dashboard', label: 'Dashboard', icon: AI.dash },
+  { id: 'usuarios', label: 'Usuários', icon: AI.users },
+  { id: 'verificacao', label: 'Verificação', icon: AI.seal },
+  { id: 'presentes', label: 'Presentes', icon: AI.gift },
+  { id: 'saques', label: 'Saques', icon: AI.bank },
+  { id: 'extrato', label: 'Movimentação', icon: AI.ledger },
+  { id: 'relatorios', label: 'Relatórios', icon: AI.report },
+  { id: 'envios', label: 'Envios', icon: AI.send },
+  { id: 'apimp', label: 'API MP', icon: AI.card },
+  { id: 'twilio', label: 'Twilio SMS', icon: AI.sms },
+  { id: 'rastreamento', label: 'Rastreamento', icon: AI.track },
+  { id: 'parametros', label: 'Parâmetros', icon: AI.params },
+  { id: 'suporte', label: 'Suporte', icon: AI.support },
+  { id: 'ferramentas', label: 'Ferramentas', icon: AI.tools },
+  { id: 'webhooks', label: 'Webhooks', icon: AI.hook },
+  { id: 'chatia', label: 'Chat IA', icon: AI.bot },
+  { id: 'kb', label: 'Base de Conhecimento', icon: AI.book },
+  { id: 'auditoria', label: 'Auditoria', icon: AI.audit },
+  { id: 'paginas', label: 'Páginas', icon: AI.pages },
+];
+
+// ---------- Gráficos SVG simples ----------
+function lineChart(data, w, h, color){
+  const max = Math.max(4, ...data.map(d => d[1]));
+  const px = i => 40 + i * ((w - 60) / (data.length - 1));
+  const py = v => (h - 30) - (v / max) * (h - 50);
+  const pts = data.map((d, i) => `${px(i)},${py(d[1])}`).join(' ');
+  const grid = [];
+  for (let g = 0; g <= max; g++) grid.push(`<line x1="40" y1="${py(g)}" x2="${w - 20}" y2="${py(g)}" stroke="currentColor" stroke-opacity="0.07"/><text x="30" y="${py(g) + 4}" font-size="10" fill="currentColor" fill-opacity="0.45" text-anchor="end">${g}</text>`);
+  const labels = data.map((d, i) => `<text x="${px(i)}" y="${h - 10}" font-size="10" fill="currentColor" fill-opacity="0.45" text-anchor="middle">${d[0]}</text>`).join('');
+  const dots = data.map((d, i) => `<circle cx="${px(i)}" cy="${py(d[1])}" r="3.5" fill="${color}"/>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" class="w-full" style="max-height:${h}px">
+    ${grid.join('')}${labels}
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${dots}</svg>`;
+}
+function donutChart(data, size){
+  const total = data.reduce((s, d) => s + d[1], 0);
+  const r = size / 2 - 12, cx = size / 2, cy = size / 2, circ = 2 * Math.PI * r;
+  let off = 0;
+  const segs = data.map(d => {
+    const frac = d[1] / total;
+    const seg = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${d[2]}" stroke-width="20"
+      stroke-dasharray="${(frac * circ).toFixed(1)} ${circ.toFixed(1)}" stroke-dashoffset="${(-off * circ).toFixed(1)}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    off += frac;
+    return seg;
+  }).join('');
+  const legend = data.map(d => `<div class="flex items-center gap-2 text-xs"><span class="w-2.5 h-2.5 rounded-full" style="background:${d[2]}"></span><span class="adm-muted">${d[0]}</span><b class="ml-auto">${d[1]}%</b></div>`).join('');
+  return `<div class="flex items-center gap-6 flex-wrap"><svg viewBox="0 0 ${size} ${size}" style="width:${size * 0.75}px">${segs}</svg><div class="space-y-1.5 min-w-[150px] flex-1">${legend}</div></div>`;
+}
+
+// ---------- Renderização das seções ----------
+const R = {};
+
+R.dashboard = () => {
+  const totalUsers = 1000 + ADMIN_USERS.length;
+  const aniversariantes = ADMIN_USERS.filter(u => u.bday === ADMIN_USERS.HOJE_STR);
+  const saques = getSaques();
+  const pendentes = saques.filter(x => x.status === 'Pendente');
+  const aprovadosMes = saques.filter(x => x.status === 'Aprovado');
+  const MAIS_COMPRADOS = [
+    ['balao', 'Balão de Festa', 298, 2384.00], ['vale-compras', 'Vale Compras R$5', 214, 1070.00],
+    ['cafe', 'Vale Café', 187, 1122.00], ['kit-confete', 'Kit Confete', 121, 1210.00],
+    ['biscoito', 'Biscoito da Sorte', 98, 1176.00], ['bolo-andares', 'Bolo Surpresa 3 Andares', 74, 2368.00],
+  ];
+  const maxQt = MAIS_COMPRADOS[0][2];
+  return `
+  <h1 class="text-xl font-extrabold mb-5">Dashboard</h1>
+  <div class="grid sm:grid-cols-3 gap-4">
+    ${[['Total de usuários', totalUsers.toLocaleString('pt-BR'), AI.users], ['Presentes enviados', '3.412', AI.gift], ['Valor total', fmtBRL(48210.90), AI.money]].map(c => `
+    <div class="adm-card p-5 flex items-start justify-between">
+      <div><div class="text-xs adm-muted font-semibold">${c[0]}</div><div class="text-2xl font-extrabold mt-1">${c[1]}</div></div>
+      <div class="w-10 h-10 rounded-xl adm-soft text-purple-500 flex items-center justify-center">${c[2]}</div>
+    </div>`).join('')}
+  </div>
+  <div class="grid sm:grid-cols-3 gap-4 mt-4">
+    <div class="adm-card p-5 flex items-start justify-between">
+      <div><div class="text-xs adm-muted font-semibold">Novos usuários no mês</div><div class="text-2xl font-extrabold mt-1">86</div><div class="text-[11px] text-green-600 font-semibold mt-1">▲ +24% vs mês anterior</div></div>
+      <div class="w-10 h-10 rounded-xl adm-soft text-purple-500 flex items-center justify-center">${AI.users}</div>
+    </div>
+    <div class="adm-card p-5 flex items-start justify-between">
+      <div><div class="text-xs adm-muted font-semibold">Saques no mês</div><div class="text-2xl font-extrabold mt-1">${fmtBRL(aprovadosMes.reduce((t, x) => t + x.valor, 0))}</div><div class="text-[11px] adm-muted mt-1">${aprovadosMes.length} solicitações aprovadas</div></div>
+      <div class="w-10 h-10 rounded-xl adm-soft text-purple-500 flex items-center justify-center">${AI.bank}</div>
+    </div>
+    <div class="adm-card p-5 flex items-start justify-between cursor-pointer hover:border-amber-300 transition" onclick="goSection('saques')">
+      <div><div class="text-xs adm-muted font-semibold">Saques pendentes</div><div class="text-2xl font-extrabold mt-1 text-amber-500">${pendentes.length}</div><div class="text-[11px] adm-muted mt-1">${fmtBRL(pendentes.reduce((t, x) => t + x.valor, 0))} aguardando — clique para revisar</div></div>
+      <div class="w-10 h-10 rounded-xl text-amber-500 flex items-center justify-center" style="background:#FEF3C7">${AI.bank}</div>
+    </div>
+  </div>
+  <div class="grid lg:grid-cols-2 gap-4 mt-4">
+    <div class="adm-card p-5"><div class="font-bold text-sm mb-3">Presentes enviados por dia</div>${lineChart(CHART_DAYS, 520, 200, '#EC4899')}</div>
+    <div class="adm-card p-5"><div class="font-bold text-sm mb-4">Presentes mais populares</div>${donutChart(CHART_POPULARES, 180)}</div>
+  </div>
+  <div class="adm-card p-5 mt-4">
+    <div class="font-bold text-sm mb-3">Presentes mais comprados (mês)</div>
+    <div class="space-y-2.5">
+      ${MAIS_COMPRADOS.map((g, i) => `
+      <div class="flex items-center gap-3 text-sm">
+        <span class="w-5 text-xs font-extrabold adm-muted">${i + 1}º</span>
+        ${giftTile(g[0], 'w-8 h-8', 'w-4 h-4')}
+        <span class="font-semibold w-52 truncate">${g[1]}</span>
+        <div class="flex-1 h-2 rounded-full adm-soft overflow-hidden"><div class="h-full rounded-full" style="width:${Math.round(g[2] / maxQt * 100)}%;background:linear-gradient(90deg,#7C3AED,#EC4899)"></div></div>
+        <span class="text-xs font-bold w-14 text-right">${g[2]}x</span>
+        <span class="text-xs adm-muted w-24 text-right">${fmtBRL(g[3])}</span>
+      </div>`).join('')}
+    </div>
+  </div>
+  <div class="mt-6">
+    <div class="font-bold text-sm mb-3">Ferramentas administrativas</div>
+    <div class="adm-card p-5">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl grad-bg text-white flex items-center justify-center shrink-0" style="box-shadow:0 6px 14px -6px rgba(124,58,237,.5)">${I(AI.send, 'w-5 h-5')}</div>
+        <div>
+          <div class="font-bold text-sm">Notificações de aniversário <span class="badge badge-purple ml-1">por e-mail</span></div>
+          <p class="text-xs adm-muted mt-0.5">Envie um e-mail de parabéns com o link do perfil para os aniversariantes — eles compartilham e recebem presentes.</p>
+        </div>
+      </div>
+      <div class="grid sm:grid-cols-2 gap-3 mt-4">
+        <div class="adm-soft rounded-xl p-4">
+          <div class="flex items-center justify-between">
+            <div class="text-xs font-bold">🎂 Aniversariantes de hoje</div>
+            <span class="badge ${aniversariantes.length ? 'badge-purple' : ''}">${aniversariantes.length}</span>
+          </div>
+          <p class="text-[11px] adm-muted mt-1">E-mail individual de "feliz aniversário" enviado hoje pela manhã.</p>
+          <button class="btn-primary rounded-xl px-3.5 py-2 text-xs font-bold mt-3 ${aniversariantes.length ? '' : 'opacity-40 pointer-events-none'}" onclick="notifPreview('dia')">Preparar envio do dia</button>
+        </div>
+        <div class="adm-soft rounded-xl p-4">
+          <div class="flex items-center justify-between">
+            <div class="text-xs font-bold">📅 Aniversariantes do mês</div>
+            <span class="badge badge-purple">70</span>
+          </div>
+          <p class="text-[11px] adm-muted mt-1">E-mail no dia 1º lembrando o mês do aniversário, com dicas de divulgação do perfil.</p>
+          <button class="adm-card rounded-xl px-3.5 py-2 text-xs font-bold mt-3" onclick="notifPreview('mes')">Preparar envio do mês</button>
+        </div>
+      </div>
+      <div id="notifPreviewBox" class="hidden mt-4 border-t adm-line pt-4"></div>
+    </div>
+  </div>
+  <div class="mt-6">
+    <div class="font-bold text-sm mb-3">Aniversariantes de hoje</div>
+    <div class="adm-card p-5">
+      ${aniversariantes.length ? aniversariantes.map(u => `
+        <div class="flex items-center gap-3 py-2">
+          <div class="w-8 h-8 rounded-full grad-bg text-white text-xs font-bold flex items-center justify-center">${u.name[0]}</div>
+          <div><div class="text-sm font-semibold">${u.name}</div><div class="text-xs adm-muted">@${u.handle} · ${u.bday}</div></div>
+          <button class="ml-auto text-xs font-semibold text-purple-600 hover:underline" onclick="audit('Enviou e-mail de parabéns', '@${u.handle}', 'Envio manual'); showToast('E-mail de parabéns enviado para @${u.handle} (demo).')">Enviar parabéns</button>
+        </div>`).join('') : '<p class="text-sm adm-muted text-center py-4">Nenhum aniversariante hoje</p>'}
+    </div>
+  </div>`;
+};
+
+// Pré-visualização e confirmação do envio de e-mails de aniversário
+function notifPreview(tipo){
+  const box = document.getElementById('notifPreviewBox');
+  const hoje = ADMIN_USERS.filter(u => u.bday === ADMIN_USERS.HOJE_STR);
+  const lista = tipo === 'dia' ? hoje : hoje.concat(ADMIN_USERS.filter(u => u.bday.includes('julho')).slice(0, 4));
+  const total = tipo === 'dia' ? lista.length : 70;
+  const assunto = tipo === 'dia' ? '🎂 Feliz aniversário, {nome}! Seu dia chegou' : '🎉 {nome}, seu mês de aniversário começou — prepare seu BDAY';
+  box.classList.remove('hidden');
+  box.innerHTML = `
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <div class="text-xs font-bold">Pré-visualização — ${tipo === 'dia' ? 'aniversariantes de hoje' : 'aniversariantes do mês'} (${total} destinatário${total === 1 ? '' : 's'})</div>
+      <button class="act-btn" onclick="document.getElementById('notifPreviewBox').classList.add('hidden')">${AI.x}</button>
+    </div>
+    <div class="adm-soft rounded-xl p-3 mt-2 text-xs">
+      <div><span class="adm-muted">Assunto:</span> <b>${assunto}</b></div>
+      <div class="mt-1"><span class="adm-muted">Corpo:</span> "Parabéns, {nome}! 🎈 Hoje é seu dia no bday.fm. Compartilhe seu perfil e receba presentes de quem você ama: bday.fm/{usuario}"</div>
+    </div>
+    <div class="flex flex-wrap gap-1.5 mt-2.5">
+      ${lista.slice(0, 8).map(u => `<span class="adm-card px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1.5"><span class="w-4 h-4 rounded-full grad-bg text-white text-[8px] font-bold flex items-center justify-center">${u.name[0]}</span>${u.email}</span>`).join('')}
+      ${total > 8 ? `<span class="text-[11px] adm-muted self-center">+ ${total - 8} outros</span>` : ''}
+    </div>
+    <button class="btn-primary rounded-xl px-4 py-2 text-xs font-bold mt-3" onclick="audit('Enviou e-mails de aniversário', tipoLabelNotif('${tipo}'), '${total} destinatários'); showToast('${total} e-mail${total === 1 ? '' : 's'} de aniversário enviado${total === 1 ? '' : 's'} (demo).'); document.getElementById('notifPreviewBox').classList.add('hidden');">✉️ Confirmar envio de ${total} e-mail${total === 1 ? '' : 's'}</button>`;
+  box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function tipoLabelNotif(t){ return t === 'dia' ? 'Aniversariantes do dia' : 'Aniversariantes do mês'; }
+
+R.usuarios = () =>R.usuarios = () => `
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-5">
+    <h1 class="text-xl font-extrabold">Usuários <span class="adm-muted font-semibold text-base">(${(1000 + ADMIN_USERS.length).toLocaleString('pt-BR')})</span></h1>
+    <div class="flex items-center gap-2">
+      <input id="userSearch" class="adm-input" style="width:240px" placeholder="Buscar por nome, email...">
+      <select id="userMonth" class="adm-input" style="width:150px">
+        <option value="">Todos os meses</option>
+        ${['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'].map(m => `<option value="${m}">${m[0].toUpperCase() + m.slice(1)}</option>`).join('')}
+      </select>
+    </div>
+  </div>
+  <div class="adm-card overflow-x-auto">
+    <table class="adm-table">
+      <thead><tr><th>Nome</th><th>Email</th><th>Username</th><th>Aniversário</th><th>Cargo</th><th>Saldo</th><th>Ações</th></tr></thead>
+      <tbody id="userRows"></tbody>
+    </table>
+  </div>
+  <p class="text-[11px] adm-muted mt-2">Cargo: <b>Administrador</b> acessa este painel · <b>Gerente</b> aprova saques e modera conteúdo · <b>Parceiro</b> tem condições especiais de divulgação. O selo de verificação é concedido na aba <a class="text-purple-500 font-semibold cursor-pointer" onclick="goSection('verificacao')">Verificação</a>.</p>`;
+
+function renderUserRows(){
+  const q = (document.getElementById('userSearch').value || '').toLowerCase();
+  const m = document.getElementById('userMonth').value;
+  const roles = getRoles();
+  const rows = ADMIN_USERS.filter(u =>
+    (!q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.handle.toLowerCase().includes(q)) &&
+    (!m || u.bday.toLowerCase().includes(m))
+  );
+  document.getElementById('userRows').innerHTML = rows.map(u => {
+    const role = roles[u.handle] || 'user';
+    return `
+    <tr>
+      <td><div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full grad-bg text-white text-[10px] font-bold flex items-center justify-center shrink-0">${u.name[0]}</div><span class="font-semibold whitespace-nowrap">${u.name}</span>${isUserVerified(u.handle) ? SEAL_BLUE : ''}</div></td>
+      <td class="adm-muted">${u.email}</td>
+      <td class="text-purple-500 font-semibold">@${u.handle}</td>
+      <td class="adm-muted whitespace-nowrap">${u.bday}</td>
+      <td>
+        <div class="flex items-center gap-1.5">
+          <select class="adm-input" style="width:130px;padding:4px 8px;font-size:12px" onchange="setRole('${u.handle}', this.value)">
+            ${ROLES.map(r => `<option value="${r[0]}" ${r[0] === role ? 'selected' : ''}>${r[1]}</option>`).join('')}
+          </select>
+          ${role !== 'user' ? `<span class="badge ${ROLE_BADGE[role] || ''}">${(ROLES.find(x => x[0] === role) || [])[1]}</span>` : ''}
+        </div>
+      </td>
+      <td class="font-bold">${fmtBRL(u.saldo)}</td>
+      <td class="whitespace-nowrap">
+        <span class="act-btn" title="Ver perfil" onclick="window.location.href='perfil.html?user=${u.handle}';">${AI.eye}</span>
+        <span class="act-btn" title="Editar" onclick="showToast('Edição de usuário (demo).')">${AI.edit}</span>
+        <span class="act-btn danger" title="Excluir" onclick="showToast('Usuário excluído (demo).')">${AI.trash}</span>
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" class="text-center adm-muted py-6">Nenhum usuário encontrado.</td></tr>';
+}
+R.usuarios.after = () => {
+  renderUserRows();
+  document.getElementById('userSearch').addEventListener('input', renderUserRows);
+  document.getElementById('userMonth').addEventListener('change', renderUserRows);
+};
+
+// ---- Verificação (selo premium) ----
+R.verificacao = () => `
+  <h1 class="text-xl font-extrabold mb-1">Verificação ${SEAL_BLUE}</h1>
+  <p class="text-xs adm-muted mb-4">Conceda o selo de verificação aos usuários premium. O selo aparece imediatamente no perfil público do usuário.</p>
+  <div class="flex items-center gap-3 mb-4">
+    <input id="verifSearch" class="adm-input max-w-xs" placeholder="Buscar usuário...">
+    <span id="verifCount" class="badge badge-blue"></span>
+  </div>
+  <div class="adm-card overflow-x-auto max-w-3xl">
+    <table class="adm-table">
+      <thead><tr><th>Usuário</th><th>Username</th><th>Status</th><th style="width:110px">Selo</th></tr></thead>
+      <tbody id="verifRows"></tbody>
+    </table>
+  </div>`;
+
+function renderVerifRows(){
+  const q = (document.getElementById('verifSearch').value || '').toLowerCase();
+  const rows = ADMIN_USERS.filter(u => !q || u.name.toLowerCase().includes(q) || u.handle.toLowerCase().includes(q));
+  const nVerif = ADMIN_USERS.filter(u => isUserVerified(u.handle)).length;
+  document.getElementById('verifCount').textContent = nVerif + ' verificados';
+  document.getElementById('verifRows').innerHTML = rows.map(u => {
+    const on = isUserVerified(u.handle);
+    return `
+    <tr>
+      <td><div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full grad-bg text-white text-[10px] font-bold flex items-center justify-center shrink-0">${u.name[0]}</div><span class="font-semibold whitespace-nowrap">${u.name}</span>${on ? SEAL_BLUE : ''}</div></td>
+      <td class="text-purple-500 font-semibold">@${u.handle}</td>
+      <td>${on ? '<span class="badge badge-blue">Premium verificado</span>' : '<span class="text-xs adm-muted">—</span>'}</td>
+      <td><span class="adm-toggle ${on ? 'on' : ''}" onclick="toggleVerified('${u.handle}')"></span></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="4" class="text-center adm-muted py-6">Nenhum usuário encontrado.</td></tr>';
+}
+function toggleVerified(handle){
+  const on = !isUserVerified(handle);
+  setUserVerified(handle, on);
+  audit(on ? 'Concedeu selo de verificação' : 'Removeu selo de verificação', '@' + handle, 'Refletido no perfil público');
+  showToast(on ? 'Selo de verificação concedido a @' + handle + ' — já aparece no perfil.' : 'Selo removido de @' + handle + '.');
+  renderVerifRows();
+}
+R.verificacao.after = () => { renderVerifRows(); document.getElementById('verifSearch').addEventListener('input', renderVerifRows); };
+
+// ---- Presentes: catálogo persistido com ficha operacional completa ----
+function getGifts(){
+  const lista = admGet('gifts2', ADMIN_GIFTS.map((g, i) => {
+    const receita = +(g.vendidosBase * g.price).toFixed(2);
+    return { ...g,
+      imagem: null, publico: 'Todos', status: 'Ativo', ordem: i + 1,
+      vendidos: g.vendidosBase, receita, receberam: Math.floor(g.vendidosBase * 0.72), enviaram: Math.floor(g.vendidosBase * 0.63),
+      criado: '02/06/2026 10:0' + (i % 10), editado: '10/07/2026 16:2' + (i % 10), responsavel: 'admin@bday.fm',
+      historico: [
+        { quando: '02/06/2026 10:0' + (i % 10), quem: 'admin@bday.fm', oque: 'Presente criado' },
+        { quando: '10/07/2026 16:2' + (i % 10), quem: 'admin@bday.fm', oque: 'Preço ajustado para ' + fmtBRL(g.price) },
+      ],
+    };
+  }));
+  lista.forEach(g => { if (!g.icone) g.icone = EMOJI_TO_ICON[g.emoji] || 'presente'; });
+  return lista;
+}
+function saveGifts(list){ admSet('gifts2', list); }
+let giftFiltroStatus = 'Ativos';
+
+R.presentes = () => {
+  const gifts = getGifts();
+  const ativos = gifts.filter(g => g.status === 'Ativo');
+  return `
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-1">
+    <h1 class="text-xl font-extrabold">Presentes <span class="adm-muted font-semibold text-base">(${gifts.length})</span></h1>
+    <div class="flex items-center gap-2">
+      <input id="giftSearch" class="adm-input" style="width:220px" placeholder="Buscar por nome ou valor">
+      <button class="btn-primary rounded-xl px-4 py-2 text-xs font-bold" onclick="giftModalOpen(null)">+ Novo Presente</button>
+    </div>
+  </div>
+  <div class="flex items-center gap-4 text-xs adm-muted mb-3">
+    <span><b class="text-purple-600">${ativos.length}</b> ativos</span>
+    <span>Receita total: <b>${fmtBRL(gifts.reduce((t, g) => t + g.receita, 0))}</b></span>
+    <span>Vendas: <b>${gifts.reduce((t, g) => t + g.vendidos, 0).toLocaleString('pt-BR')}</b></span>
+  </div>
+  <div class="flex gap-1.5 mb-4">
+    ${['Ativos','Ocultos','Rascunhos','Arquivados','Todos'].map(f => `<span class="adm-tab ${giftFiltroStatus === f ? 'active' : ''}" onclick="giftFiltroStatus='${f}'; goSection('presentes')">${f}</span>`).join('')}
+  </div>
+  <div id="giftGrid" class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4"></div>`;
+};
+
+const GIFT_STATUS_BADGE = { 'Ativo': 'badge-green', 'Oculto': 'badge-amber', 'Rascunho': 'badge-blue', 'Arquivado': 'badge-red' };
+function renderGiftGrid(){
+  const q = (document.getElementById('giftSearch').value || '').toLowerCase();
+  const mapa = { 'Ativos': 'Ativo', 'Ocultos': 'Oculto', 'Rascunhos': 'Rascunho', 'Arquivados': 'Arquivado' };
+  const alvoStatus = mapa[giftFiltroStatus];
+  const list = getGifts()
+    .filter(g => (!alvoStatus || g.status === alvoStatus) && (!q || g.name.toLowerCase().includes(q) || String(g.price).includes(q)))
+    .sort((a, b) => (a.ordem || 999) - (b.ordem || 999));
+  const taxaPct = admGet('taxa', 20);
+  document.getElementById('giftGrid').innerHTML = list.map(g => `
+    <div class="adm-card p-4">
+      <div class="flex items-start gap-3">
+        ${giftTile(g.icone, 'w-12 h-12')}
+        <div class="min-w-0 flex-1">
+          <div class="font-bold text-sm flex items-center gap-2 flex-wrap">${g.name} <span class="badge ${GIFT_STATUS_BADGE[g.status] || ''}">${g.status}</span></div>
+          <p class="text-xs adm-muted mt-0.5">${g.desc}</p>
+          <div class="text-[10px] font-bold text-purple-500 mt-1.5">${g.categoria} · Público: ${g.publico} · Ordem #${g.ordem}</div>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-2 mt-3 text-center text-[11px]">
+        <div class="adm-soft rounded-lg py-1.5"><b>${g.vendidos.toLocaleString('pt-BR')}</b><br><span class="adm-muted">vendidos</span></div>
+        <div class="adm-soft rounded-lg py-1.5"><b>${fmtBRL(g.receita)}</b><br><span class="adm-muted">receita</span></div>
+        <div class="adm-soft rounded-lg py-1.5"><b>${fmtBRL(g.receita * (1 - taxaPct / 100))}</b><br><span class="adm-muted">líquida</span></div>
+      </div>
+      <div class="flex items-center justify-between mt-3 pt-3 border-t adm-line">
+        <div class="font-extrabold text-purple-600">${fmtBRL(g.price)} <span class="text-[10px] adm-muted font-semibold">(${fmtBRL(g.price * (1 - taxaPct / 100))} p/ usuário)</span></div>
+        <div class="whitespace-nowrap">
+          <span class="act-btn" title="Editar ficha completa" onclick="giftModalOpen(${g.id})">${AI.edit}</span>
+          <span class="act-btn" title="Duplicar" onclick="giftDuplicar(${g.id})">${AI.copy}</span>
+          <span class="act-btn" title="${g.status === 'Arquivado' ? 'Reativar' : 'Arquivar'}" onclick="giftArquivar(${g.id})">${AI.archive}</span>
+          <span class="act-btn danger" title="Excluir" onclick="giftExcluir(${g.id})">${AI.trash}</span>
+        </div>
+      </div>
+    </div>`).join('') || '<p class="adm-muted text-sm col-span-3 text-center py-6">Nenhum presente neste filtro.</p>';
+}
+R.presentes.after = () => { renderGiftGrid(); document.getElementById('giftSearch').addEventListener('input', renderGiftGrid); };
+
+function giftDuplicar(id){
+  const list = getGifts(); const g = list.find(x => x.id === id); if (!g) return;
+  const novo = { ...g, id: Math.max(...list.map(x => x.id)) + 1, name: g.name + ' (cópia)', status: 'Rascunho', vendidos: 0, receita: 0, receberam: 0, enviaram: 0, ordem: list.length + 1,
+    criado: fmtData(Date.now()), editado: fmtData(Date.now()), responsavel: 'admin@bday.fm',
+    historico: [{ quando: fmtData(Date.now()), quem: 'admin@bday.fm', oque: 'Duplicado a partir de "' + g.name + '"' }] };
+  list.push(novo); saveGifts(list);
+  audit('Duplicou presente', g.name, 'Nova cópia em rascunho');
+  showToast('Presente duplicado como rascunho.'); goSection('presentes');
+}
+function giftArquivar(id){
+  const list = getGifts(); const g = list.find(x => x.id === id); if (!g) return;
+  const novoStatus = g.status === 'Arquivado' ? 'Ativo' : 'Arquivado';
+  g.status = novoStatus; g.editado = fmtData(Date.now());
+  g.historico.unshift({ quando: fmtData(Date.now()), quem: 'admin@bday.fm', oque: novoStatus === 'Arquivado' ? 'Arquivado' : 'Reativado' });
+  saveGifts(list);
+  audit(novoStatus === 'Arquivado' ? 'Arquivou presente' : 'Reativou presente', g.name, '');
+  showToast(g.name + (novoStatus === 'Arquivado' ? ' arquivado.' : ' reativado.')); goSection('presentes');
+}
+function giftExcluir(id){
+  const list = getGifts(); const g = list.find(x => x.id === id); if (!g) return;
+  saveGifts(list.filter(x => x.id !== id));
+  audit('Excluiu presente', g.name, 'Remoção definitiva do catálogo');
+  showToast(g.name + ' excluído.'); goSection('presentes');
+}
+
+// ---- Modal da ficha completa do presente ----
+function giftModalOpen(id){
+  const list = getGifts();
+  const g = id === null
+    ? { id: null, name: '', icone: 'presente', imagem: null, categoria: 'Popular', desc: '', price: 9.99, publico: 'Todos', status: 'Rascunho', ordem: list.length + 1,
+        vendidos: 0, receita: 0, receberam: 0, enviaram: 0, criado: fmtData(Date.now()), editado: '—', responsavel: 'admin@bday.fm', historico: [] }
+    : list.find(x => x.id === id);
+  if (!g) return;
+  const taxaPct = admGet('taxa', 20);
+  const overlay = document.createElement('div');
+  overlay.id = 'giftModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto;';
+  overlay.innerHTML = `
+  <div class="adm-card w-full max-w-3xl p-6 my-4" style="box-shadow:0 30px 60px -20px rgba(0,0,0,.4)">
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <div class="text-lg font-extrabold">${g.id === null ? 'Novo presente' : 'Ficha do presente'}</div>
+        <div class="text-[11px] adm-muted">Criado em ${g.criado} · Última edição: ${g.editado} · Responsável: <b>${g.responsavel}</b></div>
+      </div>
+      <button class="act-btn" onclick="document.getElementById('giftModal').remove()">${AI.x}</button>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-3">
+      <label class="block"><span class="text-[11px] font-bold adm-muted">Nome do presente</span><input id="gfNome" class="adm-input mt-1" value="${g.name.replace(/"/g, '&quot;')}"></label>
+      <label class="block"><span class="text-[11px] font-bold adm-muted">Categoria</span>
+        <select id="gfCat" class="adm-input mt-1">${['Popular','Econômico','Valioso','Especial','Presente Físico'].map(c => `<option ${c === g.categoria ? 'selected' : ''}>${c}</option>`).join('')}</select></label>
+      <div class="sm:col-span-2">
+        <span class="text-[11px] font-bold adm-muted">Ícone do presente</span>
+        <input type="hidden" id="gfIcone" value="${g.icone || 'presente'}">
+        <div id="gfIconePicker" class="mt-1.5 flex flex-wrap gap-1.5">
+          ${Object.keys(GIFT_SVG).map(k => `
+          <button type="button" data-icone="${k}" title="${k}" class="gf-icon-btn w-10 h-10 rounded-xl flex items-center justify-center transition ${k === (g.icone || 'presente') ? 'grad-bg text-white' : 'adm-soft text-purple-500 hover:ring-1 hover:ring-purple-300'}">${giftIconSvg(k, 'w-5 h-5')}</button>`).join('')}
+        </div>
+      </div>
+      <label class="block sm:col-span-2"><span class="text-[11px] font-bold adm-muted">Imagem (URL — opcional; se vazio, usa o ícone)</span><input id="gfImg" class="adm-input mt-1 font-mono text-[11px]" value="${g.imagem || ''}" placeholder="https://..."></label>
+      <label class="block sm:col-span-2"><span class="text-[11px] font-bold adm-muted">Descrição</span><textarea id="gfDesc" class="adm-input mt-1" rows="2">${g.desc}</textarea></label>
+      <label class="block"><span class="text-[11px] font-bold adm-muted">Valor (R$)</span><input id="gfPreco" type="number" step="0.01" class="adm-input mt-1" value="${g.price}"></label>
+      <div class="adm-soft rounded-xl p-3 text-xs flex flex-col justify-center">
+        <div class="flex justify-between"><span class="adm-muted">Comissão da plataforma (${taxaPct}%)</span><b id="gfComissao" class="text-pink-500"></b></div>
+        <div class="flex justify-between mt-1"><span class="adm-muted">Valor líquido para o usuário</span><b id="gfLiquido" class="text-green-600"></b></div>
+      </div>
+      <label class="block"><span class="text-[11px] font-bold adm-muted">Público</span>
+        <select id="gfPublico" class="adm-input mt-1">${['Todos','Masculino','Feminino','Infantil','Empresa'].map(p => `<option ${p === g.publico ? 'selected' : ''}>${p}</option>`).join('')}</select></label>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block"><span class="text-[11px] font-bold adm-muted">Status</span>
+          <select id="gfStatus" class="adm-input mt-1">${['Ativo','Oculto','Rascunho','Arquivado'].map(st => `<option ${st === g.status ? 'selected' : ''}>${st}</option>`).join('')}</select></label>
+        <label class="block"><span class="text-[11px] font-bold adm-muted">Ordem de exibição</span><input id="gfOrdem" type="number" class="adm-input mt-1" value="${g.ordem}"></label>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-4 text-center text-[11px]">
+      ${[['Qtd. vendida', g.vendidos], ['Receita gerada', fmtBRL(g.receita)], ['Receita líquida', fmtBRL(g.receita * (1 - taxaPct / 100))], ['Usuários que receberam', g.receberam], ['Usuários que enviaram', g.enviaram]].map(c => `
+      <div class="adm-soft rounded-lg py-2 px-1"><b>${c[1]}</b><br><span class="adm-muted">${c[0]}</span></div>`).join('')}
+    </div>
+    <div class="mt-4">
+      <div class="text-xs font-bold mb-1.5">Histórico de alterações</div>
+      <div class="adm-soft rounded-xl p-3 max-h-36 overflow-y-auto text-[11px] space-y-1.5">
+        ${g.historico.length ? g.historico.map(h => `<div><b>${h.quando}</b> · ${h.quem} — ${h.oque}</div>`).join('') : '<span class="adm-muted">Sem alterações registradas ainda.</span>'}
+      </div>
+    </div>
+    <div class="flex items-center justify-between mt-5 pt-4 border-t adm-line">
+      <div class="flex gap-1.5">
+        ${g.id !== null ? `
+        <button class="adm-card px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1" onclick="document.getElementById('giftModal').remove(); giftDuplicar(${g.id})">${I(AI.copy, 'w-3 h-3')} Duplicar</button>
+        <button class="adm-card px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1" onclick="document.getElementById('giftModal').remove(); giftArquivar(${g.id})">${I(AI.archive, 'w-3 h-3')} ${g.status === 'Arquivado' ? 'Reativar' : 'Arquivar'}</button>
+        <button class="adm-card px-3 py-1.5 text-xs font-semibold text-red-500 inline-flex items-center gap-1" onclick="document.getElementById('giftModal').remove(); giftExcluir(${g.id})">${I(AI.trash, 'w-3 h-3')} Excluir</button>` : ''}
+      </div>
+      <div class="flex gap-2">
+        <button class="adm-card px-4 py-2 text-xs font-semibold" onclick="document.getElementById('giftModal').remove()">Cancelar</button>
+        <button class="btn-primary rounded-xl px-4 py-2 text-xs font-bold" onclick="giftModalSave(${g.id === null ? 'null' : g.id})">💾 Salvar presente</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  const upd = () => {
+    const p = parseFloat(document.getElementById('gfPreco').value) || 0;
+    document.getElementById('gfComissao').textContent = fmtBRL(p * taxaPct / 100);
+    document.getElementById('gfLiquido').textContent = fmtBRL(p * (1 - taxaPct / 100));
+  };
+  document.getElementById('gfPreco').addEventListener('input', upd); upd();
+  overlay.querySelectorAll('.gf-icon-btn').forEach(btn => btn.addEventListener('click', () => {
+    document.getElementById('gfIcone').value = btn.getAttribute('data-icone');
+    overlay.querySelectorAll('.gf-icon-btn').forEach(b => { b.classList.remove('grad-bg', 'text-white'); b.classList.add('adm-soft', 'text-purple-500'); });
+    btn.classList.remove('adm-soft', 'text-purple-500'); btn.classList.add('grad-bg', 'text-white');
+  }));
+}
+function giftModalSave(id){
+  const list = getGifts();
+  const v = campo => document.getElementById(campo).value;
+  const nome = (typeof bdaySanitize === 'function' ? bdaySanitize(v('gfNome')) : v('gfNome').trim());
+  const preco = parseFloat(v('gfPreco'));
+  if (!nome) { showToast('Dê um nome ao presente.'); return; }
+  if (isNaN(preco) || preco <= 0) { showToast('Informe um valor válido.'); return; }
+  const dados = { name: nome, icone: v('gfIcone') || 'presente', imagem: v('gfImg').trim() || null, categoria: v('gfCat'),
+    desc: (typeof bdaySanitize === 'function' ? bdaySanitize(v('gfDesc')) : v('gfDesc').trim()), price: preco,
+    publico: v('gfPublico'), status: v('gfStatus'), ordem: parseInt(v('gfOrdem'), 10) || 999 };
+  if (id === null) {
+    const novo = { ...dados, id: list.length ? Math.max(...list.map(x => x.id)) + 1 : 1, vendidos: 0, receita: 0, receberam: 0, enviaram: 0,
+      criado: fmtData(Date.now()), editado: fmtData(Date.now()), responsavel: 'admin@bday.fm',
+      historico: [{ quando: fmtData(Date.now()), quem: 'admin@bday.fm', oque: 'Presente criado' }] };
+    list.push(novo);
+    audit('Criou presente', nome, fmtBRL(preco) + ' · ' + dados.status);
+  } else {
+    const g = list.find(x => x.id === id);
+    const mudancas = [];
+    if (g.name !== dados.name) mudancas.push('nome: "' + g.name + '" → "' + dados.name + '"');
+    if (g.price !== dados.price) mudancas.push('valor: ' + fmtBRL(g.price) + ' → ' + fmtBRL(dados.price));
+    if (g.status !== dados.status) mudancas.push('status: ' + g.status + ' → ' + dados.status);
+    if (g.publico !== dados.publico) mudancas.push('público: ' + g.publico + ' → ' + dados.publico);
+    if (g.categoria !== dados.categoria) mudancas.push('categoria: ' + g.categoria + ' → ' + dados.categoria);
+    if (g.ordem !== dados.ordem) mudancas.push('ordem: #' + g.ordem + ' → #' + dados.ordem);
+    Object.assign(g, dados);
+    g.editado = fmtData(Date.now()); g.responsavel = 'admin@bday.fm';
+    const resumo = mudancas.length ? mudancas.join(' · ') : 'Ficha revisada sem mudanças de campo';
+    g.historico.unshift({ quando: fmtData(Date.now()), quem: 'admin@bday.fm', oque: resumo });
+    audit('Editou presente', nome, resumo);
+  }
+  saveGifts(list);
+  const m = document.getElementById('giftModal'); if (m) m.remove();
+  showToast('Presente salvo.'); goSection('presentes');
+}
+
+function getSaques(){
+  return admGet('saques', ADMIN_SAQUES.map((x, i) => ({ ...x, uid: i })));
+}
+function setSaqueStatus(uid, status, voltar){
+  const list = getSaques();
+  const sq = list.find(x => x.uid === uid);
+  if (!sq) return;
+  sq.status = status;
+  if (status === 'Aprovado') { sq.dataAprovacao = fmtData(Date.now()); sq.dataPagamento = fmtData(Date.now() + 3600 * 1000); }
+  if (status === 'Negado') { sq.dataAprovacao = '—'; sq.dataPagamento = '—'; }
+  admSet('saques', list);
+  const info = SAQUE_USERS[sq.user] || { nome: sq.user };
+  audit(status === 'Aprovado' ? 'Aprovou saque' : status === 'Negado' ? 'Negou saque' : 'Reabriu saque', 'ID ' + sq.id + ' · ' + info.nome, fmtBRL(sq.valor));
+  showToast(status === 'Aprovado' ? `Saque de ${fmtBRL(sq.valor)} de ${info.nome} APROVADO — Pix a caminho (demo).` : status === 'Negado' ? `Saque de ${fmtBRL(sq.valor)} negado (demo).` : 'Saque reaberto para análise.');
+  if (voltar === 'detalhe') { openSaqueDetail(uid); } else { goSection('saques'); }
+}
+let saquesFiltro = 'Pendente';
+function setSaquesFiltro(f){ saquesFiltro = f; goSection('saques'); }
+
+R.saques = () => {
+  const list = getSaques();
+  const pend = list.filter(x => x.status === 'Pendente');
+  const aprov = list.filter(x => x.status === 'Aprovado');
+  const neg = list.filter(x => x.status === 'Negado');
+  const rows = saquesFiltro === 'Todos' ? list : list.filter(x => x.status === saquesFiltro);
+  const taxaPct = admGet('taxa', 20);
+  return `
+  <h1 class="text-xl font-extrabold mb-1">Saques</h1>
+  <p class="text-xs adm-muted mb-5">Extrato de solicitações — clique em uma linha para abrir os detalhes completos, com dados bancários e a origem do saldo.</p>
+  <div class="grid sm:grid-cols-3 gap-4 mb-5">
+    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">⏳ Pendentes de aprovação</div><div class="text-xl font-extrabold mt-1 text-amber-500">${pend.length} · ${fmtBRL(pend.reduce((t, x) => t + x.valor, 0))}</div></div>
+    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">✅ Aprovados</div><div class="text-xl font-extrabold mt-1 text-green-600">${aprov.length} · ${fmtBRL(aprov.reduce((t, x) => t + x.valor, 0))}</div></div>
+    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">🚫 Negados</div><div class="text-xl font-extrabold mt-1 text-red-500">${neg.length}</div></div>
+  </div>
+  <div class="flex gap-1.5 mb-3">
+    ${['Pendente','Aprovado','Negado','Todos'].map(f => `<span class="adm-tab ${saquesFiltro === f ? 'active' : ''}" onclick="setSaquesFiltro('${f}')">${f === 'Pendente' ? 'Pendentes' : f === 'Aprovado' ? 'Aprovados' : f === 'Negado' ? 'Negados' : 'Todos'}${f === 'Pendente' && pend.length ? ` (${pend.length})` : ''}</span>`).join('')}
+  </div>
+  <div class="adm-card overflow-x-auto">
+    <table class="adm-table">
+      <thead><tr><th>Usuário</th><th>Valor líquido</th><th>Taxa (${taxaPct}%)</th><th>Solicitado em</th><th>Status</th><th>Suspeita</th><th>Ações</th></tr></thead>
+      <tbody>
+        ${rows.map(x => {
+          const info = SAQUE_USERS[x.user] || { nome: x.user, pix: '—' };
+          const bruto = x.valor / (1 - taxaPct / 100);
+          return `
+        <tr class="cursor-pointer" onclick="openSaqueDetail(${x.uid})">
+          <td><div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full adm-soft text-purple-500 text-[10px] font-bold flex items-center justify-center">${String(x.id).slice(-2)}</div><div><div class="font-semibold">${info.nome}</div><div class="text-[10px] text-purple-400">${x.user} · Pix: ${info.pix}</div></div></div></td>
+          <td class="font-bold whitespace-nowrap">${fmtBRL(x.valor)}</td>
+          <td class="adm-muted whitespace-nowrap">${fmtBRL(bruto - x.valor)}</td>
+          <td class="adm-muted whitespace-nowrap">${x.data}</td>
+          <td><span class="badge ${x.status === 'Aprovado' ? 'badge-green' : x.status === 'Negado' ? 'badge-red' : 'badge-amber'}">${x.status}</span></td>
+          <td>
+            <div class="flex items-center gap-2">
+              <div class="w-16 h-2 rounded-full adm-soft overflow-hidden"><div class="h-full rounded-full" style="width:${Math.max(4, x.suspeita)}%; background:${x.suspeita >= 40 ? '#F97316' : x.suspeita >= 15 ? '#F59E0B' : '#22C55E'}"></div></div>
+              <span class="text-xs font-bold">${x.suspeita}%</span>
+            </div>
+          </td>
+          <td class="whitespace-nowrap" onclick="event.stopPropagation()">
+            ${x.status === 'Pendente' ? `
+              <button class="rounded-lg px-2.5 py-1 text-[11px] font-bold text-white mr-1" style="background:#16A34A" onclick="setSaqueStatus(${x.uid}, 'Aprovado')">✓ Aprovar</button>
+              <button class="rounded-lg px-2.5 py-1 text-[11px] font-bold text-white" style="background:#DC2626" onclick="setSaqueStatus(${x.uid}, 'Negado')">✕ Negar</button>` :
+              `<button class="rounded-lg px-2.5 py-1 text-[11px] font-semibold adm-card" onclick="openSaqueDetail(${x.uid})">Detalhes →</button>`}
+          </td>
+        </tr>`; }).join('') || '<tr><td colspan="7" class="text-center adm-muted py-6">Nenhum saque neste filtro.</td></tr>'}
+      </tbody>
+    </table>
+  </div>`;
+};
+
+// ---- Página de detalhes do saque (com ORIGEM DO SALDO) ----
+function openSaqueDetail(uid){
+  currentSection = 'saques';
+  document.querySelectorAll('#admNav .side-link').forEach(l => l.classList.toggle('active', l.getAttribute('data-section') === 'saques'));
+  const sq = getSaques().find(x => x.uid === uid);
+  if (!sq) { goSection('saques'); return; }
+  const info = SAQUE_USERS[sq.user] || { nome: sq.user, email: '—', cpf: 'não informado', pix: '—', banco: '—' };
+  const taxaPct = admGet('taxa', 20);
+  const origem = origemDoSaldo(sq);
+  const taxaValor = origem.bruto - sq.valor;
+  const saldoRestante = +(origem.bruto * 0.12).toFixed(2);
+  const main = document.getElementById('admMain');
+  main.innerHTML = `
+  <div class="flex items-center gap-2 mb-4 text-sm">
+    <button class="adm-card px-3 py-1.5 text-xs font-semibold" onclick="goSection('saques')">← Voltar para Saques</button>
+    <span class="adm-muted text-xs">Saques / Detalhe da solicitação</span>
+  </div>
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+    <h1 class="text-xl font-extrabold">Saque #${sq.uid + 1000} <span class="badge ${sq.status === 'Aprovado' ? 'badge-green' : sq.status === 'Negado' ? 'badge-red' : 'badge-amber'} align-middle ml-1">${sq.status}</span></h1>
+    <div class="flex gap-2">
+      ${sq.status === 'Pendente' ? `
+      <button class="rounded-xl px-4 py-2 text-xs font-bold text-white" style="background:#16A34A" onclick="setSaqueStatus(${sq.uid}, 'Aprovado', 'detalhe')">✓ Aprovar saque</button>
+      <button class="rounded-xl px-4 py-2 text-xs font-bold text-white" style="background:#DC2626" onclick="setSaqueStatus(${sq.uid}, 'Negado', 'detalhe')">✕ Negar saque</button>` :
+      `<button class="adm-card px-4 py-2 text-xs font-semibold" onclick="setSaqueStatus(${sq.uid}, 'Pendente', 'detalhe')">Reabrir análise</button>`}
+    </div>
+  </div>
+
+  <div class="grid lg:grid-cols-3 gap-4">
+    <div class="adm-card p-5">
+      <div class="font-bold text-sm mb-3">👤 Dados do usuário</div>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between gap-2"><span class="adm-muted">Nome</span><b class="text-right">${info.nome}</b></div>
+        <div class="flex justify-between gap-2"><span class="adm-muted">E-mail</span><b class="text-right break-all">${info.email}</b></div>
+        <div class="flex justify-between gap-2"><span class="adm-muted">CPF</span><b>${info.cpf}</b></div>
+        <div class="flex justify-between gap-2"><span class="adm-muted">Chave PIX</span><b class="text-right break-all">${info.pix}</b></div>
+        <div class="flex justify-between gap-2"><span class="adm-muted">Banco</span><b>${info.banco}</b></div>
+      </div>
+      <button class="adm-card w-full mt-4 px-3 py-2 text-xs font-semibold" onclick="goSection('usuarios')">Ver ficha do usuário →</button>
+    </div>
+
+    <div class="adm-card p-5">
+      <div class="font-bold text-sm mb-3">💰 Valores</div>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between"><span class="adm-muted">Total recebido (bruto)</span><b>${fmtBRL(origem.bruto)}</b></div>
+        <div class="flex justify-between"><span class="adm-muted">Taxa da plataforma (${taxaPct}%)</span><b class="text-pink-500">− ${fmtBRL(taxaValor)}</b></div>
+        <div class="flex justify-between border-t adm-line pt-2"><span class="adm-muted">Valor líquido do saque</span><b class="text-green-600 text-base">${fmtBRL(sq.valor)}</b></div>
+        <div class="flex justify-between"><span class="adm-muted">Saldo restante na carteira</span><b>${fmtBRL(saldoRestante)}</b></div>
+      </div>
+      <div class="mt-3 pt-3 border-t adm-line">
+        <div class="flex items-center gap-2 text-xs"><span class="adm-muted">Taxa de suspeita:</span>
+          <div class="w-20 h-2 rounded-full adm-soft overflow-hidden"><div class="h-full rounded-full" style="width:${Math.max(4, sq.suspeita)}%; background:${sq.suspeita >= 40 ? '#F97316' : sq.suspeita >= 15 ? '#F59E0B' : '#22C55E'}"></div></div>
+          <b>${sq.suspeita}%</b></div>
+      </div>
+    </div>
+
+    <div class="adm-card p-5">
+      <div class="font-bold text-sm mb-3">🗓 Linha do tempo</div>
+      <div class="space-y-3 text-sm">
+        <div class="flex items-start gap-2.5"><span class="w-2.5 h-2.5 rounded-full mt-1.5 shrink-0" style="background:#7C3AED"></span><div><div class="font-semibold">Solicitação</div><div class="text-xs adm-muted">${sq.data}</div></div></div>
+        <div class="flex items-start gap-2.5"><span class="w-2.5 h-2.5 rounded-full mt-1.5 shrink-0" style="background:${sq.status !== 'Pendente' ? '#16A34A' : '#CBD5E1'}"></span><div><div class="font-semibold">Aprovação</div><div class="text-xs adm-muted">${sq.dataAprovacao || (sq.status === 'Aprovado' ? sq.data : sq.status === 'Negado' ? 'Negado' : 'Aguardando análise')}</div></div></div>
+        <div class="flex items-start gap-2.5"><span class="w-2.5 h-2.5 rounded-full mt-1.5 shrink-0" style="background:${sq.status === 'Aprovado' ? '#16A34A' : '#CBD5E1'}"></span><div><div class="font-semibold">Pagamento (Pix)</div><div class="text-xs adm-muted">${sq.dataPagamento || (sq.status === 'Aprovado' ? 'Processando — até 48h úteis' : '—')}</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="adm-card p-5 mt-4">
+    <div class="font-bold text-sm">🔍 Origem do saldo</div>
+    <p class="text-xs adm-muted mb-4">Rastreabilidade completa: cada presente que formou o valor deste saque, por celebração.</p>
+    <div class="grid lg:grid-cols-${Math.min(origem.bdays.length, 2)} gap-4">
+      ${origem.bdays.map(b => `
+      <div class="adm-soft rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div><span class="badge badge-purple">BDAY</span> <b class="text-sm ml-1">"${b.bday}"</b></div>
+          <span class="text-[11px] adm-muted font-mono">${b.id}</span>
+        </div>
+        <div class="space-y-0">
+          ${b.gifts.map(gf => `
+          <div class="flex items-center gap-3 py-2 border-b adm-line" style="border-style:dashed">
+            <div class="w-7 h-7 rounded-full grad-bg text-white text-[10px] font-bold flex items-center justify-center shrink-0">${gf.quem[0]}</div>
+            <div class="text-sm flex items-center gap-1.5 flex-wrap"><b>${gf.quem}</b> <span class="adm-muted">enviou</span> ${giftIconSvg(gf.icone, 'w-4 h-4 text-purple-500 shrink-0')} <b>${gf.presente}</b></div>
+            <div class="ml-auto font-bold text-purple-600 whitespace-nowrap">${fmtBRL(gf.valor)}</div>
+          </div>
+          <div class="text-center adm-muted text-xs leading-none py-0.5">↓</div>`).join('')}
+          <div class="flex items-center justify-between pt-2">
+            <b class="text-sm">Total recebido neste BDAY</b>
+            <b class="text-green-600">${fmtBRL(b.total)}</b>
+          </div>
+        </div>
+      </div>`).join('')}
+    </div>
+    <div class="rounded-xl mt-4 p-3.5 flex items-center justify-between text-sm" style="background:linear-gradient(90deg, rgba(124,58,237,.10), rgba(236,72,153,.08))">
+      <b>Total bruto recebido ${fmtBRL(origem.bruto)} − taxa ${taxaPct}% (${fmtBRL(taxaValor)})</b>
+      <b class="text-green-600 text-base">= ${fmtBRL(sq.valor)} líquidos</b>
+    </div>
+  </div>
+
+  <div class="adm-card p-5 mt-4">
+    <div class="font-bold text-sm mb-3">📒 Movimentações deste usuário</div>
+    <div class="overflow-x-auto">
+      <table class="adm-table">
+        <thead><tr><th>Data</th><th>Tipo</th><th>Origem</th><th>Valor</th><th>Saldo após</th></tr></thead>
+        <tbody>
+          ${LEDGER.filter(l => l.usuario === '@' + (sq.user.replace('user-', 'user') === sq.user ? sq.user : sq.user)).slice(0, 6).map(l => `
+          <tr><td class="adm-muted whitespace-nowrap">${fmtData(l.ms)}</td><td><span class="badge ${l.dir === 'in' ? 'badge-green' : 'badge-red'}">${l.tipo}</span></td><td class="adm-muted">${l.origem}</td><td class="font-bold ${l.dir === 'in' ? 'text-green-600' : 'text-red-500'}">${l.dir === 'in' ? '+' : '−'} ${fmtBRL(l.valor)}</td><td class="adm-muted">${fmtBRL(l.saldoApos)}</td></tr>`).join('') || `<tr><td colspan="5" class="text-center adm-muted py-4">Sem movimentações recentes deste usuário no extrato — veja a aba <a class="text-purple-500 font-semibold cursor-pointer" onclick="goSection('extrato')">Movimentação</a>.</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+  window.scrollTo(0, 0);
+}
+
+// ---- Relatórios operacionais (5 painéis) ----
+let relTab = 'geral';
+function setRelTab(t){ relTab = t; goSection('relatorios'); }
+
+function relTotais(){
+  const entradas = LEDGER.filter(l => l.dir === 'in');
+  const presentes = LEDGER.filter(l => l.tipo === 'Presente');
+  const taxas = LEDGER.filter(l => l.tipo === 'Taxa');
+  const saques = LEDGER.filter(l => l.tipo === 'Saque');
+  const movimentado = presentes.reduce((t, l) => t + l.valor, 0);
+  const comissao = taxas.reduce((t, l) => t + l.valor, 0);
+  const sacado = saques.reduce((t, l) => t + l.valor, 0);
+  return { entradas, presentes, taxas, saques, movimentado, comissao, sacado };
+}
+
+R.relatorios = () => {
+  const T = relTotais();
+  const taxaPct = admGet('taxa', 20);
+  const gifts = getGifts();
+  const painel = {
+    geral: () => {
+      exportarAtual = f => exportRows(f, 'Resumo Geral', ['Indicador', 'Valor'], [
+        ['Usuários cadastrados', 1000 + ADMIN_USERS.length], ['BDAYs criados', ADMIN_BDAYS.length + 214],
+        ['Presentes enviados (30d)', T.presentes.length], ['Valor movimentado (30d)', fmtBRL(T.movimentado)],
+        ['Valor sacado (30d)', fmtBRL(T.sacado)], ['Comissão da plataforma (30d)', fmtBRL(T.comissao)],
+        ['Lucro líquido (30d)', fmtBRL(T.comissao * 0.83)]]);
+      return `
+      <div class="grid sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        ${[['Usuários cadastrados', (1000 + ADMIN_USERS.length).toLocaleString('pt-BR'), AI.users], ['BDAYs criados', (ADMIN_BDAYS.length + 214), AI.gift],
+           ['Presentes enviados (30d)', T.presentes.length, AI.send], ['Valor movimentado (30d)', fmtBRL(T.movimentado), AI.money],
+           ['Valor sacado (30d)', fmtBRL(T.sacado), AI.bank], ['Comissão da plataforma', fmtBRL(T.comissao), AI.params],
+           ['Lucro líquido estimado', fmtBRL(T.comissao * 0.83), AI.spark], ['Ticket médio', fmtBRL(T.movimentado / Math.max(1, T.presentes.length)), AI.report]].map(c => `
+        <div class="adm-card p-4">
+          <div class="flex items-center justify-between"><span class="text-xs adm-muted font-semibold">${c[0]}</span><span class="text-purple-400">${I(c[2], 'w-4 h-4')}</span></div>
+          <div class="text-xl font-extrabold mt-1">${c[1]}</div>
+        </div>`).join('')}
+      </div>
+      <div class="adm-card p-5 mt-4"><div class="font-bold text-sm mb-3">Valor movimentado — últimas 4 semanas</div>
+        ${lineChart([['sem 1', Math.round(T.movimentado * 0.18)], ['sem 2', Math.round(T.movimentado * 0.24)], ['sem 3', Math.round(T.movimentado * 0.27)], ['sem 4', Math.round(T.movimentado * 0.31)]], 900, 200, '#7C3AED')}
+      </div>`;
+    },
+    usuarios: () => {
+      const top = [...ADMIN_USERS].sort((a, b) => b.saldo - a.saldo);
+      exportarAtual = f => exportRows(f, 'Relatório de Usuários', ['Usuário', 'Handle', 'Saldo', 'Cadastro'],
+        top.map(u => [u.name, '@' + u.handle, fmtBRL(u.saldo), u.cadastro]));
+      return `
+      <div class="grid sm:grid-cols-4 gap-4 mb-4">
+        ${[['Novos usuários (mês)', 86], ['Usuários ativos', 318], ['Usuários inativos', (1000 + ADMIN_USERS.length - 318).toLocaleString('pt-BR')], ['Maior saque', fmtBRL(9176)]].map(c => `
+        <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">${c[0]}</div><div class="text-xl font-extrabold mt-1">${c[1]}</div></div>`).join('')}
+      </div>
+      <div class="grid lg:grid-cols-3 gap-4">
+        ${[['🏆 Quem mais recebeu presentes', [['Ana Beatriz', '214 presentes'], ['Ruan Carlos', '186 presentes'], ['Maria Beatriz', '154 presentes'], ['Gislane Gurgel', '112 presentes'], ['Julia Fernandes', '98 presentes']]],
+           ['🎁 Quem mais enviou presentes', [['Creative Ideia', '96 envios'], ['Rafael Mendes', '81 envios'], ['Marina Souza', '77 envios'], ['Luciano Souto', '64 envios'], ['Carolina De Sousa', '58 envios']]],
+           ['🎉 Quem mais criou BDAYs', [['Ana Beatriz', '7 BDAYs'], ['Maria Beatriz', '5 BDAYs'], ['Ruan Carlos', '4 BDAYs'], ['Lorena Amaral', '3 BDAYs'], ['Julia Fernandes', '3 BDAYs']]]].map(bloco => `
+        <div class="adm-card p-4">
+          <div class="font-bold text-sm mb-2">${bloco[0]}</div>
+          ${bloco[1].map((r, i) => `<div class="flex items-center justify-between py-1.5 text-sm ${i < 4 ? 'border-b adm-line' : ''}"><span><b class="adm-muted mr-1.5">${i + 1}º</b>${r[0]}</span><span class="text-xs font-bold text-purple-600">${r[1]}</span></div>`).join('')}
+        </div>`).join('')}
+        <div class="adm-card p-4 lg:col-span-3">
+          <div class="font-bold text-sm mb-2">💰 Maiores saldos em carteira</div>
+          <table class="adm-table"><thead><tr><th>#</th><th>Usuário</th><th>Handle</th><th>Saldo</th></tr></thead><tbody>
+          ${top.slice(0, 6).map((u, i) => `<tr><td class="adm-muted">${i + 1}º</td><td class="font-semibold">${u.name}</td><td class="text-purple-500">@${u.handle}</td><td class="font-bold">${fmtBRL(u.saldo)}</td></tr>`).join('')}
+          </tbody></table>
+        </div>
+      </div>`;
+    },
+    celebracoes: () => {
+      const cats = {};
+      ADMIN_BDAYS.forEach(b => { cats[b.categoria] = (cats[b.categoria] || 0) + 1; });
+      exportarAtual = f => exportRows(f, 'Relatório de Celebrações', ['ID', 'Título', 'Dono', 'Categoria', 'Arrecadado', 'Meta', 'Status', 'Acessos'],
+        ADMIN_BDAYS.map(b => [b.id, b.titulo, b.dono, b.categoria, fmtBRL(b.arrecadado), fmtBRL(b.meta), b.status, b.acessos]));
+      return `
+      <div class="grid sm:grid-cols-4 gap-4 mb-4">
+        ${[['BDAYs ativos', ADMIN_BDAYS.filter(b => b.status === 'Ativa').length], ['Finalizados', ADMIN_BDAYS.filter(b => b.status === 'Finalizada').length], ['Expirados', ADMIN_BDAYS.filter(b => b.status === 'Expirada').length], ['Arrecadação total', fmtBRL(ADMIN_BDAYS.reduce((t, b) => t + b.arrecadado, 0))]].map(c => `
+        <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">${c[0]}</div><div class="text-xl font-extrabold mt-1">${c[1]}</div></div>`).join('')}
+      </div>
+      <div class="adm-card overflow-x-auto mb-4">
+        <table class="adm-table">
+          <thead><tr><th>Celebração</th><th>Dono</th><th>Categoria</th><th>Arrecadado / Meta</th><th>Acessos</th><th>Status</th></tr></thead>
+          <tbody>${[...ADMIN_BDAYS].sort((a, b) => b.acessos - a.acessos).map(b => `
+          <tr>
+            <td class="font-semibold">${b.titulo}</td><td class="text-purple-500">${b.dono}</td><td class="adm-muted">${b.categoria}</td>
+            <td><div class="flex items-center gap-2"><div class="w-24 h-2 rounded-full adm-soft overflow-hidden"><div class="h-full rounded-full" style="width:${Math.min(100, Math.round(b.arrecadado / b.meta * 100))}%;background:linear-gradient(90deg,#7C3AED,#EC4899)"></div></div><span class="text-xs font-bold whitespace-nowrap">${fmtBRL(b.arrecadado)} / ${fmtBRL(b.meta)}</span></div></td>
+            <td class="font-bold">${b.acessos.toLocaleString('pt-BR')}</td>
+            <td><span class="badge ${b.status === 'Ativa' ? 'badge-green' : b.status === 'Finalizada' ? 'badge-blue' : 'badge-red'}">${b.status}</span></td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+      <div class="adm-card p-5 max-w-md"><div class="font-bold text-sm mb-3">Categorias mais utilizadas</div>
+        ${donutChart(Object.entries(cats).map(([c, n], i) => [c, Math.round(n / ADMIN_BDAYS.length * 100), ['#7C3AED', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#94A3B8'][i % 6]]), 170)}
+      </div>`;
+    },
+    financeiro: () => {
+      const porDia = {};
+      LEDGER.filter(l => l.tipo === 'Presente').forEach(l => { const d = new Date(l.ms).toLocaleDateString('pt-BR').slice(0, 5); porDia[d] = (porDia[d] || 0) + l.valor; });
+      const dias = Object.entries(porDia).slice(0, 7).reverse().map(([d, v]) => [d, Math.round(v)]);
+      const pendentes = getSaques().filter(x => x.status === 'Pendente');
+      exportarAtual = f => exportRows(f, 'Relatório Financeiro', ['Indicador', 'Valor'], [
+        ['Total movimentado (30d)', fmtBRL(T.movimentado)], ['Total pago em saques', fmtBRL(T.sacado)],
+        ['Total pendente (saques)', fmtBRL(pendentes.reduce((t, x) => t + x.valor, 0))], ['Comissões (' + taxaPct + '%)', fmtBRL(T.comissao)],
+        ['Taxas e tarifas', fmtBRL(89.90)], ['Saldo em carteira (usuários)', fmtBRL(2949160.23)], ['Saldo aguardando saque', fmtBRL(pendentes.reduce((t, x) => t + x.valor, 0))]]);
+      return `
+      <div class="grid sm:grid-cols-4 gap-4 mb-4">
+        ${[['Faturamento diário (média)', fmtBRL(T.movimentado / 30)], ['Semanal', fmtBRL(T.movimentado / 4.3)], ['Mensal', fmtBRL(T.movimentado)], ['Anual (projeção)', fmtBRL(T.movimentado * 12)]].map(c => `
+        <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">${c[0]}</div><div class="text-lg font-extrabold mt-1">${c[1]}</div></div>`).join('')}
+      </div>
+      <div class="grid sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+        ${[['Total movimentado', fmtBRL(T.movimentado)], ['Total pago', fmtBRL(T.sacado)], ['Total pendente', fmtBRL(pendentes.reduce((t, x) => t + x.valor, 0))], ['Comissões', fmtBRL(T.comissao)], ['Taxas', fmtBRL(89.90)], ['Saldo em carteira', fmtBRL(2949160.23)]].map(c => `
+        <div class="adm-card p-3 text-center"><div class="text-[10px] adm-muted font-semibold">${c[0]}</div><div class="text-sm font-extrabold mt-0.5">${c[1]}</div></div>`).join('')}
+      </div>
+      <div class="adm-card p-5"><div class="font-bold text-sm mb-3">Faturamento por dia (últimos dias com venda)</div>
+        ${lineChart(dias.length > 1 ? dias : [['—', 0], ['—', 0]], 900, 200, '#EC4899')}
+      </div>`;
+    },
+    presentes: () => {
+      const top = [...gifts].sort((a, b) => b.vendidos - a.vendidos);
+      exportarAtual = f => exportRows(f, 'Relatório de Presentes', ['Presente', 'Categoria', 'Preço', 'Qtd. enviada', 'Receita', 'Receita líquida'],
+        top.map(g => [g.name, g.categoria, fmtBRL(g.price), g.vendidos, fmtBRL(g.receita), fmtBRL(g.receita * (1 - taxaPct / 100))]));
+      const cats = {};
+      gifts.forEach(g => { cats[g.categoria] = (cats[g.categoria] || 0) + g.vendidos; });
+      const totalV = Object.values(cats).reduce((a, b) => a + b, 0);
+      return `
+      <div class="grid sm:grid-cols-4 gap-4 mb-4">
+        ${[['Quantidade enviada', gifts.reduce((t, g) => t + g.vendidos, 0).toLocaleString('pt-BR')], ['Receita total', fmtBRL(gifts.reduce((t, g) => t + g.receita, 0))], ['Ticket médio', fmtBRL(gifts.reduce((t, g) => t + g.receita, 0) / Math.max(1, gifts.reduce((t, g) => t + g.vendidos, 0)))], ['Presentes ativos', gifts.filter(g => g.status === 'Ativo').length]].map(c => `
+        <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">${c[0]}</div><div class="text-lg font-extrabold mt-1">${c[1]}</div></div>`).join('')}
+      </div>
+      <div class="grid lg:grid-cols-3 gap-4">
+        <div class="adm-card p-4 lg:col-span-2">
+          <div class="font-bold text-sm mb-2">Presentes mais vendidos</div>
+          <table class="adm-table"><thead><tr><th>#</th><th>Presente</th><th>Qtd.</th><th>Receita</th><th>Líquida</th></tr></thead><tbody>
+          ${top.slice(0, 8).map((g, i) => `<tr class="cursor-pointer" onclick="giftModalOpen(${g.id})"><td class="adm-muted">${i + 1}º</td><td class="font-semibold"><span class="inline-flex items-center gap-2">${giftIconSvg(g.icone, 'w-4 h-4 text-purple-500 shrink-0')} ${g.name}</span></td><td class="font-bold">${g.vendidos}</td><td>${fmtBRL(g.receita)}</td><td class="text-green-600 font-bold">${fmtBRL(g.receita * (1 - taxaPct / 100))}</td></tr>`).join('')}
+          </tbody></table>
+        </div>
+        <div class="adm-card p-4"><div class="font-bold text-sm mb-3">Categorias mais populares</div>
+          ${donutChart(Object.entries(cats).map(([c, n], i) => [c, Math.round(n / totalV * 100), ['#7C3AED', '#EC4899', '#F59E0B', '#10B981', '#3B82F6'][i % 5]]), 160)}
+        </div>
+      </div>`;
+    },
+  };
+  return `
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+    <h1 class="text-xl font-extrabold">Relatórios</h1>
+    ${exportBar()}
+  </div>
+  <div class="flex gap-1.5 mb-4 flex-wrap">
+    ${[['geral', 'Resumo Geral'], ['usuarios', 'Usuários'], ['celebracoes', 'Celebrações'], ['financeiro', 'Financeiro'], ['presentes', 'Presentes']].map(t => `<span class="adm-tab ${relTab === t[0] ? 'active' : ''}" onclick="setRelTab('${t[0]}')">${t[1]}</span>`).join('')}
+  </div>
+  ${painel[relTab]()}`;
+};
+
+let envioFiltroTipo = '';
+function setEnvioFiltro(t){ envioFiltroTipo = t; goSection('envios'); }
+
+R.envios = () => {
+  const presentes = ADMIN_ENVIOS.filter(e => e.tipo === 'Presente');
+  const torpedos = ADMIN_ENVIOS.filter(e => e.tipo === 'Torpedo');
+  exportarAtual = f => exportRows(f, 'Relatório de Envios', ['ID', 'Data', 'Tipo', 'De', 'Para', 'Conteúdo', 'Valor', 'Status'],
+    ADMIN_ENVIOS.map(e => [e.id, e.data, e.tipo, e.de, e.para, e.conteudo, e.valor ? fmtBRL(e.valor) : '—', e.status]));
+  return `
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-1">
+    <h1 class="text-xl font-extrabold">Envios</h1>
+    ${exportBar()}
+  </div>
+  <p class="text-xs adm-muted mb-4">Presentes e torpedos enviados na plataforma — clique em um envio para ver todos os detalhes.</p>
+
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">Total de envios</div><div class="text-xl font-extrabold mt-1">619</div></div>
+    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">🎁 Presentes</div><div class="text-xl font-extrabold mt-1 text-purple-600">187</div></div>
+    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">💬 Torpedos</div><div class="text-xl font-extrabold mt-1">432</div></div>
+    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">Valor em presentes</div><div class="text-xl font-extrabold mt-1 text-green-600">${fmtBRL(1642.13)}</div></div>
+  </div>
+
+  <div class="flex items-center gap-2 flex-wrap mb-4">
+    <div class="flex gap-1.5">
+      ${[['', 'Todos'], ['Presente', '🎁 Presentes'], ['Torpedo', '💬 Torpedos']].map(t => `<span class="adm-tab ${envioFiltroTipo === t[0] ? 'active' : ''}" onclick="setEnvioFiltro('${t[0]}')">${t[1]}</span>`).join('')}
+    </div>
+    <input id="envioSearch" class="adm-input flex-1 min-w-[200px]" placeholder="Buscar por usuário, mensagem ou presente...">
+  </div>
+
+  <div class="adm-card overflow-x-auto">
+    <table class="adm-table">
+      <thead><tr><th>Data</th><th>Tipo</th><th>De → Para</th><th>Conteúdo</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+      <tbody id="envioRows"></tbody>
+    </table>
+  </div>
+  <div class="flex items-center justify-between text-xs adm-muted mt-3"><span>Mostrando os envios mais recentes de 619 no total — exporte para ver tudo</span><span>‹ 1 2 3 4 … ›</span></div>`;
+};
+
+function renderEnvioRows(){
+  const q = (document.getElementById('envioSearch').value || '').toLowerCase();
+  const rows = ADMIN_ENVIOS.filter(e =>
+    (!envioFiltroTipo || e.tipo === envioFiltroTipo) &&
+    (!q || e.de.toLowerCase().includes(q) || e.para.toLowerCase().includes(q) || e.conteudo.toLowerCase().includes(q)));
+  document.getElementById('envioRows').innerHTML = rows.map(e => {
+    const [dia, hora] = e.data.split(' ');
+    return `
+    <tr class="cursor-pointer" onclick="openEnvioDetail('${e.id}')">
+      <td class="whitespace-nowrap"><div class="font-semibold text-xs">${dia}</div><div class="text-[10px] adm-muted">${hora}</div></td>
+      <td><span class="badge ${e.tipo === 'Presente' ? 'badge-purple' : 'badge-blue'}">${e.tipo}</span></td>
+      <td class="whitespace-nowrap">
+        <div class="flex items-center gap-1.5">
+          <span class="w-6 h-6 rounded-full grad-bg text-white text-[9px] font-bold flex items-center justify-center shrink-0">${e.de[1].toUpperCase()}</span>
+          <span class="text-purple-500 font-semibold text-xs">${e.de}</span>
+          <span class="adm-muted">→</span>
+          <span class="w-6 h-6 rounded-full adm-soft text-purple-500 text-[9px] font-bold flex items-center justify-center shrink-0">${e.para[1].toUpperCase()}</span>
+          <span class="text-purple-500 font-semibold text-xs">${e.para}</span>
+        </div>
+      </td>
+      <td class="max-w-[300px]">
+        ${e.tipo === 'Presente'
+          ? `<span class="inline-flex items-center gap-2 font-semibold text-xs">${giftTile(e.icone, 'w-7 h-7', 'w-4 h-4')} ${e.conteudo}</span>`
+          : `<span class="text-xs adm-muted italic block truncate">“${e.conteudo}”</span>`}
+      </td>
+      <td class="font-bold whitespace-nowrap">${e.valor ? fmtBRL(e.valor) : '<span class="adm-muted font-normal">—</span>'}</td>
+      <td><span class="badge ${e.status === 'Visualizado' ? 'badge-green' : 'badge-blue'}">${e.status}</span></td>
+      <td onclick="event.stopPropagation()"><span class="act-btn" title="Ver detalhes" onclick="openEnvioDetail('${e.id}')">${AI.eye}</span></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" class="text-center adm-muted py-6">Nenhum envio encontrado.</td></tr>';
+}
+R.envios.after = () => {
+  renderEnvioRows();
+  document.getElementById('envioSearch').addEventListener('input', renderEnvioRows);
+};
+
+// ---- Modal de detalhes do envio ----
+function openEnvioDetail(id){
+  const e = ADMIN_ENVIOS.find(x => x.id === id);
+  if (!e) return;
+  const taxaPct = admGet('taxa', 20);
+  const overlay = document.createElement('div');
+  overlay.id = 'envioModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto;';
+  overlay.innerHTML = `
+  <div class="adm-card w-full max-w-xl p-6 my-4" style="box-shadow:0 30px 60px -20px rgba(0,0,0,.4)">
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <div class="text-lg font-extrabold flex items-center gap-2">Envio <span class="font-mono text-sm adm-muted">#${e.id}</span> <span class="badge ${e.tipo === 'Presente' ? 'badge-purple' : 'badge-blue'}">${e.tipo}</span></div>
+        <div class="text-[11px] adm-muted mt-0.5">${e.data} · via ${e.origem}</div>
+      </div>
+      <button class="act-btn" onclick="document.getElementById('envioModal').remove()">${AI.x}</button>
+    </div>
+
+    <div class="flex items-center gap-3 mb-4">
+      <div class="adm-soft rounded-xl p-3 flex-1 text-center">
+        <div class="w-9 h-9 rounded-full grad-bg text-white text-xs font-bold flex items-center justify-center mx-auto">${e.de[1].toUpperCase()}</div>
+        <div class="text-xs font-bold mt-1.5">${e.de}</div>
+        <div class="text-[10px] adm-muted">remetente</div>
+        <button class="text-[11px] text-purple-500 font-semibold mt-1 hover:underline" onclick="document.getElementById('envioModal').remove(); goSection('usuarios'); setTimeout(() => { const i = document.getElementById('userSearch'); if (i) { i.value = '${e.de.slice(1)}'; renderUserRows(); } }, 60);">ver ficha →</button>
+      </div>
+      <div class="text-xl adm-muted shrink-0">→</div>
+      <div class="adm-soft rounded-xl p-3 flex-1 text-center">
+        <div class="w-9 h-9 rounded-full adm-card text-purple-500 text-xs font-bold flex items-center justify-center mx-auto border adm-line">${e.para[1].toUpperCase()}</div>
+        <div class="text-xs font-bold mt-1.5">${e.para}</div>
+        <div class="text-[10px] adm-muted">destinatário</div>
+        <button class="text-[11px] text-purple-500 font-semibold mt-1 hover:underline" onclick="document.getElementById('envioModal').remove(); goSection('usuarios'); setTimeout(() => { const i = document.getElementById('userSearch'); if (i) { i.value = '${e.para.slice(1)}'; renderUserRows(); } }, 60);">ver ficha →</button>
+      </div>
+    </div>
+
+    ${e.tipo === 'Presente' ? `
+    <div class="rounded-xl p-4 mb-4" style="background:linear-gradient(90deg, rgba(124,58,237,.08), rgba(236,72,153,.06))">
+      <div class="flex items-center gap-3">
+        ${giftTile(e.icone, 'w-12 h-12')}
+        <div>
+          <div class="font-bold text-sm">${e.conteudo}</div>
+          <div class="text-[11px] adm-muted">${e.bday ? 'Enviado para o BDAY "' + e.bday + '"' : 'Enviado direto ao perfil'}</div>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-2 mt-3 text-center text-[11px]">
+        <div class="adm-card rounded-lg py-2"><b>${fmtBRL(e.valor)}</b><br><span class="adm-muted">valor do presente</span></div>
+        <div class="adm-card rounded-lg py-2"><b class="text-pink-500">− ${fmtBRL(e.valor * taxaPct / 100)}</b><br><span class="adm-muted">taxa (${taxaPct}%)</span></div>
+        <div class="adm-card rounded-lg py-2"><b class="text-green-600">${fmtBRL(e.valor * (1 - taxaPct / 100))}</b><br><span class="adm-muted">creditado</span></div>
+      </div>
+    </div>` : `
+    <div class="adm-soft rounded-xl p-4 mb-4">
+      <div class="text-[10px] font-bold adm-muted uppercase tracking-wide mb-1.5">Mensagem do torpedo</div>
+      <p class="text-sm leading-relaxed">“${e.conteudo}”</p>
+    </div>`}
+
+    <div class="mb-4">
+      <div class="text-[10px] font-bold adm-muted uppercase tracking-wide mb-2">Linha do tempo da entrega</div>
+      <div class="flex items-center gap-2 text-[11px]">
+        <span class="badge badge-green">✓ Enviado</span><span class="adm-muted">—</span>
+        <span class="badge badge-green">✓ Entregue</span><span class="adm-muted">—</span>
+        <span class="badge ${e.status === 'Visualizado' ? 'badge-green' : ''}">${e.status === 'Visualizado' ? '✓ Visualizado' : '○ Aguardando visualização'}</span>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between pt-4 border-t adm-line">
+      <button class="adm-card px-3 py-1.5 text-xs font-semibold" onclick="audit('Reenviou notificação de envio', '${e.id}', '${e.tipo} de ${e.de} para ${e.para}'); showToast('Notificação reenviada para ${e.para} (demo).')">🔔 Reenviar notificação</button>
+      <button class="btn-primary rounded-xl px-4 py-2 text-xs font-bold" onclick="document.getElementById('envioModal').remove()">Fechar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', ev => { if (ev.target === overlay) overlay.remove(); });
+}
+
+function getMpCfg(){ return admGet('mp', { token: 'APP_USR-4839201765**********3316', webhook: 'https://bday.fm/api/webhooks/mercadopago', ambiente: 'Produção' }); }
+function getApis(){
+  return admGet('apis', [
+    { nome: 'OpenAI — Chat IA', tipo: 'Inteligência Artificial', chave: 'sk-proj-9f2************', url: 'https://api.openai.com/v1', ativo: true },
+    { nome: 'Twilio SMS', tipo: 'Mensageria', chave: 'AC6504b73da92bfc************', url: 'https://api.twilio.com/2010-04-01', ativo: true },
+  ]);
+}
+let apiEditIndex = null;
+function saveMpToken(){
+  const v = document.getElementById('mpTokenInput').value.trim();
+  if (!v) { showToast('Informe o novo token.'); return; }
+  const cfg = getMpCfg(); cfg.token = v; admSet('mp', cfg);
+  audit('Alterou token', 'API Mercado Pago', 'Token substituído (final ' + v.slice(-4) + ')');
+  showToast('Token do Mercado Pago atualizado.');
+  goSection('apimp');
+}
+function saveMpConfig(){
+  const cfg = getMpCfg();
+  cfg.webhook = document.getElementById('mpWebhookInput').value.trim() || cfg.webhook;
+  cfg.ambiente = document.getElementById('mpAmbienteSel').value;
+  admSet('mp', cfg);
+  audit('Editou configuração', 'API Mercado Pago', 'Webhook/ambiente: ' + cfg.ambiente);
+  showToast('Configuração da API salva.');
+  goSection('apimp');
+}
+function apiFormOpen(i){
+  apiEditIndex = (i === undefined ? null : i);
+  const box = document.getElementById('apiFormBox');
+  box.classList.remove('hidden');
+  const a = apiEditIndex !== null ? getApis()[apiEditIndex] : { nome: '', tipo: '', chave: '', url: '' };
+  document.getElementById('apiFormTitle').textContent = apiEditIndex !== null ? 'Editar API' : 'Adicionar nova API';
+  document.getElementById('apiNome').value = a.nome; document.getElementById('apiTipo').value = a.tipo;
+  document.getElementById('apiChave').value = a.chave; document.getElementById('apiUrl').value = a.url;
+  box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function apiFormSave(){
+  const nome = document.getElementById('apiNome').value.trim();
+  const chave = document.getElementById('apiChave').value.trim();
+  if (!nome || !chave) { showToast('Preencha ao menos o nome e a chave da API.'); return; }
+  const list = getApis();
+  const item = { nome, tipo: document.getElementById('apiTipo').value.trim() || 'Integração', chave, url: document.getElementById('apiUrl').value.trim(), ativo: true };
+  if (apiEditIndex !== null) { item.ativo = list[apiEditIndex].ativo; list[apiEditIndex] = item; } else { list.push(item); }
+  admSet('apis', list);
+  audit(apiEditIndex !== null ? 'Editou API' : 'Adicionou API', item.nome, item.tipo);
+  showToast(apiEditIndex !== null ? 'API atualizada.' : 'Nova API adicionada.');
+  apiEditIndex = null;
+  goSection('apimp');
+}
+function apiToggle(i){ const l = getApis(); l[i].ativo = !l[i].ativo; admSet('apis', l); audit(l[i].ativo ? 'Ativou API' : 'Desativou API', l[i].nome, ''); showToast(l[i].nome + (l[i].ativo ? ' ativada.' : ' desativada.')); goSection('apimp'); }
+function apiDelete(i){ const l = getApis(); const nome = l[i].nome; l.splice(i, 1); admSet('apis', l); audit('Removeu API', nome, ''); showToast(nome + ' removida.'); goSection('apimp'); }
+
+R.apimp = () => {
+  const pend = ADMIN_DEPOSITOS.filter(d => d.status === 'Pendente').length;
+  const mp = getMpCfg();
+  const mascarado = mp.token.length > 8 ? '**********' + mp.token.slice(-4) : mp.token;
+  const apis = getApis();
+  return `
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-1">
+    <h1 class="text-xl font-extrabold">API Mercado Pago</h1>
+    <button class="btn-primary rounded-xl px-4 py-2 text-xs font-bold" onclick="showToast('Status da integração atualizado (demo).')">Atualizar</button>
+  </div>
+  <p class="text-xs adm-muted mb-4">Informações detalhadas sobre a integração com o Mercado Pago</p>
+  <div class="adm-card p-4 mb-4 flex items-start gap-3" style="border-color:#BBF7D0">
+    <span class="text-green-500 mt-0.5">${AI.check}</span>
+    <div><div class="text-sm font-bold">Processamento de pagamentos funcionando</div>
+    <p class="text-xs adm-muted mt-0.5">O sistema de confirmação de pagamentos do Mercado Pago está operando normalmente. Os depósitos serão automaticamente atualizados para "completado" quando aprovados pela plataforma de pagamento.</p></div>
+  </div>
+  <div class="grid lg:grid-cols-3 gap-4 mb-4">
+    <div class="adm-card p-5">
+      <div class="font-bold text-sm">Status do Token</div><p class="text-xs adm-muted">Chave de API do Mercado Pago</p>
+      <div class="flex items-center gap-2 mt-3"><span class="text-sm font-mono">${mascarado}</span><span class="badge badge-green">Válido</span></div>
+      <div class="mt-3">
+        <label class="text-[11px] font-bold adm-muted">Alterar token do Mercado Pago</label>
+        <div class="flex gap-2 mt-1">
+          <input id="mpTokenInput" class="adm-input font-mono" placeholder="APP_USR-...">
+          <button class="btn-primary rounded-xl px-3 py-1.5 text-xs font-bold shrink-0" onclick="saveMpToken()">Salvar</button>
+        </div>
+      </div>
+      <div class="text-[11px] text-green-600 font-semibold mt-3 flex items-center gap-1">${I(AI.check, 'w-3 h-3')} Ambiente de ${mp.ambiente.toLowerCase()}</div>
+    </div>
+    <div class="adm-card p-5">
+      <div class="font-bold text-sm">Estatísticas</div><p class="text-xs adm-muted">Resumo de operações</p>
+      <div class="mt-3 space-y-1.5 text-sm">
+        <div class="flex justify-between"><span class="adm-muted">Total de depósitos:</span><b>179</b></div>
+        <div class="flex justify-between"><span class="adm-muted">Completados:</span><b class="text-green-600">26</b></div>
+        <div class="flex justify-between"><span class="adm-muted">Pendentes:</span><span><b class="text-amber-500">153</b> <span class="badge badge-amber">Requer atenção</span></span></div>
+        <div class="flex justify-between"><span class="adm-muted">Falhas:</span><b class="text-red-500">0</b></div>
+      </div>
+      <div class="rounded-xl p-3 mt-3 text-[11px]" style="background:#FEFCE8;color:#854D0E">
+        <b>⚠ Depósitos pendentes detectados</b><br>Existem 153 depósitos com status "pendente" que podem já ter sido processados mas não tiveram o status atualizado. Use o botão "Verificar pendências" para corrigir inconsistências.
+      </div>
+      <div class="flex justify-between text-sm mt-3 pt-3 border-t adm-line"><span class="adm-muted">Total arrecadado:</span><b>${fmtBRL(125057.23)}</b></div>
+    </div>
+    <div class="adm-card p-5">
+      <div class="font-bold text-sm">Configuração</div><p class="text-xs adm-muted mb-3">Detalhes da configuração da API</p>
+      <label class="block mb-2"><span class="text-[11px] font-bold adm-muted">Webhook URL</span>
+        <input id="mpWebhookInput" class="adm-input mt-1 font-mono text-[11px]" value="${mp.webhook}"></label>
+      <label class="block mb-3"><span class="text-[11px] font-bold adm-muted">Ambiente</span>
+        <select id="mpAmbienteSel" class="adm-input mt-1"><option ${mp.ambiente === 'Produção' ? 'selected' : ''}>Produção</option><option ${mp.ambiente === 'Sandbox' ? 'selected' : ''}>Sandbox</option></select></label>
+      <button class="btn-primary w-full rounded-xl px-3 py-2 text-xs font-bold" onclick="saveMpConfig()">💾 Salvar configuração</button>
+      <div class="text-[11px] text-green-600 font-semibold mt-2 flex items-center gap-1">${I(AI.check, 'w-3 h-3')} Ambiente de ${mp.ambiente.toLowerCase()} ativo</div>
+    </div>
+  </div>
+
+  <div class="adm-card p-5 mb-4">
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <div><div class="font-bold text-sm">Outras APIs conectadas</div><p class="text-xs adm-muted">Gerencie as integrações da plataforma — edite, desative ou adicione novas APIs</p></div>
+      <button class="btn-primary rounded-xl px-4 py-2 text-xs font-bold" onclick="apiFormOpen()">+ Adicionar nova API</button>
+    </div>
+    <div class="mt-3 space-y-2">
+      ${apis.map((a, i) => `
+      <div class="adm-soft rounded-xl p-3 flex items-center gap-3 flex-wrap">
+        <span class="adm-toggle ${a.ativo ? 'on' : ''}" onclick="apiToggle(${i})" title="${a.ativo ? 'Desativar' : 'Ativar'}"></span>
+        <div class="min-w-0 flex-1">
+          <div class="text-sm font-bold">${a.nome} ${a.ativo ? '<span class="badge badge-green">Ativa</span>' : '<span class="badge badge-red">Inativa</span>'}</div>
+          <div class="text-[11px] adm-muted">${a.tipo}${a.url ? ' · <span class="font-mono">' + a.url + '</span>' : ''} · chave <span class="font-mono">${a.chave}</span></div>
+        </div>
+        <div class="shrink-0">
+          <span class="act-btn" title="Editar" onclick="apiFormOpen(${i})">${AI.edit}</span>
+          <span class="act-btn danger" title="Remover" onclick="apiDelete(${i})">${AI.trash}</span>
+        </div>
+      </div>`).join('') || '<p class="text-xs adm-muted text-center py-3">Nenhuma API adicional cadastrada.</p>'}
+    </div>
+    <div id="apiFormBox" class="hidden mt-4 border-t adm-line pt-4">
+      <div id="apiFormTitle" class="font-bold text-sm mb-2">Adicionar nova API</div>
+      <div class="grid sm:grid-cols-2 gap-3">
+        <label class="block"><span class="text-[11px] font-bold adm-muted">Nome</span><input id="apiNome" class="adm-input mt-1" placeholder="Ex: Resend E-mail"></label>
+        <label class="block"><span class="text-[11px] font-bold adm-muted">Tipo</span><input id="apiTipo" class="adm-input mt-1" placeholder="Ex: E-mail transacional"></label>
+        <label class="block"><span class="text-[11px] font-bold adm-muted">Chave / Token</span><input id="apiChave" class="adm-input mt-1 font-mono" placeholder="Chave secreta da API"></label>
+        <label class="block"><span class="text-[11px] font-bold adm-muted">URL base (opcional)</span><input id="apiUrl" class="adm-input mt-1 font-mono" placeholder="https://api.exemplo.com"></label>
+      </div>
+      <div class="flex gap-2 mt-3">
+        <button class="btn-primary rounded-xl px-4 py-2 text-xs font-bold" onclick="apiFormSave()">💾 Salvar API</button>
+        <button class="adm-card px-4 py-2 text-xs font-semibold" onclick="document.getElementById('apiFormBox').classList.add('hidden'); apiEditIndex = null;">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex gap-1.5 mb-3">
+    ${['Depósitos','Pagamentos','Preferências','Dados do Comerciante'].map((t, i) => `<span class="adm-tab ${i === 0 ? 'active' : ''}" onclick="showToast('Aba \\'${t}\\' (demo).')">${t}</span>`).join('')}
+  </div>
+  <div class="adm-card overflow-x-auto">
+    <div class="flex items-center justify-between p-4 pb-0">
+      <div><div class="font-bold text-sm">Depósitos no Sistema</div><p class="text-xs adm-muted">Últimos depósitos registrados no sistema via Mercado Pago</p></div>
+      <button class="adm-card px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5" onclick="showToast('${pend} pendências verificadas junto ao Mercado Pago (demo).')">${I(AI.check, 'w-3.5 h-3.5')} Verificar pendências</button>
+    </div>
+    <table class="adm-table mt-2">
+      <thead><tr><th>ID</th><th>Usuário</th><th>Valor</th><th>Data</th><th>Referência</th><th>Status</th></tr></thead>
+      <tbody>${ADMIN_DEPOSITOS.map(d => `
+        <tr>
+          <td class="adm-muted">${d.id}</td>
+          <td class="text-purple-500 font-semibold">${d.user}</td>
+          <td class="font-bold whitespace-nowrap">${fmtBRL(d.valor)}</td>
+          <td class="adm-muted whitespace-nowrap">${d.data}</td>
+          <td class="adm-muted font-mono text-[11px]">${d.ref}</td>
+          <td><span class="badge ${d.status === 'Completado' ? 'badge-green' : 'badge-amber'}">${d.status}</span></td>
+        </tr>`).join('')}</tbody>
+    </table>
+    <div class="text-center py-3 text-xs adm-muted">Lista de depósitos via Mercado Pago.
+      <div class="mt-2"><button class="adm-card px-4 py-2 text-xs font-semibold" onclick="showToast('Sem mais registros neste protótipo.')">+ Carregar mais (169 restantes)</button></div>
+    </div>
+  </div>`;
+};
+
+R.twilio = () => {
+  const tw = admGet('twilio', { on: true, sid: 'AC6504b73da92bfc764c3b53c18eef3454', token: '••••••••••••••••••••••••••••', fone: '+19069997141', amb: 'Produção (Envio real)' });
+  return `
+  <h1 class="text-xl font-extrabold mb-4">Configurações do Twilio</h1>
+  <div class="adm-card p-5 max-w-3xl">
+    <div class="font-bold text-sm">Credenciais do Twilio</div>
+    <p class="text-xs adm-muted mb-4">Configure a integração com o Twilio para envio de SMS.</p>
+    <div class="flex items-center justify-between mb-4"><span class="text-sm font-semibold">Ativar integração com Twilio</span><span id="twOn" class="adm-toggle ${tw.on ? 'on' : ''}" onclick="this.classList.toggle('on')"></span></div>
+    <label class="block mb-3"><span class="text-xs font-bold">Account SID</span>
+      <input id="twSid" class="adm-input mt-1 font-mono" value="${tw.sid}">
+      <span class="text-[11px] adm-muted">Encontre no painel do Twilio em Account Info > API Credentials > Account SID</span></label>
+    <label class="block mb-3"><span class="text-xs font-bold">Auth Token</span>
+      <input id="twToken" type="password" class="adm-input mt-1 font-mono" value="${tw.token}">
+      <span class="text-[11px] adm-muted">Encontre no painel do Twilio em Account Info > API Credentials > Auth Token</span></label>
+    <label class="block mb-3"><span class="text-xs font-bold">Número de Telefone</span>
+      <input id="twFone" class="adm-input mt-1 font-mono" value="${tw.fone}">
+      <span class="text-[11px] adm-muted">O número de telefone do Twilio que será usado para enviar SMS</span></label>
+    <label class="block mb-4"><span class="text-xs font-bold">Ambiente</span>
+      <select id="twAmb" class="adm-input mt-1"><option ${tw.amb.startsWith('Produção') ? 'selected' : ''}>Produção (Envio real)</option><option ${tw.amb.startsWith('Sandbox') ? 'selected' : ''}>Sandbox (teste)</option></select>
+      <span class="text-[11px] adm-muted">No modo sandbox, os SMS não são realmente enviados</span></label>
+    <div class="flex gap-2">
+      <button class="btn-primary rounded-xl px-4 py-2 text-xs font-bold" onclick="admSet('twilio', { on: document.getElementById('twOn').classList.contains('on'), sid: document.getElementById('twSid').value, token: document.getElementById('twToken').value, fone: document.getElementById('twFone').value, amb: document.getElementById('twAmb').value }); showToast('Configurações do Twilio salvas.')">💾 Salvar Configurações</button>
+      <button class="adm-card px-4 py-2 text-xs font-semibold" onclick="showToast('Conexão com o Twilio OK (demo).')">📱 Testar Conexão</button>
+    </div>
+  </div>
+  <div class="adm-card p-5 max-w-3xl mt-4">
+    <div class="flex gap-1.5 mb-4">${['Teste de SMS','Mensagens Personalizadas','Tipos de Mensagens'].map((t, i) => `<span class="adm-tab ${i === 0 ? 'active' : ''}" onclick="showToast('Aba \\'${t}\\' (demo).')">${t}</span>`).join('')}</div>
+    <div class="font-bold text-sm">Enviar SMS de Teste</div>
+    <p class="text-xs adm-muted mt-1">Enviar uma mensagem de teste para o número <b>+5579996800626</b>.<br>Texto da mensagem: <b>"tudo funcionando"</b></p>
+    <div class="flex gap-2 mt-3">
+      <button class="btn-primary rounded-xl px-4 py-2 text-xs font-bold" onclick="showToast('SMS de teste enviado (demo).')">💬 Enviar SMS de Teste</button>
+      <button class="adm-card px-4 py-2 text-xs font-semibold" onclick="showToast('SMS personalizado (demo).')">📞 Enviar SMS Personalizado</button>
+    </div>
+  </div>`;
+};
+
+R.rastreamento = () => {
+  const cfg = admGet('tracking', { ga: 'G-DEFMRNFW74', pixel: '1877368169664581' });
+  return `
+  <h1 class="text-xl font-extrabold mb-1">Configurações de Rastreamento</h1>
+  <p class="text-xs adm-muted mb-4">Configure as ferramentas de rastreamento e análise para monitorar o desempenho do site</p>
+  <div class="adm-card p-5 max-w-3xl">
+    <div class="font-bold text-sm">Google Analytics</div>
+    <p class="text-xs adm-muted mb-4">Configure o ID de medição do Google Analytics para rastrear o comportamento dos usuários</p>
+    <label class="block mb-3"><span class="text-xs font-bold">ID de Medição (G-XXXXXXXX)</span>
+      <input id="trackGa" class="adm-input mt-1 font-mono" value="${cfg.ga}">
+      <span class="text-[11px] adm-muted">Para encontrar o ID, acesse sua conta do Google Analytics > Administrador > Propriedade > Streams de dados</span></label>
+    <label class="block mb-4"><span class="text-xs font-bold">ID do Facebook Pixel</span>
+      <input id="trackPixel" class="adm-input mt-1 font-mono" value="${cfg.pixel}">
+      <span class="text-[11px] adm-muted">Para encontrar o ID, acesse o Business Manager do Facebook > Events Manager > Pixels</span></label>
+    <button class="btn-primary rounded-xl px-4 py-2 text-xs font-bold" onclick="admSet('tracking', { ga: document.getElementById('trackGa').value, pixel: document.getElementById('trackPixel').value }); showToast('Configurações de rastreamento salvas.')">💾 Salvar Configurações</button>
+  </div>`;
+};
+
+R.parametros = () => {
+  const taxa = admGet('taxa', 20);
+  return `
+  <h1 class="text-xl font-extrabold mb-4 text-center">Parâmetros do Sistema</h1>
+  <div class="flex gap-1.5 mb-4 justify-center">${['Taxa de Comissão','Configurações de Mídia','Rastreamento'].map((t, i) => `<span class="adm-tab ${i === 0 ? 'active' : ''}" onclick="${i === 2 ? "goSection('rastreamento')" : `showToast('Aba \\'${t}\\' (demo).')`}">${t}</span>`).join('')}</div>
+  <div class="adm-card p-6 max-w-3xl mx-auto">
+    <div class="font-bold">Taxa de Comissão</div>
+    <p class="text-xs adm-muted mt-1 mb-5">Configure a porcentagem da comissão cobrada pela plataforma em cada presente enviado. O restante do valor (100% - comissão) será creditado ao destinatário do presente.</p>
+    <div class="grid sm:grid-cols-2 gap-6">
+      <label class="block"><span class="text-xs font-bold">Taxa de Comissão (%)</span>
+        <div class="flex items-center gap-2 mt-1"><input id="taxaInput" type="number" min="0" max="100" class="adm-input" value="${taxa}"><span class="font-bold">%</span></div>
+      </label>
+      <div>
+        <div class="text-xs font-bold mb-2">Exemplos de Divisão</div>
+        <div id="taxaExemplos" class="text-xs space-y-1.5 adm-muted"></div>
+      </div>
+    </div>
+    <div class="text-right mt-4"><button class="btn-primary rounded-xl px-5 py-2 text-xs font-bold" onclick="const v = parseFloat(document.getElementById('taxaInput').value); if (isNaN(v) || v < 0 || v > 100) { showToast('Informe uma taxa entre 0 e 100.'); } else { admSet('taxa', v); audit('Alterou parâmetro', 'Taxa de comissão', v + '%'); showToast('Taxa de comissão salva: ' + v + '%.'); }">💾 Salvar</button></div>
+    <p class="text-[11px] adm-muted mt-3">O site público está configurado com taxa de 20% (saldo exibido já líquido, saque mínimo R$ 10, processamento em até 48h úteis via Pix).</p>
+  </div>`;
+};
+R.parametros.after = () => {
+  const input = document.getElementById('taxaInput');
+  const out = document.getElementById('taxaExemplos');
+  const upd = () => {
+    const t = Math.min(100, Math.max(0, parseFloat(input.value) || 0));
+    out.innerHTML = [10, 50, 100].map(v => {
+      const plat = v * t / 100, dest = v - plat;
+      return `Presente de ${fmtBRL(v)}: <b class="text-green-600">${fmtBRL(dest)}</b> para o destinatário, <b class="text-pink-500">${fmtBRL(plat)}</b> para a plataforma`;
+    }).join('<br>');
+  };
+  input.addEventListener('input', upd); upd();
+};
+
+R.suporte = () => {
+  const frases = admGet('frases', [
+    { txt: 'Vamos Conversar! =)', on: true }, { txt: 'Quero ajudá-lo!', on: true },
+    { txt: 'Ja criou seu perfil?', on: true }, { txt: 'Divulgue seu perfil e ganhe Pix!', on: true },
+  ]);
+  const novas = ADMIN_SUPORTE.filter(s => s.nova).length;
+  return `
+  <h1 class="text-xl font-extrabold mb-1">Suporte</h1>
+  <p class="text-xs adm-muted mb-4">Gerencie as mensagens enviadas pelos usuários através do formulário de contato.</p>
+  <div class="flex gap-1.5 mb-4">
+    <span class="adm-tab active" data-sup-tab="mensagens" onclick="supTab(this)">Mensagens <span class="badge badge-red ml-1">${novas}</span></span>
+    <span class="adm-tab" data-sup-tab="conversas" onclick="supTab(this)">Conversas de Chat</span>
+    <span class="adm-tab" data-sup-tab="atendimento" onclick="supTab(this)">Configurar Atendimento</span>
+  </div>
+  <div data-sup-panel="mensagens">
+    <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+      ${ADMIN_SUPORTE.map(s => `
+      <div class="adm-card p-4 ${s.nova ? 'border-pink-200' : ''}">
+        <div class="flex items-start justify-between gap-2">
+          <div class="font-bold text-sm">${s.titulo}</div>${s.nova ? '<span class="badge badge-red">Nova</span>' : ''}
+        </div>
+        <div class="text-[11px] adm-muted mt-1">De ${s.de}${s.fone ? '<br>📞 ' + s.fone : ''}</div>
+        <p class="text-xs mt-2">${s.msg}</p>
+        <div class="flex items-center justify-between mt-3 pt-2 border-t adm-line">
+          <span class="text-[11px] adm-muted">${s.data}</span>
+          <div>
+            <span class="act-btn" title="Ver completa" onclick="showToast('Mensagem completa (demo).')">${AI.eye}</span>
+            <span class="act-btn" title="Marcar como lida" onclick="showToast('Marcada como lida (demo).')">${AI.check}</span>
+            <span class="act-btn danger" title="Excluir" onclick="showToast('Mensagem excluída (demo).')">${AI.trash}</span>
+          </div>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>
+  <div data-sup-panel="conversas" class="hidden">
+    <div class="grid lg:grid-cols-5 gap-4">
+      <div class="adm-card p-4 lg:col-span-2">
+        <div class="font-bold text-sm mb-2">💬 Sessões (69)</div>
+        <input class="adm-input mb-3" placeholder="Buscar sessão ou usuário...">
+        <div class="space-y-2 max-h-[420px] overflow-y-auto">
+          ${ADMIN_CHATS.map(c => `
+          <div class="adm-soft rounded-xl p-3 cursor-pointer hover:ring-1 hover:ring-purple-300 transition" onclick="showToast('Histórico da sessão de ${c.nome} (demo).')">
+            <div class="flex items-center justify-between"><span class="text-xs font-bold ${c.user ? '' : 'badge badge-purple'}">${c.nome}</span><span class="text-[11px] adm-muted">${c.msgs} msgs</span></div>
+            ${c.user ? `<div class="text-[11px] text-purple-500">${c.user}</div>` : ''}
+            <div class="text-[11px] adm-muted mt-0.5">🗓 ${c.data}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="adm-card p-4 lg:col-span-3 flex flex-col items-center justify-center min-h-[300px] text-center">
+        <div class="text-2xl mb-2">💬</div>
+        <div class="font-bold text-sm">Selecione uma sessão</div>
+        <p class="text-xs adm-muted mt-1">Selecione uma sessão para ver o histórico completo</p>
+      </div>
+    </div>
+  </div>
+  <div data-sup-panel="atendimento" class="hidden">
+    <div class="adm-card p-5 max-w-3xl">
+      <div class="font-bold text-sm">💬 Frases do Balão</div>
+      <p class="text-xs adm-muted mb-3">As mensagens ativas serão exibidas em rotação no balão animado acima do botão de chat</p>
+      <div class="flex gap-2 mb-4"><input id="novaFrase" class="adm-input" placeholder="Digite uma nova mensagem..."><button class="btn-primary rounded-xl px-4 py-2 text-xs font-bold shrink-0" onclick="addFrase()">+ Adicionar</button></div>
+      <div id="frasesList"></div>
+    </div>
+    <div class="adm-card p-5 max-w-3xl mt-4">
+      <div class="font-bold text-sm mb-1">Visualização do Chat</div>
+      <p class="text-xs adm-muted mb-4">Mensagens ativas serão exibidas uma por vez, mudando automaticamente a cada 3 segundos</p>
+      <div class="adm-soft rounded-xl p-6 text-center">
+        <div class="text-[11px] adm-muted mb-2">Exemplo de balão:</div>
+        <span id="frasePreview" class="inline-block text-xs font-bold text-white rounded-full px-4 py-2" style="background:linear-gradient(90deg,#7C3AED,#EC4899)">${(frases.find(f => f.on) || { txt: '...' }).txt}</span>
+      </div>
+    </div>
+  </div>`;
+};
+function supTab(elm){
+  document.querySelectorAll('[data-sup-tab]').forEach(t => t.classList.remove('active'));
+  elm.classList.add('active');
+  const id = elm.getAttribute('data-sup-tab');
+  document.querySelectorAll('[data-sup-panel]').forEach(p => p.classList.toggle('hidden', p.getAttribute('data-sup-panel') !== id));
+}
+function renderFrases(){
+  const frases = admGet('frases', []);
+  const list = document.getElementById('frasesList');
+  if (!list) return;
+  list.innerHTML = `<table class="adm-table"><thead><tr><th>Mensagem</th><th style="width:70px">Ativo</th><th style="width:70px">Ações</th></tr></thead><tbody>` +
+    frases.map((f, i) => `<tr>
+      <td class="font-semibold">${f.txt}</td>
+      <td><span class="adm-toggle ${f.on ? 'on' : ''}" onclick="toggleFrase(${i})"></span></td>
+      <td><span class="act-btn danger" onclick="delFrase(${i})">${AI.trash}</span></td>
+    </tr>`).join('') + '</tbody></table>';
+  const prev = document.getElementById('frasePreview');
+  if (prev) prev.textContent = (frases.find(f => f.on) || { txt: '(nenhuma frase ativa)' }).txt;
+}
+function addFrase(){
+  const input = document.getElementById('novaFrase');
+  const txt = (typeof bdaySanitize === 'function' ? bdaySanitize(input.value) : input.value.trim());
+  if (!txt) { showToast('Digite a mensagem do balão.'); return; }
+  const frases = admGet('frases', []); frases.push({ txt, on: true }); admSet('frases', frases);
+  input.value = ''; renderFrases(); showToast('Frase adicionada.');
+}
+function toggleFrase(i){ const f = admGet('frases', []); f[i].on = !f[i].on; admSet('frases', f); renderFrases(); }
+function delFrase(i){ const f = admGet('frases', []); f.splice(i, 1); admSet('frases', f); renderFrases(); showToast('Frase removida.'); }
+R.suporte.after = () => {
+  if (!localStorage.getItem('bdayfm_admin_frases')) admSet('frases', [
+    { txt: 'Vamos Conversar! =)', on: true }, { txt: 'Quero ajudá-lo!', on: true },
+    { txt: 'Ja criou seu perfil?', on: true }, { txt: 'Divulgue seu perfil e ganhe Pix!', on: true },
+  ]);
+  renderFrases();
+};
+
+R.ferramentas = () => `
+  <h1 class="text-xl font-extrabold mb-1 text-center">Ferramentas de Desenvolvimento</h1>
+  <p class="text-xs adm-muted mb-5 text-center">Ferramentas para teste e depuração do sistema de pagamentos</p>
+  <div class="grid lg:grid-cols-2 gap-4 max-w-4xl mx-auto">
+    <div class="adm-card p-5">
+      <div class="font-bold text-sm">Teste de Depósito</div>
+      <p class="text-xs adm-muted mb-3">Simule um depósito para testar o sistema de pagamentos</p>
+      <label class="block mb-2"><span class="text-xs font-bold">ID do Usuário</span><input class="adm-input mt-1" placeholder="Ex: 913"></label>
+      <label class="block mb-2"><span class="text-xs font-bold">Valor (R$)</span><input class="adm-input mt-1" placeholder="Ex: 10.00"></label>
+      <label class="block mb-3"><span class="text-xs font-bold">ID do Pagamento (opcional)</span><input class="adm-input mt-1 font-mono" value="teste-1784136912475"></label>
+      <div class="space-y-2">
+        <button class="btn-primary w-full rounded-xl px-4 py-2 text-xs font-bold" onclick="showToast('Depósito direto simulado (demo).')">Testar Depósito Direto</button>
+        <button class="adm-card w-full px-4 py-2 text-xs font-semibold" onclick="showToast('Webhook MercadoPago simulado (demo).')">Simular Webhook MercadoPago</button>
+        <button class="w-full rounded-xl px-4 py-2 text-xs font-semibold" style="background:#FDF2F8;color:#BE185D" onclick="showToast('Depósito simplificado simulado (demo).')">Depósito Simplificado (Novo)</button>
+      </div>
+    </div>
+    <div class="adm-card p-5">
+      <div class="font-bold text-sm mb-3">Outras Ferramentas</div>
+      <div class="adm-soft rounded-xl p-4 text-xs">
+        <div class="font-bold mb-1">Documentação do Depósito Simplificado</div>
+        <p class="adm-muted">Uma nova rota simplificada foi adicionada para testes de depósito sem autenticação. Consulte o arquivo <span class="font-mono">docs-teste-deposito-simples.md</span> para mais detalhes.</p>
+        <div class="mt-2"><span class="font-bold">Endpoint:</span> <span class="font-mono adm-card px-2 py-0.5 rounded">/api/test-deposit-simple</span></div>
+        <div class="mt-2 font-bold">Scripts disponíveis:</div>
+        <ul class="list-disc ml-5 adm-muted"><li><span class="font-mono">test-deposit-simple.js</span> (Node.js)</li><li><span class="font-mono">test-deposit-curl.sh</span> (Shell)</li></ul>
+      </div>
+    </div>
+  </div>`;
+
+R.webhooks = () => `
+  <h1 class="text-xl font-extrabold mb-5 text-center">Monitor de Webhooks</h1>
+  <div class="grid lg:grid-cols-2 gap-4 max-w-4xl mx-auto">
+    <div class="adm-card p-5">
+      <div class="font-bold text-sm">Simulador de Webhook MercadoPago</div>
+      <p class="text-xs adm-muted mb-3">Simule webhooks do MercadoPago para testar o sistema de pagamentos</p>
+      <label class="block mb-2"><span class="text-xs font-bold">ID do Usuário</span><input class="adm-input mt-1" placeholder="ID do usuário para receber o depósito"></label>
+      <label class="block mb-2"><span class="text-xs font-bold">Valor (R$)</span><input class="adm-input mt-1" placeholder="Valor do depósito"></label>
+      <label class="block mb-3"><span class="text-xs font-bold">ID do Pagamento (opcional)</span><input class="adm-input mt-1" placeholder="ID personalizado ou deixe em branco para gerar automaticamente"></label>
+      <button class="btn-primary w-full rounded-xl px-4 py-2 text-xs font-bold" onclick="registrarWebhookTeste()">Simular Webhook MercadoPago</button>
+    </div>
+    <div class="adm-card p-5">
+      <div class="font-bold text-sm">Testes Recentes</div>
+      <p class="text-xs adm-muted mb-3">Resultados das últimas simulações de webhook</p>
+      <div id="webhookTests" class="text-xs adm-muted text-center py-8">Nenhum teste realizado ainda</div>
+    </div>
+  </div>`;
+let webhookTests = [];
+function registrarWebhookTeste(){
+  webhookTests.unshift({ ok: true, ref: 'wh-teste-' + (1000 + webhookTests.length) });
+  document.getElementById('webhookTests').innerHTML = webhookTests.map(t =>
+    `<div class="flex items-center gap-2 py-1.5 text-left"><span class="badge badge-green">200 OK</span><span class="font-mono">${t.ref}</span><span class="adm-muted ml-auto">agora</span></div>`).join('');
+  showToast('Webhook simulado com sucesso (demo).');
+}
+
+R.chatia = () => {
+  const cfg = admGet('chatia', {
+    prompt: 'Você é um assistente do bday.fm, uma rede social onde presentes virtuais viram dinheiro real. Responda de forma clara, objetiva e completa em 10-100 palavras. Cada resposta deve ter início, meio e fim. Seja amigável mas direto ao ponto.',
+    temp: 1, max: 150,
+  });
+  return `
+  <h1 class="text-xl font-extrabold mb-1 text-center">💬 Treinamento do Chat IA</h1>
+  <p class="text-xs adm-muted mb-5 text-center">Configure as instruções e comportamento do assistente virtual que atende os visitantes do site.</p>
+  <div class="adm-card p-6 max-w-3xl mx-auto">
+    <div class="font-bold">Configurações da IA</div>
+    <p class="text-xs adm-muted mb-4">Personalize como a IA se comporta e responde aos usuários</p>
+    <label class="block mb-1 text-xs font-bold">Instruções do Sistema</label>
+    <textarea id="iaPrompt" class="adm-input" rows="5">${cfg.prompt}</textarea>
+    <p class="text-[11px] adm-muted mt-1 mb-4">Estas instruções definem a personalidade e o conhecimento base da IA. Seja específico sobre como ela deve responder e que informações deve fornecer.</p>
+    <label class="block text-xs font-bold">Temperatura: <span id="iaTempVal">${cfg.temp}</span></label>
+    <input id="iaTemp" type="range" min="0" max="2" step="0.1" value="${cfg.temp}" class="w-full accent-purple-600" oninput="document.getElementById('iaTempVal').textContent = this.value">
+    <p class="text-[11px] adm-muted mb-4">Controla a criatividade das respostas. Valores baixos (0.3-0.5) = mais focadas e consistentes. Valores altos (0.8-1.2) = mais criativas e variadas.</p>
+    <label class="block mb-1 text-xs font-bold">Tamanho Máximo da Resposta</label>
+    <input id="iaMax" type="number" class="adm-input" value="${cfg.max}">
+    <p class="text-[11px] adm-muted mt-1 mb-4">Limite de tokens (palavras aproximadas) para cada resposta. 500 tokens ≈ 375 palavras.</p>
+    <div class="rounded-xl p-3 text-xs mb-4" style="background:#EFF6FF;color:#1D4ED8"><b>Modelo em uso: GPT-4o mini</b><br>Um modelo rápido e eficiente da OpenAI, ideal para assistentes de chat.</div>
+    <div class="text-right"><button class="btn-primary rounded-xl px-5 py-2 text-xs font-bold" onclick="admSet('chatia', { prompt: document.getElementById('iaPrompt').value, temp: parseFloat(document.getElementById('iaTemp').value), max: parseInt(document.getElementById('iaMax').value, 10) || 150 }); showToast('Configurações do Chat IA salvas.')">💾 Salvar Configurações</button></div>
+  </div>`;
+};
+
+R.kb = () => `
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-1">
+    <h1 class="text-xl font-extrabold">📖 Base de Conhecimento</h1>
+    <button class="btn-primary rounded-xl px-4 py-2 text-xs font-bold" onclick="showToast('Cadastro de novo conhecimento (demo).')">+ Adicionar Conhecimento</button>
+  </div>
+  <p class="text-xs adm-muted mb-4">Gerencie as perguntas e respostas que o chat IA irá utilizar antes de consultar o GPT-4o mini</p>
+  <input id="kbSearch" class="adm-input mb-4 max-w-xl" placeholder="Buscar conhecimento...">
+  <div id="kbList" class="space-y-3 max-w-4xl"></div>`;
+function renderKb(){
+  const q = (document.getElementById('kbSearch').value || '').toLowerCase();
+  const list = ADMIN_KB.filter(k => !q || k[0].toLowerCase().includes(q) || k[1].toLowerCase().includes(q) || k[2].some(t => t.includes(q)));
+  document.getElementById('kbList').innerHTML = list.map(k => `
+    <div class="adm-card p-4">
+      <div class="flex items-start justify-between gap-3">
+        <div class="font-bold text-sm">${k[0]}</div>
+        <div class="shrink-0">
+          <span class="act-btn" onclick="showToast('Edição do conhecimento (demo).')">${AI.edit}</span>
+          <span class="act-btn danger" onclick="showToast('Conhecimento removido (demo).')">${AI.trash}</span>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-1 mt-1.5">${k[2].map(t => `<span class="badge badge-blue" style="font-weight:600">${t}</span>`).join('')}</div>
+      <p class="text-xs adm-muted mt-2">${k[1]}</p>
+    </div>`).join('') || '<p class="adm-muted text-sm text-center py-6">Nada encontrado.</p>';
+}
+R.kb.after = () => { renderKb(); document.getElementById('kbSearch').addEventListener('input', renderKb); };
+
+R.paginas = () => `
+  <h1 class="text-xl font-extrabold mb-1">Páginas do Site</h1>
+  <p class="text-xs adm-muted mb-4">Atalhos para todas as páginas públicas do bday.fm</p>
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-4xl">
+    ${ADMIN_PAGES.map(p => `
+    <a href="${p[0]}" class="adm-card p-4 flex items-center gap-3 hover:border-purple-300 transition">
+      <div class="w-9 h-9 rounded-xl adm-soft text-purple-500 flex items-center justify-center">${AI.pages}</div>
+      <div class="min-w-0"><div class="font-bold text-sm truncate">${p[1]}</div><div class="text-[11px] adm-muted font-mono truncate">${p[0]}</div></div>
+    </a>`).join('')}
+  </div>`;
+
+// ==================== MOVIMENTAÇÃO DA CONTA (extrato completo) ====================
+let extFiltros = { periodo: '30', tipo: '', usuario: '', status: '', ini: '', fim: '' };
+function setExtFiltro(campo, valor){ extFiltros[campo] = valor; goSection('extrato'); }
+
+function filtrarLedger(){
+  const agora = Date.now();
+  return LEDGER.filter(l => {
+    if (extFiltros.periodo === 'hoje') {
+      if (new Date(l.ms).toDateString() !== new Date().toDateString()) return false;
+    } else if (extFiltros.periodo === '7') {
+      if (l.ms < agora - 7 * 86400000) return false;
+    } else if (extFiltros.periodo === '30') {
+      if (l.ms < agora - 30 * 86400000) return false;
+    } else if (extFiltros.periodo === 'custom') {
+      if (extFiltros.ini && l.ms < new Date(extFiltros.ini + 'T00:00').getTime()) return false;
+      if (extFiltros.fim && l.ms > new Date(extFiltros.fim + 'T23:59').getTime()) return false;
+    }
+    if (extFiltros.tipo && l.tipo !== extFiltros.tipo) return false;
+    if (extFiltros.status && l.status !== extFiltros.status) return false;
+    if (extFiltros.usuario && !(l.usuario + ' ' + l.origem).toLowerCase().includes(extFiltros.usuario.toLowerCase())) return false;
+    return true;
+  });
+}
+
+R.extrato = () => {
+  const rows = filtrarLedger();
+  const entradas = rows.filter(l => l.dir === 'in').reduce((t, l) => t + l.valor, 0);
+  const saidas = rows.filter(l => l.dir === 'out').reduce((t, l) => t + l.valor, 0);
+  const tipos = ['Presente', 'Taxa', 'Saque', 'Reembolso', 'Estorno', 'Bonificação', 'Crédito', 'Débito'];
+  const totalPorTipo = tipos.map(t => [t, LEDGER.filter(l => l.tipo === t).reduce((s2, l) => s2 + l.valor, 0), LEDGER.filter(l => l.tipo === t).length]);
+  exportarAtual = f => exportRows(f, 'Movimentação da Conta', ['ID', 'Data', 'Tipo', 'Entrada/Saída', 'Origem', 'Usuário', 'BDAY', 'Presente', 'Valor', 'Taxa', 'Saldo após', 'Status'],
+    rows.map(l => [l.id, fmtData(l.ms), l.tipo, l.dir === 'in' ? 'Entrada' : 'Saída', l.origem, l.usuario, l.bday, l.presente, fmtBRL(l.valor), fmtBRL(l.taxa), fmtBRL(l.saldoApos), l.status]));
+  return `
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-1">
+    <h1 class="text-xl font-extrabold">Movimentação da Conta</h1>
+    ${exportBar()}
+  </div>
+  <p class="text-xs adm-muted mb-4">Extrato completo da plataforma — cada linha rastreia usuário, BDAY e presente de origem.</p>
+
+  <div class="grid sm:grid-cols-3 gap-4 mb-4">
+    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">⬆ Entradas no período</div><div class="text-xl font-extrabold mt-1 text-green-600">+ ${fmtBRL(entradas)}</div></div>
+    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">⬇ Saídas no período</div><div class="text-xl font-extrabold mt-1 text-red-500">− ${fmtBRL(saidas)}</div></div>
+    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">Resultado do período</div><div class="text-xl font-extrabold mt-1">${fmtBRL(entradas - saidas)}</div></div>
+  </div>
+
+  <div class="adm-card p-3 mb-4">
+    <div class="text-[11px] font-bold adm-muted mb-2">HISTÓRICO FINANCEIRO — TOTAIS POR TIPO (30 dias) · clique para filtrar</div>
+    <div class="flex flex-wrap gap-1.5">
+      <span class="adm-tab ${extFiltros.tipo === '' ? 'active' : ''}" onclick="setExtFiltro('tipo', '')">Tudo</span>
+      ${totalPorTipo.map(t => `<span class="adm-tab ${extFiltros.tipo === t[0] ? 'active' : ''}" onclick="setExtFiltro('tipo', '${t[0]}')">${t[0]} <b>(${t[2]})</b> · ${fmtBRL(t[1])}</span>`).join('')}
+    </div>
+  </div>
+
+  <div class="adm-card p-3 mb-4 flex flex-wrap items-end gap-2">
+    <div>
+      <div class="text-[11px] font-bold adm-muted mb-1">Período</div>
+      <div class="flex gap-1">${[['hoje', 'Hoje'], ['7', '7 dias'], ['30', '30 dias'], ['tudo', 'Tudo'], ['custom', 'Personalizado']].map(p => `<span class="adm-tab ${extFiltros.periodo === p[0] ? 'active' : ''}" onclick="setExtFiltro('periodo', '${p[0]}')">${p[1]}</span>`).join('')}</div>
+    </div>
+    ${extFiltros.periodo === 'custom' ? `
+    <label class="block"><span class="text-[11px] font-bold adm-muted">De</span><input type="date" class="adm-input mt-1" value="${extFiltros.ini}" onchange="setExtFiltro('ini', this.value)"></label>
+    <label class="block"><span class="text-[11px] font-bold adm-muted">Até</span><input type="date" class="adm-input mt-1" value="${extFiltros.fim}" onchange="setExtFiltro('fim', this.value)"></label>` : ''}
+    <label class="block flex-1 min-w-[160px]"><span class="text-[11px] font-bold adm-muted">Usuário / origem</span><input class="adm-input mt-1" value="${extFiltros.usuario}" placeholder="@usuario ou texto" onchange="setExtFiltro('usuario', this.value)"></label>
+    <label class="block"><span class="text-[11px] font-bold adm-muted">Status</span>
+      <select class="adm-input mt-1" onchange="setExtFiltro('status', this.value)">
+        <option value="">Todos</option><option ${extFiltros.status === 'Concluída' ? 'selected' : ''}>Concluída</option><option ${extFiltros.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
+      </select></label>
+  </div>
+
+  <div class="adm-card overflow-x-auto">
+    <table class="adm-table">
+      <thead><tr><th>Data</th><th>Tipo</th><th>E/S</th><th>Origem</th><th>Usuário</th><th>BDAY</th><th>Presente</th><th>Valor</th><th>Taxa</th><th>Saldo após</th><th>Status</th></tr></thead>
+      <tbody>
+        ${rows.slice(0, 60).map(l => `
+        <tr>
+          <td class="adm-muted whitespace-nowrap text-[11px]">${fmtData(l.ms)}</td>
+          <td><span class="badge ${l.tipo === 'Presente' ? 'badge-purple' : l.tipo === 'Taxa' ? 'badge-blue' : l.tipo === 'Saque' ? 'badge-amber' : l.dir === 'in' ? 'badge-green' : 'badge-red'}">${l.tipo}</span></td>
+          <td class="font-bold ${l.dir === 'in' ? 'text-green-600' : 'text-red-500'}">${l.dir === 'in' ? '⬆' : '⬇'}</td>
+          <td class="adm-muted max-w-[200px] truncate" title="${l.origem}">${l.origem}</td>
+          <td class="text-purple-500 font-semibold whitespace-nowrap">${l.usuario}</td>
+          <td class="adm-muted max-w-[140px] truncate">${l.bday}</td>
+          <td class="adm-muted whitespace-nowrap">${l.presenteIcone ? `<span class="inline-flex items-center gap-1.5">${giftIconSvg(l.presenteIcone, 'w-3.5 h-3.5 text-purple-500 shrink-0')} ${l.presente}</span>` : l.presente}</td>
+          <td class="font-bold whitespace-nowrap ${l.dir === 'in' ? 'text-green-600' : 'text-red-500'}">${l.dir === 'in' ? '+' : '−'} ${fmtBRL(l.valor)}</td>
+          <td class="adm-muted whitespace-nowrap">${l.taxa ? fmtBRL(l.taxa) : '—'}</td>
+          <td class="whitespace-nowrap font-semibold">${fmtBRL(l.saldoApos)}</td>
+          <td><span class="badge ${l.status === 'Concluída' ? 'badge-green' : 'badge-amber'}">${l.status}</span></td>
+        </tr>`).join('') || '<tr><td colspan="11" class="text-center adm-muted py-6">Nenhuma movimentação neste filtro.</td></tr>'}
+      </tbody>
+    </table>
+    ${rows.length > 60 ? `<div class="text-center py-2 text-[11px] adm-muted">Mostrando 60 de ${rows.length} — use os filtros ou exporte o relatório completo.</div>` : ''}
+  </div>`;
+};
+
+// ==================== AUDITORIA ====================
+R.auditoria = () => {
+  const log = getAudit();
+  exportarAtual = f => exportRows(f, 'Auditoria Administrativa', ['Quando', 'Quem', 'Ação', 'Alvo', 'Detalhe', 'IP'],
+    log.map(a => [a.quando, a.quem, a.acao, a.alvo, a.detalhe, a.ip]));
+  return `
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-1">
+    <h1 class="text-xl font-extrabold">Auditoria</h1>
+    ${exportBar()}
+  </div>
+  <p class="text-xs adm-muted mb-4">Histórico administrativo: quem alterou, o que foi alterado, quando e de qual IP. Toda ação relevante do painel é registrada automaticamente.</p>
+  <input id="auditSearch" class="adm-input mb-4 max-w-md" placeholder="Filtrar por ação, alvo, usuário...">
+  <div class="adm-card overflow-x-auto">
+    <table class="adm-table">
+      <thead><tr><th>Data / Hora</th><th>Quem</th><th>Ação</th><th>Alvo</th><th>O que foi alterado</th><th>IP</th></tr></thead>
+      <tbody id="auditRows"></tbody>
+    </table>
+  </div>`;
+};
+function renderAuditRows(){
+  const q = (document.getElementById('auditSearch').value || '').toLowerCase();
+  const log = getAudit().filter(a => !q || (a.acao + ' ' + a.alvo + ' ' + a.detalhe + ' ' + a.quem).toLowerCase().includes(q));
+  document.getElementById('auditRows').innerHTML = log.map(a => `
+    <tr>
+      <td class="adm-muted whitespace-nowrap text-[11px]">${a.quando}</td>
+      <td class="font-semibold whitespace-nowrap">${a.quem}</td>
+      <td><span class="badge badge-purple">${a.acao}</span></td>
+      <td class="font-semibold">${a.alvo}</td>
+      <td class="adm-muted max-w-[280px]">${a.detalhe}</td>
+      <td class="adm-muted font-mono text-[11px]">${a.ip}</td>
+    </tr>`).join('') || '<tr><td colspan="6" class="text-center adm-muted py-6">Nada encontrado.</td></tr>';
+}
+R.auditoria.after = () => { renderAuditRows(); document.getElementById('auditSearch').addEventListener('input', renderAuditRows); };
+
+// ==================== BUSCA GLOBAL ====================
+function buscaGlobal(q){
+  q = q.toLowerCase();
+  const hits = [];
+  ADMIN_USERS.forEach(u => {
+    if ((u.name + ' ' + u.email + ' @' + u.handle).toLowerCase().includes(q))
+      hits.push({ grupo: 'Usuários', titulo: u.name, sub: '@' + u.handle + ' · ' + u.email, acao: () => { goSection('usuarios'); setTimeout(() => { const i = document.getElementById('userSearch'); if (i) { i.value = u.handle; renderUserRows(); } }, 50); } });
+  });
+  Object.entries(SAQUE_USERS).forEach(([key, u]) => {
+    if ((u.nome + ' ' + u.email + ' ' + u.cpf + ' ' + u.pix).toLowerCase().includes(q)) {
+      const sq = getSaques().find(x => x.user === key);
+      if (sq) hits.push({ grupo: 'Saques (PIX/CPF)', titulo: u.nome + ' — ' + fmtBRL(sq.valor), sub: 'PIX ' + u.pix + ' · CPF ' + u.cpf, acao: () => openSaqueDetail(sq.uid) });
+    }
+  });
+  ADMIN_BDAYS.forEach(b => {
+    if ((b.id + ' ' + b.titulo + ' ' + b.dono + ' ' + b.categoria).toLowerCase().includes(q))
+      hits.push({ grupo: 'BDAYs', titulo: b.titulo, sub: b.id + ' · ' + b.dono + ' · ' + fmtBRL(b.arrecadado) + ' arrecadados', acao: () => { relTab = 'celebracoes'; goSection('relatorios'); } });
+  });
+  getGifts().forEach(g => {
+    if (g.name.toLowerCase().includes(q))
+      hits.push({ grupo: 'Presentes', icone: g.icone, titulo: g.name, sub: fmtBRL(g.price) + ' · ' + g.vendidos + ' vendidos · ' + g.status, acao: () => giftModalOpen(g.id) });
+  });
+  LEDGER.forEach(l => {
+    if (l.id.toLowerCase() === q)
+      hits.push({ grupo: 'Movimentações', titulo: l.id + ' — ' + l.tipo + ' ' + fmtBRL(l.valor), sub: l.origem, acao: () => { extFiltros = { periodo: 'tudo', tipo: '', usuario: l.usuario.replace('@', ''), status: '', ini: '', fim: '' }; goSection('extrato'); } });
+  });
+  return hits.slice(0, 12);
+}
+(function initBuscaGlobal(){
+  const input = document.getElementById('globalSearch');
+  const box = document.getElementById('globalSearchResults');
+  if (!input) return;
+  window.__gsGo = (idx) => { const h = window.__gsHits && window.__gsHits[idx]; if (h) { box.classList.add('hidden'); input.value = ''; h.acao(); } };
+  input.addEventListener('input', () => {
+    const q = input.value.trim();
+    if (q.length < 2) { box.classList.add('hidden'); return; }
+    const hits = buscaGlobal(q);
+    window.__gsHits = hits;
+    let grupoAtual = '';
+    box.innerHTML = hits.length ? hits.map((h, i) => {
+      const cab = h.grupo !== grupoAtual ? `<div class="text-[10px] font-bold adm-muted uppercase tracking-wide px-2 pt-2">${h.grupo}</div>` : '';
+      grupoAtual = h.grupo;
+      return cab + `<div class="px-2 py-1.5 rounded-lg hover:bg-purple-50 cursor-pointer" onclick="__gsGo(${i})" style="transition:background .1s"><div class="text-sm font-semibold flex items-center gap-1.5">${h.icone ? giftIconSvg(h.icone, 'w-3.5 h-3.5 text-purple-500 shrink-0') : ''}${h.titulo}</div><div class="text-[11px] adm-muted">${h.sub}</div></div>`;
+    }).join('') : '<div class="text-xs adm-muted text-center py-3">Nada encontrado para "' + q.replace(/</g, '') + '"</div>';
+    box.classList.remove('hidden');
+  });
+  document.addEventListener('click', e => { if (!box.contains(e.target) && e.target !== input) box.classList.add('hidden'); });
+})();
+
+// ---------- Navegação ----------
+let currentSection = 'dashboard';
+function goSection(id){
+  currentSection = id;
+  document.querySelectorAll('#admNav .side-link').forEach(l => l.classList.toggle('active', l.getAttribute('data-section') === id));
+  const main = document.getElementById('admMain');
+  main.innerHTML = R[id]();
+  if (R[id].after) R[id].after();
+  document.getElementById('admSide').classList.remove('open');
+  main.scrollTop = 0; window.scrollTo(0, 0);
+}
+
+// Sidebar
+document.getElementById('admNav').innerHTML = SECTIONS.map(s =>
+  `<div class="side-link" data-section="${s.id}">${s.icon}<span>${s.label}</span></div>`).join('');
+document.querySelectorAll('#admNav .side-link').forEach(l => l.addEventListener('click', () => goSection(l.getAttribute('data-section'))));
+
+// Modo escuro
+function applyDark(on){
+  document.body.classList.toggle('dark', on);
+  document.getElementById('darkToggleLink').innerHTML = (on ? AI.sun : AI.moon) + '<span>' + (on ? 'Modo claro' : 'Modo escuro') + '</span>';
+  admSet('dark', on);
+}
+document.getElementById('darkToggleLink').addEventListener('click', () => applyDark(!document.body.classList.contains('dark')));
+applyDark(!!admGet('dark', false));
+
+// Sair
+const logoutLink = document.getElementById('logoutLink');
+logoutLink.innerHTML = AI.exit + '<span>Sair</span>';
+logoutLink.addEventListener('click', () => { authLogout(); window.location.href = 'index.html'; });
+
+// Menu mobile
+document.getElementById('admMenuBtn').addEventListener('click', () => document.getElementById('admSide').classList.toggle('open'));
+
+goSection('dashboard');
+</script>
+</body>
+</html>

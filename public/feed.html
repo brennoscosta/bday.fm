@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="favicon.png">
+<title>Feed — bday.fm</title>
+<meta name="description" content="Acompanhe as celebrações dos seus amigos, quem está recebendo presentes e quem está comemorando hoje no bday.fm.">
+<meta property="og:title" content="Feed — bday.fm">
+<meta property="og:description" content="Acompanhe as celebrações dos seus amigos no bday.fm.">
+<meta property="og:image" content="og-image.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tailwind-prod.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-white">
+
+<div class="demo-banner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 inline-block align-[-2px] mr-1"><path d="M9 2v6L4 20a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2L15 8V2"/><path d="M9 2h6"/><line x1="8" y1="14" x2="16" y2="14"/></svg> <b>Protótipo de demonstração</b> — dados fictícios, nenhum pagamento ou ação aqui é real.</div>
+
+<header class="sticky top-0 z-50 bg-white/85 backdrop-blur border-b border-gray-100">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2 font-extrabold text-lg">
+      <img src="logo-full.png" alt="bday.fm" class="h-8 w-auto object-contain">
+    </a>
+    <nav class="hidden md:flex items-center gap-8">
+      <a href="index.html#como-funciona" class="nav-link">Como Funciona</a>
+      <a href="explorar.html" class="nav-link">Explorar Celebrações</a>
+      <a href="feed.html" class="nav-link active">Feed</a>
+      <a href="presentes.html" class="nav-link">Presentes</a>
+      <a href="carteira.html" id="navCarteiraD" class="nav-link hidden">Carteira</a>
+    </nav>
+    <div id="authArea" class="hidden md:flex items-center gap-3">
+      <a href="login.html" class="btn-secondary px-4 py-2 rounded-xl text-sm">Entrar</a>
+      <a href="cadastro.html" class="btn-primary px-4 py-2 rounded-xl text-sm">Criar conta grátis</a>
+    </div>
+    <button id="menuBtn" class="md:hidden p-2" aria-label="Abrir menu" aria-expanded="false">
+      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div id="mobileMenu" class="md:hidden">
+    <div class="px-5 pb-4 flex flex-col gap-3 border-t border-gray-100 pt-3">
+      <a href="index.html#como-funciona" class="nav-link">Como Funciona</a>
+      <a href="explorar.html" class="nav-link">Explorar Celebrações</a>
+      <a href="feed.html" class="nav-link">Feed</a>
+      <a href="presentes.html" class="nav-link">Presentes</a>
+      <a href="carteira.html" id="navCarteiraM" class="nav-link hidden">Carteira</a>
+      <div id="authAreaMobile" class="flex flex-col gap-3">
+        <a href="login.html" class="btn-secondary px-4 py-2 rounded-xl text-sm text-center">Entrar</a>
+        <a href="cadastro.html" class="btn-primary px-4 py-2 rounded-xl text-sm text-center">Criar conta grátis</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-5 sm:px-8 py-8">
+  <div class="reveal mb-6">
+    <h1 class="text-2xl sm:text-3xl font-extrabold">Feed</h1>
+    <p class="text-slate-500 mt-1">As celebrações, presentes e momentos especiais dos seus amigos.</p>
+  </div>
+
+  <div class="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start reveal-stagger">
+
+    <!-- Coluna principal: feed estilo LinkedIn, em um canvas cinza claro -->
+    <div class="bg-slate-100 rounded-2xl p-3 sm:p-4 space-y-3 min-w-0">
+
+      <!-- Caixa de "criar publicação" (decorativa) -->
+      <div class="bg-white border border-slate-200 rounded-lg p-3.5 sm:p-4">
+        <div class="flex items-center gap-3">
+          <div id="composerAvatar" class="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold shrink-0"></div>
+          <button id="composerPrompt" data-demo-action="Criar publicação — em breve." data-requires-login class="flex-1 text-left text-sm text-slate-500 border border-slate-200 rounded-full px-4 py-2.5 hover:bg-slate-50 transition">Compartilhe um momento especial...</button>
+        </div>
+        <div class="mt-3 pt-3 border-t border-slate-100">
+          <button id="composerBdayBtn" data-requires-login class="btn-metallic w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold"></button>
+        </div>
+      </div>
+
+      <!-- Posts -->
+      <div id="postsList" class="space-y-3"></div>
+    </div>
+
+    <!-- Sidebar: rankings e aniversariantes (estilo dashboard, cards arredondados) -->
+    <div class="space-y-5 min-w-0">
+      <div class="bg-white rounded-[28px] shadow-[0_10px_40px_-15px_rgba(15,23,42,.18)] border border-slate-100 p-5">
+        <div class="flex items-center justify-between mb-1">
+          <div>
+            <h2 class="font-bold text-[15px] text-slate-800">Top Presenteadores</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Quem mais presenteou este mês</p>
+          </div>
+          <button data-demo-action="Filtro por período — em breve." class="shrink-0 text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-100 rounded-full pl-3 pr-2 py-1.5 flex items-center gap-1 hover:bg-slate-100 transition">Mês <span id="giversChevron"></span></button>
+        </div>
+        <div id="topGivers" class="mt-2"></div>
+      </div>
+
+      <div class="bg-white rounded-[28px] shadow-[0_10px_40px_-15px_rgba(15,23,42,.18)] border border-slate-100 p-5">
+        <div class="flex items-center justify-between mb-1">
+          <div>
+            <h2 class="font-bold text-[15px] text-slate-800">Top Presenteados</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Quem mais recebeu este mês</p>
+          </div>
+          <button data-demo-action="Filtro por período — em breve." class="shrink-0 text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-100 rounded-full pl-3 pr-2 py-1.5 flex items-center gap-1 hover:bg-slate-100 transition">Mês <span id="receiversChevron"></span></button>
+        </div>
+        <div id="topReceivers" class="mt-2"></div>
+      </div>
+
+      <div class="bg-white rounded-[28px] shadow-[0_10px_40px_-15px_rgba(15,23,42,.18)] border border-slate-100 p-5">
+        <div class="flex items-center justify-between mb-1">
+          <div>
+            <h2 class="font-bold text-[15px] text-slate-800">Aniversariantes</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Quem faz aniversário este mês</p>
+          </div>
+          <button data-demo-action="Ver todos — em breve." class="shrink-0 text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-100 rounded-full pl-3 pr-2 py-1.5 flex items-center gap-1 hover:bg-slate-100 transition">Todos <span id="monthChevron"></span></button>
+        </div>
+        <div id="monthList" class="mt-2"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Publicar um momento especial no feed -->
+<div id="feedComposerModal" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="flex items-center justify-between">
+      <h3 class="font-extrabold text-lg">Compartilhar um momento</h3>
+      <button data-close-modal class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+    <textarea id="feedComposerText" rows="4" maxlength="280" placeholder="O que você quer celebrar hoje?" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-purple-400 mt-4"></textarea>
+    <div class="text-xs text-slate-400 text-right mt-1"><span id="feedComposerCount">0</span>/280</div>
+    <div id="feedComposerImagePreview" class="hidden mt-2 rounded-xl overflow-hidden border border-gray-100">
+      <img id="feedComposerImagePreviewImg" class="w-full max-h-56 object-cover" alt="Foto do momento">
+    </div>
+    <div class="flex items-center gap-2 mt-3">
+      <label class="btn-secondary rounded-xl px-4 py-2.5 text-sm text-center cursor-pointer inline-flex items-center gap-1.5">
+        <span id="feedComposerPhotoIcon"></span> Adicionar foto
+        <input id="feedComposerImageInput" type="file" accept="image/*" class="hidden">
+      </label>
+      <button id="feedComposerRemoveImageBtn" type="button" class="hidden text-xs font-semibold text-red-600 hover:underline">Remover foto</button>
+    </div>
+
+    <div class="mt-4 pt-3 border-t border-slate-100">
+      <p class="text-xs font-semibold text-slate-500 mb-2">Ou compartilhe algo seu:</p>
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" id="feedAttachBdayBtn" class="feed-attach-btn border-2 border-gray-200 rounded-xl p-2.5 text-left transition flex items-center gap-2">
+          <span id="feedAttachBdayIcon" class="w-8 h-8 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center shrink-0 pointer-events-none"></span>
+          <span class="min-w-0">
+            <span class="text-xs font-semibold block">Meu BDAY</span>
+            <span id="feedAttachBdayHint" class="text-[10.5px] text-slate-400 block truncate"></span>
+          </span>
+        </button>
+        <button type="button" id="feedAttachRecapBtn" class="feed-attach-btn border-2 border-gray-200 rounded-xl p-2.5 text-left transition flex items-center gap-2">
+          <span id="feedAttachRecapIcon" class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 pointer-events-none"></span>
+          <span class="min-w-0">
+            <span class="text-xs font-semibold block">Meu Recap</span>
+            <span id="feedAttachRecapHint" class="text-[10.5px] text-slate-400 block truncate"></span>
+          </span>
+        </button>
+      </div>
+      <div id="feedAttachPreview" class="hidden mt-2.5 rounded-xl border border-purple-100 bg-purple-50/60 p-3"></div>
+    </div>
+
+    <button id="feedComposerSubmitBtn" class="btn-primary w-full rounded-xl px-6 py-3 mt-4">Publicar</button>
+  </div>
+</div>
+
+<!-- Compartilhar um post -->
+<div id="feedShareModal" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="flex items-center justify-between">
+      <h3 class="font-extrabold text-lg">Compartilhar</h3>
+      <button data-close-modal class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+    <p class="text-sm text-slate-500 mt-1">Compartilhe essa publicação com seus amigos.</p>
+    <div class="grid grid-cols-2 gap-3 mt-4">
+      <button data-feed-share-network="instagram" class="share-btn flex items-center gap-3 border-2 border-gray-200 rounded-xl px-4 py-3 hover:border-pink-400 transition text-left">
+        <span class="w-9 h-9 rounded-lg flex items-center justify-center text-white shrink-0" style="background:linear-gradient(135deg,#F58529,#DD2A7B,#8134AF)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><line x1="17.5" y1="6.5" x2="17.5" y2="6.5"/></svg>
+        </span>
+        <span class="text-sm font-semibold">Instagram</span>
+      </button>
+      <button data-feed-share-network="facebook" class="share-btn flex items-center gap-3 border-2 border-gray-200 rounded-xl px-4 py-3 hover:border-blue-400 transition text-left">
+        <span class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+        </span>
+        <span class="text-sm font-semibold">Facebook</span>
+      </button>
+      <button data-feed-share-network="tiktok" class="share-btn flex items-center gap-3 border-2 border-gray-200 rounded-xl px-4 py-3 hover:border-slate-400 transition text-left">
+        <span class="w-9 h-9 rounded-lg bg-black flex items-center justify-center text-white shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M15 3v11a3.5 3.5 0 1 1-3.5-3.5c.35 0 .68.05 1 .14"/><path d="M15 3a5 5 0 0 0 5 5"/></svg>
+        </span>
+        <span class="text-sm font-semibold">TikTok</span>
+      </button>
+      <button data-feed-share-network="linkedin" class="share-btn flex items-center gap-3 border-2 border-gray-200 rounded-xl px-4 py-3 hover:border-blue-400 transition text-left">
+        <span class="w-9 h-9 rounded-lg bg-blue-700 flex items-center justify-center text-white shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect x="2" y="2" width="20" height="20" rx="4"/><line x1="7" y1="10" x2="7" y2="16"/><line x1="7" y1="7" x2="7" y2="7"/><path d="M11 16v-4a2 2 0 0 1 4 0v4"/><line x1="11" y1="10" x2="11" y2="16"/></svg>
+        </span>
+        <span class="text-sm font-semibold">LinkedIn</span>
+      </button>
+    </div>
+    <div class="mt-4 flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2.5">
+      <span id="feedShareLink" class="text-sm text-slate-500 flex-1 truncate">bday.fm/ana</span>
+      <button data-copy-target="feedShareLink" class="text-sm font-semibold text-purple-700 shrink-0">Copiar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Presentear direto pelo post: mesma vitrine de presentes do "Contribuir para o bday" do perfil -->
+<div id="feedGiftModal" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="flex items-center justify-between">
+      <h3 class="font-extrabold text-lg flex items-center gap-2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-pink-600"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Presentear
+      </h3>
+      <button data-close-modal class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+    <p id="feedGiftSubtitle" class="text-sm text-slate-500 mt-1">Escolha um presente para enviar.</p>
+    <div class="grid grid-cols-2 gap-2.5 mt-4">
+      <button type="button" data-feed-gift="Biscoito da Sorte" data-feed-gift-price="12" class="feed-gift-btn border-2 border-gray-200 rounded-xl p-3 text-left hover:border-pink-400 transition">
+        <div class="w-9 h-9 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center mb-2"></div>
+        <div class="text-sm font-semibold">Biscoito da Sorte</div>
+        <div class="text-xs text-slate-400 mt-0.5">R$ 12</div>
+      </button>
+      <button type="button" data-feed-gift="Balão de Festa" data-feed-gift-price="8" class="feed-gift-btn border-2 border-gray-200 rounded-xl p-3 text-left hover:border-pink-400 transition">
+        <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-2"></div>
+        <div class="text-sm font-semibold">Balão de Festa</div>
+        <div class="text-xs text-slate-400 mt-0.5">R$ 8</div>
+      </button>
+      <button type="button" data-feed-gift="Coroa de Aniversariante" data-feed-gift-price="25" class="feed-gift-btn border-2 border-gray-200 rounded-xl p-3 text-left hover:border-pink-400 transition">
+        <div class="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-2"></div>
+        <div class="text-sm font-semibold">Coroa de Aniversariante</div>
+        <div class="text-xs text-slate-400 mt-0.5">R$ 25</div>
+      </button>
+      <button type="button" data-feed-gift="Bolo Surpresa 3 Andares" data-feed-gift-price="32" class="feed-gift-btn border-2 border-gray-200 rounded-xl p-3 text-left hover:border-pink-400 transition">
+        <div class="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-2"></div>
+        <div class="text-sm font-semibold">Bolo Surpresa 3 Andares</div>
+        <div class="text-xs text-slate-400 mt-0.5">R$ 32</div>
+      </button>
+    </div>
+    <a href="presentes.html" class="text-xs text-purple-600 font-semibold hover:underline mt-3 inline-block">Ver catálogo completo de presentes</a>
+    <p class="text-xs text-slate-400 mt-3">Demonstração — nenhum pagamento real será processado.</p>
+    <button id="confirmFeedGiftBtn" disabled class="btn-primary w-full rounded-xl px-6 py-3 mt-2 opacity-50 cursor-not-allowed" style="background:linear-gradient(90deg,#EC4899,#7C3AED)">Escolha um presente</button>
+  </div>
+</div>
+
+<footer class="border-t border-gray-100 mt-10">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+    <div class="flex items-center gap-2 font-bold text-slate-700">
+      <img src="logo-full.png" alt="bday.fm" class="h-5 w-auto object-contain" loading="lazy">
+    </div>
+    <div>© 2026 bday.fm — protótipo de demonstração</div>
+  </div>
+</footer>
+
+<script src="users.js"></script>
+<script src="icons.js"></script>
+<script src="auth.js"></script>
+<script src="script.js"></script>
+<script>
+  const all = USERS_ORDER.map(slug => ({ ...USERS[slug], slug }));
+
+  document.getElementById('giversChevron').innerHTML = ICONS.chevronDown;
+  document.getElementById('receiversChevron').innerHTML = ICONS.chevronDown;
+  document.getElementById('monthChevron').innerHTML = ICONS.chevronDown;
+
+  // Item de ranking (Top Presenteadores / Top Presenteados) — estilo "Friends Score" do mockup:
+  // avatar arredondado, nome + selo de posição. Os valores em R$ não são exibidos (privacidade).
+  function rankItemHTML(u, rank) {
+    return `
+    <a href="perfil.html?user=${u.slug}" class="flex items-center gap-3 py-2.5 -mx-2 px-2 rounded-2xl hover:bg-slate-50 transition">
+      <div class="relative shrink-0">
+        <div class="w-11 h-11 rounded-2xl ${u.grad} flex items-center justify-center text-white font-bold text-sm">${u.initial}</div>
+        <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white border border-slate-100 shadow-sm flex items-center justify-center text-[9.5px] font-extrabold text-slate-500">${rank}</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-semibold text-slate-800 truncate">${u.name}</div>
+        <div class="text-[11px] text-slate-400 truncate">@${u.handle}</div>
+      </div>
+    </a>`;
+  }
+
+  // ----- Top givers (mocked separately from "received" since it's about who SENT gifts) -----
+  const giversMock = [
+    { slug: 'ana', total: 156 }, { slug: 'mauricio', total: 89 }, { slug: 'thaina', total: 41 }
+  ].map(g => ({ ...USERS[g.slug], slug: g.slug, total: g.total }));
+
+  document.getElementById('topGivers').innerHTML = giversMock.map((u, i) => rankItemHTML(u, i + 1)).join('');
+
+  const receivers = all.filter(u => u.received > 0).sort((a, b) => b.received - a.received);
+  document.getElementById('topReceivers').innerHTML = receivers.map((u, i) => rankItemHTML(u, i + 1)).join('');
+
+  // Aniversariantes do mês — estilo "Homework" do mockup: ícone escuro + barra de progresso
+  // (quão perto o mês está de chegar no dia do aniversário da pessoa).
+  const monthOthers = all.filter(u => !u.isToday);
+  document.getElementById('monthList').innerHTML = monthOthers.map(u => {
+    const daysNum = parseInt(u.daysLabel, 10) || 0;
+    const pct = Math.max(6, Math.min(100, Math.round((30 - daysNum) / 30 * 100)));
+    return `
+    <a href="perfil.html?user=${u.slug}" class="flex items-center gap-3 py-2.5 -mx-2 px-2 rounded-2xl hover:bg-slate-50 transition">
+      <div class="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center text-white shrink-0">${iconSize(ICONS.cake, 'w-4 h-4')}</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-semibold text-slate-800 truncate">${u.name}</div>
+        <div class="mt-1.5 h-1.5 bg-slate-100 rounded-full overflow-hidden max-w-[140px]">
+          <div class="h-full rounded-full ${u.grad}" style="width:${pct}%"></div>
+        </div>
+      </div>
+      <div class="text-sm font-bold text-slate-500 shrink-0">${u.daysLabel}</div>
+    </a>`;
+  }).join('');
+
+  // ----- Caixa de "criar publicação" (topo do feed) -----
+  const authSession = authGetSession();
+  const me = authSession && typeof findAnyUser === 'function' ? findAnyUser(authSession.slug) : null;
+  // Respaldo: fotos enviadas antes da correção de persistência só existem na sessão
+  // deste navegador (authSession.avatarDataUrl), sem estar salvas no perfil (u.avatar).
+  // Sem isso, quem já tinha enviado uma foto continuaria sem vê-la aqui no feed.
+  if (me && !me.avatar && authSession && authSession.avatarDataUrl) me.avatar = authSession.avatarDataUrl;
+  const composerAvatar = document.getElementById('composerAvatar');
+  if (me) {
+    if (me.avatar) {
+      composerAvatar.classList.add('bg-cover', 'bg-center');
+      composerAvatar.style.backgroundImage = `url(${me.avatar})`;
+    } else {
+      composerAvatar.classList.add(...me.grad.split(' '));
+      composerAvatar.textContent = me.initial;
+    }
+    document.getElementById('composerPrompt').textContent = `Compartilhe um momento especial, ${me.name.split(' ')[0]}...`;
+  } else {
+    composerAvatar.classList.add('bg-slate-200', 'text-slate-500');
+    composerAvatar.innerHTML = iconSize(ICONS.userCircle, 'w-5 h-5');
+  }
+  document.getElementById('composerBdayBtn').innerHTML = iconSize(ICONS.gift, 'w-4 h-4') + ' Conte sobre seu bday';
+
+  // ----- Posts estilo LinkedIn: aniversários, bdays em grupo, presentes recebidos e
+  // publicações criadas pelo próprio usuário no compositor do topo -----
+  const HEART_FILLED = `<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 inline-block align-middle"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>`;
+
+  // Estado das curtidas/comentários/publicações — guardado no navegador (sem backend,
+  // as interações ficam só neste dispositivo, mas são reais e persistem entre visitas).
+  const FEED_LIKES_KEY = 'bdayfm_feed_likes';
+  const FEED_COMMENTS_KEY = 'bdayfm_feed_comments';
+  const FEED_POSTS_KEY = 'bdayfm_feed_custom_posts';
+  function getFeedLikes() { try { return JSON.parse(localStorage.getItem(FEED_LIKES_KEY) || '{}'); } catch (e) { return {}; } }
+  function saveFeedLikes(v) { try { localStorage.setItem(FEED_LIKES_KEY, JSON.stringify(v)); } catch (e) {} }
+  function getFeedComments() { try { return JSON.parse(localStorage.getItem(FEED_COMMENTS_KEY) || '{}'); } catch (e) { return {}; } }
+  function saveFeedComments(v) { try { localStorage.setItem(FEED_COMMENTS_KEY, JSON.stringify(v)); } catch (e) {} }
+  function getFeedCustomPosts() { try { return JSON.parse(localStorage.getItem(FEED_POSTS_KEY) || '[]'); } catch (e) { return []; } }
+  function saveFeedCustomPosts(v) { try { localStorage.setItem(FEED_POSTS_KEY, JSON.stringify(v)); } catch (e) {} }
+
+  function postImageHTML(u, gg) {
+    if (gg.image) return `<div class="aspect-[16/9] bg-cover bg-center" style="background-image:url(${gg.image})"></div>`;
+    return `<div class="aspect-[16/9] flex items-center justify-center ${u.grad}">${iconSize(ICONS.gift, 'w-10 h-10 text-white/90')}</div>`;
+  }
+
+  // Cartões de anexo do compositor: quando a pessoa opta por compartilhar o próprio
+  // BDAY ou Recap em vez de (ou junto com) uma legenda, em vez de uma foto qualquer.
+  function bdayAttachHTML(d) {
+    const pct = Math.min(100, Math.round((d.current / d.target) * 100));
+    const imagePanel = d.image
+      ? `<div class="aspect-[4/3] sm:aspect-auto sm:h-full min-h-[110px] bg-cover bg-center" style="background-image:url(${d.image})"></div>`
+      : `<div class="aspect-[4/3] sm:aspect-auto sm:h-full min-h-[110px] flex items-center justify-center" style="background:linear-gradient(135deg,#7C3AED,#EC4899)">${iconSize(ICONS.gift, 'w-8 h-8 text-white/70')}</div>`;
+    return `
+    <a href="perfil.html?user=${d.slug}" class="block px-4 sm:px-5">
+      <div class="rounded-2xl border border-slate-100 overflow-hidden grid sm:grid-cols-[minmax(0,130px)_1fr]">
+        ${imagePanel}
+        <div class="p-3.5 min-w-0">
+          <div class="flex items-center justify-between gap-2">
+            <h4 class="font-bold text-sm text-slate-800 truncate flex items-center gap-1.5">${iconSize(ICONS.gift, 'w-3.5 h-3.5 text-pink-600 shrink-0')} <span class="truncate">${d.title}</span></h4>
+            <span class="text-xs font-extrabold text-pink-600 shrink-0">${pct}%</span>
+          </div>
+          <div class="w-full h-2.5 rounded-full bg-pink-100 overflow-hidden mt-2"><div class="h-full bg-pink-500 rounded-full" style="width:${pct}%"></div></div>
+          <div class="text-xs text-slate-500 mt-2">R$ ${d.current} de R$ ${d.target}</div>
+          <span class="btn-primary inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs mt-3">Ver e contribuir</span>
+        </div>
+      </div>
+    </a>`;
+  }
+  function recapAttachHTML(d) {
+    return `
+    <a href="recap.html?user=${d.slug}" class="block px-4 sm:px-5">
+      <div class="rounded-xl border border-purple-100 bg-purple-50/60 p-3">
+        <div class="text-xs font-bold text-purple-700">Meu Recap ${d.year}</div>
+        <div class="grid grid-cols-3 gap-2 mt-2 text-center">
+          <div><div class="text-sm font-extrabold text-purple-700">R$ ${d.totalReceived}</div><div class="text-[10px] text-slate-500">recebido</div></div>
+          <div><div class="text-sm font-extrabold text-purple-700">${d.giftsReceived}</div><div class="text-[10px] text-slate-500">presentes</div></div>
+          <div><div class="text-sm font-extrabold text-purple-700">${d.friendsParticipated}</div><div class="text-[10px] text-slate-500">amigos</div></div>
+        </div>
+        <div class="text-xs text-purple-600 font-semibold mt-2">Ver recap completo →</div>
+      </div>
+    </a>`;
+  }
+
+  // Comentários "semente" para os posts de demonstração (Marina, Thainá etc.): sem eles,
+  // o card mostrava um número de comentários que não existia de fato — abrir o modal dava
+  // "nenhum comentário ainda" mesmo com a contagem em, digamos, 11. Gerados de forma
+  // determinística (mesmo post = sempre os mesmos comentários), usando outros usuários
+  // de demonstração como autores, para o número exibido bater com o que aparece na lista.
+  const SEED_COMMENT_TEXTS = [
+    'Parabéns! Que venham muitas alegrias.',
+    'Já mandei meu presente, bora celebrar!',
+    'Muitas felicidades, sempre!',
+    'Adorei ver isso por aqui, parabéns!',
+    'Contando os dias pra participar dessa comemoração.',
+    'Você merece o melhor, parabéns!',
+  ];
+  function getSeedComments(postId, authorSlug) {
+    const others = all.filter(u2 => u2.slug !== authorSlug);
+    if (others.length === 0) return [];
+    const h = Math.abs(hashCode(postId));
+    const count = 1 + (h % 4); // 1 a 4 comentários, sempre os mesmos para o mesmo post
+    const comments = [];
+    for (let i = 0; i < count; i++) {
+      const commenter = others[(h + i * 7) % others.length];
+      const text = SEED_COMMENT_TEXTS[(h + i * 3) % SEED_COMMENT_TEXTS.length];
+      comments.push({ author: commenter.name, initial: commenter.initial, grad: commenter.grad, text, when: 'há algumas horas' });
+    }
+    return comments;
+  }
+
+  function buildPost(postId, u, mode, extra) {
+    extra = extra || {};
+    // Posts publicados pela própria pessoa começam sem nenhuma curtida "de brinde" —
+    // só conta curtida de verdade. Só os posts de demonstração (Marina, Thainá etc.)
+    // usam a base fictícia, pra simular um feed com histórico.
+    const baseLikes = extra.baseLikes != null ? extra.baseLikes : (12 + u.giftsCount * 6 + (u.isToday ? 26 : 0));
+    const liked = !!getFeedLikes()[postId];
+    const likeCount = baseLikes + (liked ? 1 : 0);
+    const seedCommentsCount = mode === 'custom' ? 0 : getSeedComments(postId, u.slug).length;
+    const commentCount = seedCommentsCount + (getFeedComments()[postId] || []).length;
+    let caption, when, imageHTML = '';
+    if (mode === 'custom') {
+      caption = extra.caption;
+      when = extra.when;
+      if (extra.image) imageHTML = `<div class="aspect-[16/9] bg-cover bg-center" style="background-image:url(${extra.image})"></div>`;
+      else if (extra.attachType === 'bday' && extra.attachData) imageHTML = bdayAttachHTML(extra.attachData);
+      else if (extra.attachType === 'recap' && extra.attachData) imageHTML = recapAttachHTML(extra.attachData);
+    } else if (mode === 'today') {
+      caption = `Hoje é o meu aniversário! Quem quiser participar da celebração, já sabe onde clicar.`;
+      when = 'há poucas horas';
+    } else if (mode === 'bday') {
+      const gg = u.groupGoal;
+      const pct = Math.min(100, Math.round((gg.current / gg.target) * 100));
+      caption = `Criei um BDAY para celebrar: "${gg.title.replace('Bday: ', '')}". Já estamos em ${pct}% da meta — quem quiser participar com um presente, fico muito feliz.`;
+      when = 'BDAY ativo';
+      imageHTML = postImageHTML(u, gg);
+    } else if (mode === 'gift') {
+      const g = u.gifts[0];
+      caption = `Recebi um presente de ${g.who}: ${g.item}${g.msg ? ` — "${g.msg}"` : ''}.`;
+      when = g.when;
+    } else {
+      caption = `${u.status}. Já dá pra ir se programando para o presente!`;
+      when = `faltam ${u.daysLabel}`;
+    }
+    const avatarHTML = u.avatar
+      ? `<div class="w-11 h-11 rounded-full bg-cover bg-center border border-black/5" style="background-image:url(${u.avatar})"></div>`
+      : `<div class="w-11 h-11 rounded-full ${u.grad} flex items-center justify-center text-white font-bold">${u.initial}</div>`;
+    return `
+    <article class="bg-white border border-slate-200 rounded-lg p-4 sm:p-5" data-post-id="${postId}" data-post-slug="${u.slug}" data-post-mode="${mode}">
+      <div class="flex items-start gap-2.5">
+        <a href="perfil.html?user=${u.slug}" class="shrink-0">
+          ${avatarHTML}
+        </a>
+        <div class="min-w-0 flex-1">
+          <a href="perfil.html?user=${u.slug}" class="font-semibold text-sm text-slate-800 hover:underline">${u.name}</a>
+          <div class="text-xs text-slate-400 truncate">@${u.handle} · ${when}</div>
+        </div>
+        <button data-demo-action="Opções da publicação — em breve." class="text-slate-400 hover:bg-slate-100 rounded-full p-1.5 -mr-1.5 shrink-0">${ICONS.moreHorizontal}</button>
+      </div>
+      <div class="mt-2.5 text-sm text-slate-700 leading-relaxed">${caption}</div>
+      ${imageHTML ? `<div class="mt-3 -mx-4 sm:-mx-5 overflow-hidden">${imageHTML}</div>` : ''}
+      <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+        <div class="flex items-center gap-1.5"><span class="w-4 h-4 rounded-full bg-pink-500 text-white flex items-center justify-center">${iconSize(ICONS.heart, 'w-2.5 h-2.5')}</span> <span data-like-count>${likeCount}</span></div>
+        <button type="button" data-comment-btn class="hover:underline"><span data-comment-count>${commentCount}</span> comentários</button>
+      </div>
+      <div class="mt-1 pt-1 border-t border-slate-100 grid grid-cols-4 gap-1">
+        <button data-like-btn data-requires-login aria-label="Curtir" class="flex items-center justify-center gap-1.5 py-2 rounded-lg hover:bg-slate-50 text-xs font-semibold ${liked ? 'text-pink-600' : 'text-slate-600'}">
+          <span data-like-icon>${liked ? HEART_FILLED : iconSize(ICONS.heart, 'w-4 h-4')}</span> <span class="hidden sm:inline">Curtir</span>
+        </button>
+        <button data-comment-btn data-requires-login aria-label="Comentar" class="flex items-center justify-center gap-1.5 py-2 rounded-lg hover:bg-slate-50 text-slate-600 text-xs font-semibold">${iconSize(ICONS.message, 'w-4 h-4')} <span class="hidden sm:inline">Comentar</span></button>
+        <button data-share-btn aria-label="Compartilhar" class="flex items-center justify-center gap-1.5 py-2 rounded-lg hover:bg-slate-50 text-slate-600 text-xs font-semibold">${iconSize(ICONS.share, 'w-4 h-4')} <span class="hidden sm:inline">Compartilhar</span></button>
+        <button data-gift-btn aria-label="Presentear" class="flex items-center justify-center gap-1.5 py-2 rounded-lg hover:bg-purple-50 text-purple-600 text-xs font-semibold">${iconSize(ICONS.gift, 'w-4 h-4')} <span class="hidden sm:inline">Presentear</span></button>
+      </div>
+
+      <!-- Comentários direto no post — sem caixa externa, dá pra ver e escrever aqui mesmo -->
+      <div data-comments-panel class="hidden mt-3 pt-3 border-t border-slate-100">
+        <div data-comments-list class="space-y-2 mb-3"></div>
+        <div class="flex items-center gap-2">
+          <input type="text" data-comment-inline-input maxlength="200" placeholder="Escreva um comentário..." class="flex-1 border border-gray-200 rounded-full px-3.5 py-2 text-xs outline-none focus:border-purple-400">
+          <button type="button" data-comment-inline-send class="text-xs font-semibold text-purple-700 hover:underline shrink-0">Enviar</button>
+        </div>
+      </div>
+    </article>`;
+  }
+
+  function renderFeed() {
+    const posts = [];
+    getFeedCustomPosts().forEach(p => posts.push({ postId: p.id, u: { name: p.authorName, slug: p.authorSlug, handle: p.authorSlug, initial: p.authorInitial, grad: p.authorGrad, avatar: p.authorAvatar || null, giftsCount: 0, isToday: false }, mode: 'custom', extra: { caption: p.caption, image: p.image, when: 'agora mesmo', baseLikes: 0, attachType: p.attachType || null, attachData: p.attachData || null } }));
+    all.filter(u => u.isToday).forEach(u => posts.push({ postId: `today-${u.slug}`, u, mode: 'today' }));
+    all.filter(u => u.groupGoal).forEach(u => posts.push({ postId: `bday-${u.slug}`, u, mode: 'bday' }));
+    all.filter(u => u.gifts && u.gifts.length).forEach(u => posts.push({ postId: `gift-${u.slug}`, u, mode: 'gift' }));
+    all.filter(u => !u.isToday && !u.groupGoal && u.inBirthdayMonth).forEach(u => posts.push({ postId: `upcoming-${u.slug}`, u, mode: 'upcoming' }));
+
+    document.getElementById('postsList').innerHTML = posts.map(p => buildPost(p.postId, p.u, p.mode, p.extra)).join('') || `<p class="text-slate-500 text-sm text-center py-6">Nenhuma novidade por aqui ainda.</p>`;
+  }
+  renderFeed();
+
+  // ----- Curtir: alterna estado por post, guardado no navegador -----
+  document.getElementById('postsList').addEventListener('click', (e) => {
+    const likeBtn = e.target.closest('[data-like-btn]');
+    if (likeBtn) {
+      if (typeof isLoggedInFeed === 'function' && !isLoggedInFeed()) return; // data-requires-login já cuida do redirecionamento
+      const article = likeBtn.closest('[data-post-id]');
+      const postId = article.getAttribute('data-post-id');
+      const likes = getFeedLikes();
+      const countEl = article.querySelector('[data-like-count]');
+      const iconEl = article.querySelector('[data-like-icon]');
+      const nowLiked = !likes[postId];
+      if (nowLiked) { likes[postId] = true; } else { delete likes[postId]; }
+      saveFeedLikes(likes);
+      let count = parseInt(countEl.textContent, 10) || 0;
+      count += nowLiked ? 1 : -1;
+      countEl.textContent = Math.max(0, count);
+      iconEl.innerHTML = nowLiked ? HEART_FILLED : iconSize(ICONS.heart, 'w-4 h-4');
+      likeBtn.classList.toggle('text-pink-600', nowLiked);
+      likeBtn.classList.toggle('text-slate-600', !nowLiked);
+      return;
+    }
+    const commentBtn = e.target.closest('[data-comment-btn]');
+    if (commentBtn) {
+      const article = commentBtn.closest('[data-post-id]');
+      toggleFeedCommentsPanel(article);
+      return;
+    }
+    const inlineSend = e.target.closest('[data-comment-inline-send]');
+    if (inlineSend) {
+      const article = inlineSend.closest('[data-post-id]');
+      submitInlineComment(article);
+      return;
+    }
+    const shareBtn = e.target.closest('[data-share-btn]');
+    if (shareBtn) {
+      const article = shareBtn.closest('[data-post-id]');
+      openFeedShare(article.getAttribute('data-post-slug'));
+      return;
+    }
+    const giftBtn = e.target.closest('[data-gift-btn]');
+    if (giftBtn) {
+      if (!isLoggedInFeed()) { goToLoginFromHereFeed(); return; }
+      const article = giftBtn.closest('[data-post-id]');
+      openFeedGift(article.getAttribute('data-post-slug'));
+      return;
+    }
+  });
+  // Enter no campo de comentário inline também envia (sem precisar clicar em "Enviar")
+  document.getElementById('postsList').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.matches('[data-comment-inline-input]')) {
+      e.preventDefault();
+      submitInlineComment(e.target.closest('[data-post-id]'));
+    }
+  });
+
+  // ----- Comentar direto no post: sem modal, expande um painel dentro do próprio card
+  // com a lista de comentários (semente + reais) e um campo pra escrever ali mesmo. -----
+  function renderInlineComments(article) {
+    const postId = article.getAttribute('data-post-id');
+    const authorSlug = article.getAttribute('data-post-slug');
+    const mode = article.getAttribute('data-post-mode');
+    const seedComments = mode === 'custom' ? [] : getSeedComments(postId, authorSlug);
+    const realComments = getFeedComments()[postId] || [];
+    const comments = [...seedComments, ...realComments];
+    const listEl = article.querySelector('[data-comments-list]');
+    listEl.innerHTML = comments.length ? comments.map(c => {
+      const commentAvatarHTML = c.avatar
+        ? `<div class="w-7 h-7 rounded-full bg-cover bg-center border border-black/5 shrink-0" style="background-image:url(${c.avatar})"></div>`
+        : `<div class="w-7 h-7 rounded-full ${c.grad} flex items-center justify-center text-white text-[10px] font-bold shrink-0">${c.initial}</div>`;
+      return `
+      <div class="flex items-start gap-2">
+        ${commentAvatarHTML}
+        <div class="min-w-0 bg-slate-50 rounded-xl px-3 py-1.5 flex-1">
+          <div class="text-xs"><span class="font-semibold">${c.author}</span> <span class="text-slate-600">${c.text}</span></div>
+          <div class="text-[10px] text-slate-400 mt-0.5">${c.when}</div>
+        </div>
+      </div>`;
+    }).join('') : `<p class="text-xs text-slate-400 text-center py-2">Nenhum comentário ainda — seja o primeiro!</p>`;
+  }
+  function toggleFeedCommentsPanel(article) {
+    const panel = article.querySelector('[data-comments-panel]');
+    if (panel.classList.contains('hidden')) {
+      renderInlineComments(article);
+      panel.classList.remove('hidden');
+      const input = panel.querySelector('[data-comment-inline-input]');
+      if (input) input.focus();
+    } else {
+      panel.classList.add('hidden');
+    }
+  }
+  function submitInlineComment(article) {
+    if (!article) return;
+    if (!isLoggedInFeed()) { goToLoginFromHereFeed(); return; }
+    const input = article.querySelector('[data-comment-inline-input]');
+    const text = bdaySanitize(input.value);
+    if (!text) return;
+    const postId = article.getAttribute('data-post-id');
+    const session = authGetSession();
+    const meUser = session && typeof findAnyUser === 'function' ? findAnyUser(session.slug) : null;
+    const author = meUser ? meUser.name : 'Você';
+    const initial = meUser ? meUser.initial : 'V';
+    const grad = meUser ? meUser.grad : 'bg-purple-500';
+    const avatar = meUser ? (meUser.avatar || (session && session.avatarDataUrl) || null) : null;
+    const all_ = getFeedComments();
+    all_[postId] = all_[postId] || [];
+    all_[postId].push({ author, initial, grad, avatar, text, when: 'agora mesmo' });
+    saveFeedComments(all_);
+    input.value = '';
+    renderInlineComments(article);
+    const countEl = article.querySelector('[data-comment-count]');
+    countEl.textContent = (parseInt(countEl.textContent, 10) || 0) + 1;
+    showToast('Comentário publicado! (demo)');
+  }
+
+  // ----- Compartilhar: Instagram, Facebook, TikTok e LinkedIn -----
+  let activeSharePostSlug = null;
+  function openFeedShare(slug) {
+    activeSharePostSlug = slug;
+    document.getElementById('feedShareLink').textContent = `bday.fm/${slug}`;
+    document.getElementById('feedShareModal').classList.add('open');
+  }
+  document.querySelectorAll('[data-feed-share-network]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const network = btn.getAttribute('data-feed-share-network');
+      const url = encodeURIComponent(`https://bday.fm/perfil.html?user=${activeSharePostSlug}`);
+      if (network === 'facebook') {
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'noopener,noreferrer,width=600,height=600');
+        return;
+      }
+      if (network === 'linkedin') {
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank', 'noopener,noreferrer,width=600,height=600');
+        return;
+      }
+      // Instagram e TikTok não têm um endereço de compartilhamento direto por link — no
+      // celular, tentamos abrir o menu nativo de compartilhar; sem suporte, copiamos o
+      // link e avisamos para colar no app.
+      if (navigator.share) {
+        navigator.share({ title: 'bday.fm', url: `https://bday.fm/perfil.html?user=${activeSharePostSlug}` }).catch(() => {});
+        return;
+      }
+      feedCopyToClipboard(`https://bday.fm/perfil.html?user=${activeSharePostSlug}`).then(() => {
+        showToast(`Link copiado! Cole no ${network === 'instagram' ? 'Instagram' : 'TikTok'} para compartilhar.`);
+      });
+    });
+  });
+  function feedCopyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try { document.execCommand('copy'); } catch (e) { /* silencioso — melhor esforço */ }
+    document.body.removeChild(textarea);
+    return Promise.resolve();
+  }
+
+  // ----- Presentear direto pelo post: abre a vitrine de presentes e, se a pessoa tiver
+  // um BDAY ativo, o valor entra direto na caixa dele (mesma lógica de "Contribuir para
+  // o bday" do perfil, só que sem precisar sair do feed). -----
+  const FEED_GIFT_ICONS = { 'Biscoito da Sorte': ICONS.cookie, 'Balão de Festa': ICONS.balloon, 'Coroa de Aniversariante': ICONS.crown, 'Bolo Surpresa 3 Andares': ICONS.cake };
+  document.querySelectorAll('.feed-gift-btn').forEach(btn => {
+    btn.querySelector('div').innerHTML = iconSize(FEED_GIFT_ICONS[btn.getAttribute('data-feed-gift')], 'w-5 h-5');
+  });
+
+  let activeGiftSlug = null;
+  let pendingFeedGift = null;
+  const confirmFeedGiftBtn = document.getElementById('confirmFeedGiftBtn');
+  function resetFeedGiftSelection() {
+    pendingFeedGift = null;
+    document.querySelectorAll('.feed-gift-btn').forEach(b => {
+      b.classList.remove('border-pink-500', 'bg-pink-50');
+      b.classList.add('border-gray-200');
+    });
+    confirmFeedGiftBtn.disabled = true;
+    confirmFeedGiftBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    confirmFeedGiftBtn.textContent = 'Escolha um presente';
+  }
+  function openFeedGift(slug) {
+    activeGiftSlug = slug;
+    resetFeedGiftSelection();
+    const target = typeof findAnyUser === 'function' ? findAnyUser(slug) : null;
+    const targetFirstName = target ? target.name.split(' ')[0] : 'essa pessoa';
+    document.getElementById('feedGiftSubtitle').textContent = (target && target.groupGoal)
+      ? `Escolha um presente para enviar direto para o BDAY de ${targetFirstName}.`
+      : `${targetFirstName} ainda não tem um BDAY ativo — o presente vai ser só um carinho, sem entrar em nenhuma caixa.`;
+    document.getElementById('feedGiftModal').classList.add('open');
+  }
+  document.querySelectorAll('.feed-gift-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.feed-gift-btn').forEach(b => {
+        b.classList.remove('border-pink-500', 'bg-pink-50');
+        b.classList.add('border-gray-200');
+      });
+      btn.classList.remove('border-gray-200');
+      btn.classList.add('border-pink-500', 'bg-pink-50');
+      pendingFeedGift = { name: btn.getAttribute('data-feed-gift'), price: parseInt(btn.getAttribute('data-feed-gift-price'), 10) };
+      confirmFeedGiftBtn.disabled = false;
+      confirmFeedGiftBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      confirmFeedGiftBtn.textContent = `Enviar ${pendingFeedGift.name} — R$ ${pendingFeedGift.price}`;
+    });
+  });
+  confirmFeedGiftBtn.addEventListener('click', () => {
+    if (!pendingFeedGift || !activeGiftSlug) return;
+    const target = typeof findAnyUser === 'function' ? findAnyUser(activeGiftSlug) : null;
+    const targetFirstName = target ? target.name.split(' ')[0] : 'essa pessoa';
+    if (target && target.groupGoal) {
+      const gg = target.groupGoal;
+      const session = authGetSession();
+      const meUser = session && typeof findAnyUser === 'function' ? findAnyUser(session.slug) : null;
+      gg.current = (gg.current || 0) + pendingFeedGift.price;
+      gg.contributors = gg.contributors || [];
+      gg.contributors.push({ initial: meUser ? meUser.initial : 'V', grad: meUser ? meUser.grad : 'bg-purple-500', amount: pendingFeedGift.price });
+      if (typeof getCustomUsers === 'function' && getCustomUsers()[target.slug] && typeof saveCustomUser === 'function') {
+        saveCustomUser({ ...target });
+      }
+      showToast(`Você enviou ${pendingFeedGift.name} para o BDAY de ${targetFirstName}! (demo)`);
+      renderFeed();
+    } else {
+      showToast(`Presente enviado para ${targetFirstName}! (demo — sem BDAY ativo no momento para contribuir.)`);
+    }
+    document.getElementById('feedGiftModal').classList.remove('open');
+    resetFeedGiftSelection();
+  });
+
+  // ----- Compositor: publicar um novo momento no topo do feed -----
+  let pendingComposerImage = null;
+  let pendingAttachType = null; // null | 'bday' | 'recap'
+  let pendingAttachData = null;
+  function isLoggedInFeed() { return typeof authGetSession === 'function' && !!authGetSession(); }
+  document.getElementById('composerPrompt').removeAttribute('data-demo-action');
+  document.getElementById('composerPrompt').setAttribute('data-open-modal', 'feedComposerModal');
+  document.getElementById('feedComposerPhotoIcon').innerHTML = iconSize(ICONS.image, 'w-4 h-4');
+  document.getElementById('feedAttachBdayIcon').innerHTML = iconSize(ICONS.gift, 'w-4 h-4');
+  document.getElementById('feedAttachRecapIcon').innerHTML = iconSize(ICONS.sparkles, 'w-4 h-4');
+  const feedComposerText = document.getElementById('feedComposerText');
+  const feedComposerCount = document.getElementById('feedComposerCount');
+  feedComposerText.addEventListener('input', () => { feedComposerCount.textContent = feedComposerText.value.length; });
+
+  // Ao abrir o compositor, atualiza se dá pra anexar o BDAY (só existe se a pessoa já
+  // criou um) e o Recap (sempre disponível, mesmo que ainda zerado).
+  const feedAttachBdayBtn = document.getElementById('feedAttachBdayBtn');
+  const feedAttachRecapBtn = document.getElementById('feedAttachRecapBtn');
+  const feedAttachPreview = document.getElementById('feedAttachPreview');
+  function clearFeedAttachSelection() {
+    pendingAttachType = null;
+    pendingAttachData = null;
+    [feedAttachBdayBtn, feedAttachRecapBtn].forEach(b => {
+      b.classList.remove('border-purple-500', 'bg-purple-50');
+      b.classList.add('border-gray-200');
+    });
+    feedAttachPreview.classList.add('hidden');
+    feedAttachPreview.innerHTML = '';
+  }
+  function refreshFeedAttachButtons() {
+    clearFeedAttachSelection();
+    const session = authGetSession();
+    const meUser = session && typeof findAnyUser === 'function' ? findAnyUser(session.slug) : null;
+    const hasGoal = !!(meUser && meUser.groupGoal);
+    feedAttachBdayBtn.dataset.disabled = hasGoal ? '' : 'true';
+    feedAttachBdayBtn.classList.toggle('opacity-40', !hasGoal);
+    feedAttachBdayBtn.classList.toggle('cursor-not-allowed', !hasGoal);
+    document.getElementById('feedAttachBdayHint').textContent = hasGoal ? meUser.groupGoal.title : 'Crie um BDAY primeiro';
+    document.getElementById('feedAttachRecapHint').textContent = meUser ? `Ano ${(meUser.recap && meUser.recap.year) || new Date().getFullYear()}` : '';
+  }
+  function renderFeedAttachPreview() {
+    if (pendingAttachType === 'bday' && pendingAttachData) {
+      feedAttachPreview.innerHTML = bdayAttachHTML(pendingAttachData).replace('block px-4 sm:px-5', 'block');
+      feedAttachPreview.classList.remove('hidden');
+    } else if (pendingAttachType === 'recap' && pendingAttachData) {
+      feedAttachPreview.innerHTML = recapAttachHTML(pendingAttachData).replace('block px-4 sm:px-5', 'block');
+      feedAttachPreview.classList.remove('hidden');
+    } else {
+      feedAttachPreview.classList.add('hidden');
+      feedAttachPreview.innerHTML = '';
+    }
+  }
+  feedAttachBdayBtn.addEventListener('click', () => {
+    if (feedAttachBdayBtn.dataset.disabled === 'true') { showToast('Crie seu BDAY no perfil antes de compartilhar (demo).'); return; }
+    const session = authGetSession();
+    const meUser = session && typeof findAnyUser === 'function' ? findAnyUser(session.slug) : null;
+    if (!meUser || !meUser.groupGoal) return;
+    if (pendingAttachType === 'bday') { clearFeedAttachSelection(); return; }
+    clearFeedAttachSelection();
+    // Escolher um anexo substitui a foto — só um tipo de conteúdo rico por post, como em
+    // qualquer rede social.
+    pendingComposerImage = null;
+    document.getElementById('feedComposerImagePreview').classList.add('hidden');
+    document.getElementById('feedComposerRemoveImageBtn').classList.add('hidden');
+    document.getElementById('feedComposerImageInput').value = '';
+    pendingAttachType = 'bday';
+    pendingAttachData = { title: meUser.groupGoal.title, current: meUser.groupGoal.current || 0, target: meUser.groupGoal.target, image: meUser.groupGoal.image || null, slug: meUser.slug };
+    feedAttachBdayBtn.classList.remove('border-gray-200');
+    feedAttachBdayBtn.classList.add('border-purple-500', 'bg-purple-50');
+    renderFeedAttachPreview();
+  });
+  feedAttachRecapBtn.addEventListener('click', () => {
+    const session = authGetSession();
+    const meUser = session && typeof findAnyUser === 'function' ? findAnyUser(session.slug) : null;
+    if (!meUser) return;
+    if (pendingAttachType === 'recap') { clearFeedAttachSelection(); return; }
+    clearFeedAttachSelection();
+    pendingComposerImage = null;
+    document.getElementById('feedComposerImagePreview').classList.add('hidden');
+    document.getElementById('feedComposerRemoveImageBtn').classList.add('hidden');
+    document.getElementById('feedComposerImageInput').value = '';
+    const r = meUser.recap || { year: new Date().getFullYear(), totalReceived: 0, giftsReceived: 0, friendsParticipated: 0 };
+    pendingAttachType = 'recap';
+    pendingAttachData = { year: r.year, totalReceived: r.totalReceived, giftsReceived: r.giftsReceived, friendsParticipated: r.friendsParticipated, slug: meUser.slug };
+    feedAttachRecapBtn.classList.remove('border-gray-200');
+    feedAttachRecapBtn.classList.add('border-purple-500', 'bg-purple-50');
+    renderFeedAttachPreview();
+  });
+
+  document.getElementById('feedComposerImageInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (typeof validateImageFile === 'function' && !validateImageFile(file)) { e.target.value = ''; return; }
+    clearFeedAttachSelection();
+    const reader = new FileReader();
+    reader.onload = () => {
+      pendingComposerImage = reader.result;
+      document.getElementById('feedComposerImagePreviewImg').src = pendingComposerImage;
+      document.getElementById('feedComposerImagePreview').classList.remove('hidden');
+      document.getElementById('feedComposerRemoveImageBtn').classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('feedComposerRemoveImageBtn').addEventListener('click', () => {
+    pendingComposerImage = null;
+    document.getElementById('feedComposerImagePreview').classList.add('hidden');
+    document.getElementById('feedComposerRemoveImageBtn').classList.add('hidden');
+    document.getElementById('feedComposerImageInput').value = '';
+  });
+  document.getElementById('feedComposerSubmitBtn').addEventListener('click', () => {
+    let caption = bdaySanitize(feedComposerText.value);
+    if (!caption && !pendingAttachType) { showToast('Escreva algo para compartilhar.'); return; }
+    const session = authGetSession();
+    const meUser = session && typeof findAnyUser === 'function' ? findAnyUser(session.slug) : null;
+    if (!meUser) { showToast('Faça login para publicar.'); return; }
+    if (!caption) {
+      caption = pendingAttachType === 'bday'
+        ? `Compartilhando meu BDAY: ${pendingAttachData.title}!`
+        : `Compartilhando meu Recap ${pendingAttachData.year}!`;
+    }
+    const authorAvatar = meUser.avatar || (session && session.avatarDataUrl) || null;
+    const customPosts = getFeedCustomPosts();
+    customPosts.unshift({
+      id: `custom-${Date.now()}`,
+      authorSlug: meUser.slug, authorName: meUser.name, authorInitial: meUser.initial, authorGrad: meUser.grad, authorAvatar,
+      caption, image: pendingComposerImage, attachType: pendingAttachType, attachData: pendingAttachData,
+    });
+    saveFeedCustomPosts(customPosts);
+    feedComposerText.value = '';
+    feedComposerCount.textContent = '0';
+    pendingComposerImage = null;
+    document.getElementById('feedComposerImagePreview').classList.add('hidden');
+    document.getElementById('feedComposerRemoveImageBtn').classList.add('hidden');
+    clearFeedAttachSelection();
+    document.getElementById('feedComposerModal').classList.remove('open');
+    renderFeed();
+    showToast('Momento publicado! (demo)');
+  });
+
+  // Atualiza os botões de anexo toda vez que o compositor é aberto pelo campo de
+  // texto, pra refletir se há um BDAY ativo no momento.
+  document.getElementById('composerPrompt').addEventListener('click', refreshFeedAttachButtons);
+
+  // "Conte sobre seu bday": atalho único que já abre o compositor com o BDAY
+  // selecionado pra compartilhar. Quem ainda não criou um é levado pro perfil primeiro.
+  document.getElementById('composerBdayBtn').addEventListener('click', () => {
+    if (!isLoggedInFeed()) { goToLoginFromHereFeed(); return; }
+    const session = authGetSession();
+    const meUser = typeof findAnyUser === 'function' ? findAnyUser(session.slug) : null;
+    if (!meUser || !meUser.groupGoal) {
+      showToast('Crie seu BDAY no perfil antes de compartilhar (demo).');
+      window.location.href = `perfil.html?user=${session.slug}`;
+      return;
+    }
+    refreshFeedAttachButtons();
+    document.getElementById('feedComposerModal').classList.add('open');
+    feedAttachBdayBtn.click();
+  });
+  function goToLoginFromHereFeed() {
+    window.location.href = `login.html?next=${encodeURIComponent('feed.html')}`;
+  }
+</script>
+</body>
+</html>

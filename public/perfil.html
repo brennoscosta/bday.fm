@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="favicon.png">
+<title id="pageTitle">Perfil — bday.fm</title>
+<meta id="metaDesc" name="description" content="Participe dessa celebração com um presente digital — simples, rápido e cheio de significado.">
+<meta id="ogTitle" property="og:title" content="Perfil — bday.fm">
+<meta id="ogDesc" property="og:description" content="Alguém especial está celebrando um momento importante. Envie um presente digital e faça parte dessa história.">
+<meta property="og:image" content="og-image.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tailwind-prod.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-white">
+
+<div class="demo-banner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 inline-block align-[-2px] mr-1"><path d="M9 2v6L4 20a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2L15 8V2"/><path d="M9 2h6"/><line x1="8" y1="14" x2="16" y2="14"/></svg> <b>Protótipo de demonstração</b> — dados fictícios, nenhum pagamento ou ação aqui é real.</div>
+
+<!-- NAV -->
+<header class="sticky top-0 z-50 bg-white/85 backdrop-blur border-b border-gray-100">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2 font-extrabold text-lg">
+      <img src="logo-full.png" alt="bday.fm" class="h-8 w-auto object-contain">
+    </a>
+    <nav class="hidden md:flex items-center gap-8">
+      <a href="index.html#como-funciona" class="nav-link">Como Funciona</a>
+      <a href="explorar.html" class="nav-link active">Explorar Celebrações</a>
+      <a href="feed.html" class="nav-link">Feed</a>
+      <a href="presentes.html" class="nav-link">Presentes</a>
+      <a href="carteira.html" id="navCarteiraD" class="nav-link hidden">Carteira</a>
+    </nav>
+    <div class="hidden md:flex items-center gap-3">
+      <button id="headerCopyLinkBtn" data-copy-value="bday.fm/ana" class="btn-secondary px-4 py-2 rounded-xl text-sm inline-flex items-center gap-1.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg> Copiar link</button>
+      <div id="authArea" class="flex items-center gap-3">
+        <a href="cadastro.html" class="btn-primary px-4 py-2 rounded-xl text-sm">Criar conta grátis</a>
+      </div>
+    </div>
+    <button id="menuBtn" class="md:hidden p-2" aria-label="Abrir menu" aria-expanded="false">
+      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div id="mobileMenu" class="md:hidden">
+    <div class="px-5 pb-4 flex flex-col gap-3 border-t border-gray-100 pt-3">
+      <a href="index.html#como-funciona" class="nav-link">Como Funciona</a>
+      <a href="explorar.html" class="nav-link">Explorar Celebrações</a>
+      <a href="feed.html" class="nav-link">Feed</a>
+      <a href="presentes.html" class="nav-link">Presentes</a>
+      <a href="carteira.html" id="navCarteiraM" class="nav-link hidden">Carteira</a>
+      <div id="authAreaMobile" class="flex flex-col gap-3">
+        <a href="cadastro.html" class="btn-primary px-4 py-2 rounded-xl text-sm text-center">Criar conta grátis</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-5 sm:px-8 py-10">
+
+  <!-- Breadcrumb -->
+  <div class="flex items-center gap-2 text-sm text-slate-500 mb-6 reveal">
+    <a href="explorar.html" class="hover:text-purple-700 inline-flex items-center gap-1.5 font-medium">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Explorar Celebrações
+    </a>
+    <span class="text-slate-300">/</span>
+    <span id="pBreadcrumbName" class="font-semibold text-slate-700">Ana Beatriz</span>
+  </div>
+
+  <div class="grid lg:grid-cols-[300px_1fr] gap-6 items-start">
+
+    <!-- SIDEBAR -->
+    <aside class="space-y-6 lg:sticky lg:top-24">
+      <div class="card overflow-hidden reveal">
+        <div id="pCover" class="relative h-20 sm:h-24 grad-bg bg-cover bg-center">
+          <button data-open-modal="editProfileModal" title="Editar perfil" class="open-edit-profile absolute top-2.5 right-2.5 bg-black/30 hover:bg-black/50 text-white rounded-lg p-1.5 backdrop-blur-sm transition">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+        </div>
+        <div class="px-5 pb-5 flex flex-col items-center text-center">
+          <div class="relative shrink-0 -mt-12">
+            <div id="pAvatar" class="w-24 h-24 rounded-full border-4 border-white shadow-lg grad-bg flex items-center justify-center text-white font-extrabold text-2xl bg-cover bg-center">A</div>
+            <div id="pAccessory" class="hidden z-10" title=""></div>
+            <button data-open-modal="editProfileModal" title="Alterar foto" class="open-edit-profile absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-slate-500 hover:text-purple-600 transition">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </button>
+          </div>
+          <div class="mt-3 flex items-center gap-1.5 flex-wrap justify-center">
+            <h1 id="pName" class="text-lg font-extrabold leading-tight break-words">Ana Beatriz</h1>
+            <span id="pVerifiedSeal" class="hidden shrink-0" title="Perfil verificado — usuário premium"><svg viewBox="0 0 24 24" class="w-5 h-5"><path fill="#3B82F6" d="M12 1.6l2.5 1.9 3.1-.4 1.2 2.9 2.9 1.2-.4 3.1 1.9 2.5-1.9 2.5.4 3.1-2.9 1.2-1.2 2.9-3.1-.4-2.5 1.9-2.5-1.9-3.1.4-1.2-2.9-2.9-1.2.4-3.1L1.3 12l1.9-2.5-.4-3.1 2.9-1.2 1.2-2.9 3.1.4z"/><path fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M8.5 12.4l2.3 2.3 4.7-5"/></svg></span>
+            <span id="pBadge" class="hidden w-5 h-5 rounded-full bg-purple-50 text-purple-600 items-center justify-center shrink-0" title=""></span>
+          </div>
+          <div id="pHandle" class="text-slate-500 text-sm">@ana</div>
+          <div id="pSocials" class="flex items-center gap-2.5 mt-2 justify-center"></div>
+
+          <!-- Ações rápidas -->
+          <div class="grid grid-cols-3 gap-1.5 w-full mt-4">
+            <button data-open-modal="giftFlowModal" data-requires-login title="Presentear" class="flex flex-col items-center gap-1 py-1.5 rounded-xl group hover:bg-purple-50/70 transition">
+              <span class="w-9 h-9 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center transition group-hover:bg-purple-100">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect x="3" y="8" width="18" height="4"/><path d="M12 8v13"/><path d="M19 12v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8"/><path d="M16.5 8a2.5 2.5 0 0 0 0-5C14 3 12 8 12 8"/></svg>
+              </span>
+              <span class="text-[10.5px] font-semibold text-slate-500">Presentear</span>
+            </button>
+            <button data-open-modal="torpedoModal" title="Enviar Torpedo" class="flex flex-col items-center gap-1 py-1.5 rounded-xl group hover:bg-blue-50/70 transition">
+              <span class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center transition group-hover:bg-blue-100">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.38 8.38 0 0 1 12.5 3a8.5 8.5 0 0 1 8.5 8.5z"/></svg>
+              </span>
+              <span class="text-[10.5px] font-semibold text-slate-500">Torpedo</span>
+            </button>
+            <button data-open-modal="shareModal" title="Compartilhar" class="flex flex-col items-center gap-1 py-1.5 rounded-xl group hover:bg-slate-50 transition">
+              <span class="w-9 h-9 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center transition group-hover:bg-slate-200">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
+              </span>
+              <span class="text-[10.5px] font-semibold text-slate-500">Compartilhar</span>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-1.5 mt-4 w-full text-xs text-slate-500">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+            <span id="pLastActivity" class="truncate">Nenhuma atividade recente</span>
+          </div>
+        </div>
+
+        <!-- Abas locais da sidebar -->
+        <div class="border-t border-gray-100 px-5">
+          <div class="flex gap-5" data-tab-group="sidebar">
+            <button data-tab-btn="sobre" class="is-active py-3 text-xs font-semibold border-b-2 border-purple-600 text-purple-700">Sobre</button>
+            <button data-tab-btn="atividades" class="py-3 text-xs font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700">Atividades</button>
+          </div>
+        </div>
+        <script>
+          document.querySelectorAll('[data-tab-group="sidebar"] [data-tab-btn]').forEach(b=>{
+            b.addEventListener('click', ()=>{
+              document.querySelectorAll('[data-tab-group="sidebar"] [data-tab-btn]').forEach(x=>{
+                x.classList.remove('border-purple-600','text-purple-700');
+                x.classList.add('border-transparent','text-slate-500');
+              });
+              b.classList.add('border-purple-600','text-purple-700');
+              b.classList.remove('border-transparent','text-slate-500');
+            });
+          });
+        </script>
+        <div data-tab-panel="sobre" data-tab-of="sidebar" class="px-5 py-4">
+          <p id="pBioText" class="text-sm text-slate-600 leading-relaxed mb-3 hidden"></p>
+          <button id="pAddBioBtn" data-open-modal="editProfileModal" class="open-edit-profile hidden text-xs font-semibold text-purple-700 hover:underline mb-3">+ Adicionar uma descrição sobre você</button>
+          <div class="rounded-xl bg-purple-50 border border-purple-100 px-3.5 py-3">
+            <div class="flex items-center justify-between">
+              <div class="text-xs font-bold text-purple-800 flex items-center gap-1.5">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M17 5h2.5a2.5 2.5 0 0 1 0 5H17M7 5H4.5a2.5 2.5 0 0 0 0 5H7"/></svg>
+                Conquistas
+              </div>
+              <span id="pSidebarAchievementsCount" class="text-xs font-extrabold text-purple-700">0</span>
+            </div>
+            <div id="pSidebarAchievementsPreview" class="flex items-center gap-1.5 mt-2"></div>
+            <p id="pSidebarAchievementsEmpty" class="text-[11px] text-purple-700/70 mt-1.5 hidden">Nenhuma conquista ainda — continue celebrando para desbloquear emblemas e molduras.</p>
+          </div>
+        </div>
+        <div data-tab-panel="atividades" data-tab-of="sidebar" class="px-5 py-4 hidden">
+          <div id="pActivityTimeline"></div>
+        </div>
+      </div>
+
+      <!-- Loja de Personalização — em destaque -->
+      <div class="card p-5 reveal" style="background:linear-gradient(135deg,#FAF5FF,#FDF2F8);border:1px solid #F3E8FF">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl grad-bg text-white flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M20.4 14.5 16 10.1"/><path d="m22 2-1.5 1.5"/><path d="M15.5 6.5 4 18l-1 3 3-1L17.5 8.5"/><circle cx="12" cy="12" r="1"/></svg>
+          </div>
+          <div class="min-w-0">
+            <div class="font-extrabold text-sm leading-tight">Loja de Personalização</div>
+            <div class="text-xs text-slate-500 mt-0.5">Molduras, acessórios e emblemas para o seu perfil</div>
+          </div>
+        </div>
+        <a id="pLojaLink" href="loja.html?user=ana" class="mt-4 btn-primary rounded-xl px-4 py-2.5 text-sm font-bold w-full text-center block">Ir para a loja →</a>
+      </div>
+
+      <!-- Resumo -->
+      <div class="card p-5 reveal">
+        <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-3">Resumo</p>
+        <div class="space-y-3.5">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <div class="min-w-0">
+              <div class="text-xs text-slate-400">Próximo aniversário</div>
+              <div id="pDaysLabel" class="text-sm font-bold text-slate-800">3 dias</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="min-w-0">
+      <div class="flex flex-wrap items-start justify-between gap-3 reveal">
+        <h2 id="pMainTitle" class="text-2xl sm:text-3xl font-extrabold leading-tight">Faz 25 anos em 3 dias</h2>
+      </div>
+
+      <div class="mt-3 flex flex-wrap items-center gap-3 reveal">
+        <div id="pFriendsAvatars" class="flex -space-x-2"></div>
+        <span id="pFriendsText" class="text-sm text-slate-500">8 amigos já confirmados</span>
+        <button data-demo-action="Pedido de amizade enviado (demo)" class="btn-secondary rounded-xl px-4 py-2 text-xs inline-flex items-center gap-1.5 sm:ml-auto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          Adicionar amigo
+        </button>
+      </div>
+
+      <!-- CTA de presentear em destaque -->
+      <button data-open-modal="giftFlowModal" data-requires-login id="pMainGiftBtn" class="btn-primary w-full sm:w-auto rounded-xl px-6 py-3.5 mt-5 text-base inline-flex items-center justify-center gap-2 shadow-lg shadow-purple-200 reveal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect x="3" y="8" width="18" height="4"/><path d="M12 8v13"/><path d="M19 12v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8"/><path d="M16.5 8a2.5 2.5 0 0 0 0-5C14 3 12 8 12 8"/></svg>
+        <span id="pMainGiftBtnLabel">Presentear</span>
+      </button>
+
+      <!-- Stat cards -->
+      <div class="mt-6 grid sm:grid-cols-3 gap-4 reveal-stagger">
+        <div id="pMeterCard" class="card p-5 sm:col-span-2" style="background:linear-gradient(135deg,#FAF5FF,#FDF2F8); border-color:#F3E8FF;">
+          <div class="flex items-center justify-between">
+            <div class="w-10 h-10 rounded-xl bg-white text-purple-600 flex items-center justify-center shadow-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
+            <span id="pMeterPct" class="text-3xl font-extrabold grad-text">0%</span>
+          </div>
+          <div class="text-sm text-slate-600 font-bold mt-3">Presentômetro do mês</div>
+          <div class="w-full h-2.5 rounded-full bg-white overflow-hidden mt-2.5 shadow-inner">
+            <div id="pMeterBar" class="h-full grad-bg rounded-full transition-all" style="width:0%"></div>
+          </div>
+          <p id="pMeterText" class="text-xs text-slate-500 mt-2.5 leading-snug">R$ 0 de R$ 0 recebidos em presentes este mês.</p>
+        </div>
+        <button type="button" id="pFriendsStatCard" class="card p-5 text-left hover:border-pink-200 transition">
+          <div class="flex items-center justify-between">
+            <div class="w-9 h-9 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <span id="pFriendsStatValue" class="text-xl font-extrabold text-pink-700">0</span>
+          </div>
+          <div class="text-xs text-slate-500 font-semibold mt-2.5">Amigos confirmados</div>
+          <p class="text-[11px] text-slate-400 mt-2 leading-snug">Clique para ver quem já te presenteou.</p>
+        </button>
+      </div>
+
+      <!-- BDAY: celebração em destaque, sempre visível (não fica escondida em aba) -->
+      <div id="pGroupGoalCard" class="mt-6 grid sm:grid-cols-[minmax(0,220px)_1fr] gap-0 overflow-hidden card reveal hidden">
+        <div id="pGroupGoalImage" class="aspect-[4/5] sm:aspect-auto sm:h-full min-h-[180px] bg-cover bg-center relative flex items-center justify-center" style="background:linear-gradient(135deg,#7C3AED,#EC4899);">
+          <svg id="pGroupGoalImagePlaceholderIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-12 h-12 text-white/70"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+        </div>
+        <div class="p-6 flex flex-col justify-center min-w-0">
+          <div class="flex items-center justify-between gap-3 mb-1">
+            <h3 id="pGroupGoalTitle" class="font-bold flex items-center gap-2 min-w-0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-pink-600 shrink-0"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span id="pGroupGoalTitleText" class="truncate">Bday em grupo</span></h3>
+            <div class="flex items-center gap-3 shrink-0">
+              <button id="shareGroupGoalBtn" data-open-modal="groupGoalShareModal" title="Compartilhar bday" class="text-slate-400 hover:text-purple-600 transition">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
+              </button>
+              <button id="editGroupGoalBtn" data-open-modal="groupGoalFormModal" title="Personalizar bday" class="text-slate-400 hover:text-pink-600 transition">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <span id="pGroupGoalPct" class="text-sm font-extrabold text-pink-600">0%</span>
+            </div>
+          </div>
+          <p id="pGroupGoalDesc" class="text-xs text-slate-500 mb-3">Junte-se com outros amigos para um presente maior — sem limite de valor por pessoa.</p>
+          <div class="w-full h-3 rounded-full bg-pink-100 overflow-hidden">
+            <div id="pGroupGoalBar" class="h-full bg-pink-500 rounded-full transition-all" style="width:0%"></div>
+          </div>
+          <div class="flex items-center justify-between mt-3">
+            <div id="pGroupGoalText" class="text-sm text-slate-600"></div>
+            <div id="pGroupGoalAvatars" class="flex -space-x-2"></div>
+          </div>
+          <button data-open-modal="contributeModal" data-requires-login class="btn-primary w-full rounded-xl px-4 py-2.5 text-sm mt-4 inline-flex items-center justify-center gap-2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M12 5v14M5 12h14"/></svg>
+            Contribuir para o bday
+          </button>
+        </div>
+      </div>
+
+      <!-- Prompt para criar um bday, quando o perfil ainda não tem um -->
+      <div id="pGroupGoalEmptyCard" class="card p-6 mt-6 reveal hidden text-center">
+        <div class="w-12 h-12 rounded-2xl bg-pink-50 text-pink-500 flex items-center justify-center mx-auto mb-3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3 id="pGroupGoalEmptyTitle" class="font-bold mb-1">Crie o seu BDAY</h3>
+        <p class="text-sm text-slate-500 mb-4">Escolha o que você está celebrando e convide seus amigos a participar com presentes digitais.</p>
+        <button id="createGroupGoalBtn" data-open-modal="groupGoalFormModal" class="btn-primary rounded-xl px-5 py-2.5 text-sm inline-flex items-center gap-2 mx-auto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M12 5v14M5 12h14"/></svg>
+          Criar meu BDAY
+        </button>
+      </div>
+
+      <!-- Recap anual — destaque (só o dono vê o seu) -->
+      <a id="pRecapLink" href="recap.html?user=ana" class="card mt-6 p-6 reveal flex items-center justify-between gap-4 flex-wrap" style="background:linear-gradient(135deg,#7C3AED,#EC4899); text-decoration:none;">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 text-white">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg>
+          </div>
+          <div>
+            <div id="pRecapBannerTitle" class="font-extrabold text-lg text-white">Seu recap 2025 está pronto!</div>
+            <div class="text-sm mt-0.5" style="color:rgba(255,255,255,0.85)">Veja o resumo do ano e compartilhe nos Stories do Instagram.</div>
+          </div>
+        </div>
+        <span class="rounded-xl px-5 py-2.5 text-sm font-bold shrink-0 inline-flex items-center gap-2" style="background:#fff;color:#7C3AED;">
+          <span id="pRecapBannerBtnLabel">Ver meu recap</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <!-- Tabs -->
+      <div class="mt-8 flex gap-6 border-b border-gray-100 reveal overflow-x-auto" data-tab-group="profile">
+        <button data-tab-btn="geral" class="is-active pb-3 text-sm font-semibold border-b-2 border-purple-600 text-purple-700 whitespace-nowrap">Visão geral</button>
+        <button data-tab-btn="amigos" class="pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Amigos <span id="pFriendsTabCount"></span></button>
+        <button data-tab-btn="lembrancas" class="pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Lembranças</button>
+      </div>
+
+      <script>
+        // keep tab underline in sync (small enhancement over generic handler)
+        document.querySelectorAll('[data-tab-group="profile"] [data-tab-btn]').forEach(b=>{
+          b.addEventListener('click', ()=>{
+            document.querySelectorAll('[data-tab-group="profile"] [data-tab-btn]').forEach(x=>{
+              x.classList.remove('border-purple-600','text-purple-700');
+              x.classList.add('border-transparent','text-slate-500');
+            });
+            b.classList.add('border-purple-600','text-purple-700');
+            b.classList.remove('border-transparent','text-slate-500');
+          });
+        });
+      </script>
+
+      <div data-tab-panel="geral" data-tab-of="profile" class="mt-6">
+        <div class="card p-6 reveal">
+          <h2 class="font-bold text-lg mb-4 flex items-center gap-2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-purple-600"><rect x="3" y="8" width="18" height="4"/><path d="M12 8v13"/><path d="M19 12v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8"/><path d="M16.5 8a2.5 2.5 0 0 0 0-5C14 3 12 8 12 8"/></svg>
+            Presentes e Torpedos recebidos
+          </h2>
+          <div id="pGiftsList" class="space-y-4"></div>
+        </div>
+      </div>
+
+      <div data-tab-panel="amigos" data-tab-of="profile" class="mt-6 card p-6 hidden">
+        <div class="flex items-center justify-between gap-3 mb-1 flex-wrap">
+          <h3 id="pFriendsTabTitle" class="font-bold">8 amigos</h3>
+          <p class="text-xs text-slate-400">Demonstração — remover aqui não afeta dados reais.</p>
+        </div>
+        <div class="flex gap-2 mb-4 mt-3">
+          <button type="button" data-friends-filter="todos" id="pFriendsFilterTodos" class="is-active px-3 py-1.5 rounded-full text-xs font-semibold bg-purple-600 text-white">Todos</button>
+          <button type="button" data-friends-filter="presentearam" id="pFriendsFilterGifters" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200">Que me presentearam</button>
+        </div>
+        <div id="pFriendsFullList" class="grid sm:grid-cols-2 gap-3"></div>
+        <div id="pFriendsPagination" class="flex items-center justify-center gap-4 mt-4"></div>
+      </div>
+
+      <div data-tab-panel="lembrancas" data-tab-of="profile" class="mt-6 space-y-5 hidden">
+        <div class="grid sm:grid-cols-3 gap-4 reveal-stagger">
+          <div class="card p-5 text-center">
+            <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></div>
+            <div id="pStatMoments" class="text-2xl font-extrabold">0</div>
+            <div class="text-xs text-slate-500 font-semibold mt-1">Momentos criados</div>
+          </div>
+          <div class="card p-5 text-center">
+            <div class="w-10 h-10 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center mx-auto mb-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect x="3" y="8" width="18" height="4"/><path d="M12 8v13"/><path d="M19 12v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8"/><path d="M16.5 8a2.5 2.5 0 0 0 0-5C14 3 12 8 12 8"/></svg></div>
+            <div id="pStatGifts" class="text-2xl font-extrabold">0</div>
+            <div class="text-xs text-slate-500 font-semibold mt-1">Presentes recebidos</div>
+          </div>
+          <div class="card p-5 text-center">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M17 5h2.5a2.5 2.5 0 0 1 0 5H17M7 5H4.5a2.5 2.5 0 0 0 0 5H7"/></svg></div>
+            <div id="pStatAchievements" class="text-2xl font-extrabold">0</div>
+            <div class="text-xs text-slate-500 font-semibold mt-1">Conquistas</div>
+          </div>
+        </div>
+
+        <div class="card p-6">
+          <h3 class="font-bold mb-4 flex items-center gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-purple-600"><rect x="3" y="8" width="18" height="4"/><path d="M12 8v13"/><path d="M19 12v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8"/><path d="M16.5 8a2.5 2.5 0 0 0 0-5C14 3 12 8 12 8"/></svg> Coleção de presentes</h3>
+          <div id="pGiftCollection" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+        </div>
+
+        <div class="card p-6">
+          <h3 class="font-bold mb-4 flex items-center gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-amber-600"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M17 5h2.5a2.5 2.5 0 0 1 0 5H17M7 5H4.5a2.5 2.5 0 0 0 0 5H7"/></svg> Conquistas</h3>
+          <div id="pAchievementsList" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Botão flutuante: criar/editar o BDAY (celebração), com balão de texto sugestivo -->
+<div id="floatingGoalWrap" class="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2.5">
+  <span id="floatingGoalLabel" class="bg-white shadow-lg rounded-full pl-4 pr-4 py-2.5 text-sm font-bold text-purple-700 whitespace-nowrap hidden sm:inline-block">Criar meu BDAY</span>
+  <button id="floatingGoalBtn" data-open-modal="groupGoalFormModal" title="Criar bday" class="w-14 h-14 rounded-full bg-white shadow-xl shadow-purple-200 flex items-center justify-center transition hover:scale-105 p-3 shrink-0">
+    <img src="floating-btn-icon.png" alt="Criar bday" class="w-full h-full object-contain">
+  </button>
+</div>
+
+<!-- Gift flow modal (redirect suggestion) -->
+<div id="giftFlowModal" class="modal-backdrop">
+  <div class="modal-box text-center">
+    <div class="w-14 h-14 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-3">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7"><rect x="3" y="8" width="18" height="4"/><path d="M12 8v13"/><path d="M19 12v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8"/><path d="M16.5 8a2.5 2.5 0 0 0 0-5C14 3 12 8 12 8"/></svg>
+    </div>
+    <h3 id="pGiftModalTitle" class="font-extrabold text-xl">Escolher um presente</h3>
+    <p class="text-sm text-slate-600 mt-2">Veja o catálogo completo de presentes digitais — cada um é convertido em Pix para quem está celebrando.</p>
+    <a id="pCatalogLink" href="presentes.html" class="btn-primary inline-block rounded-xl px-6 py-3 mt-6 w-full">Ver catálogo de presentes</a>
+    <button data-close-modal class="btn-secondary rounded-xl px-6 py-3 mt-3 w-full">Cancelar</button>
+  </div>
+</div>
+
+<!-- Contribute to group goal modal -->
+<div id="contributeModal" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="flex items-center justify-between">
+      <h3 class="font-extrabold text-lg flex items-center gap-2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-pink-600"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Contribuir para o bday
+      </h3>
+      <button data-close-modal class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+    <p id="pContributeSubtitle" class="text-sm text-slate-500 mt-1">Escolha um presente para enviar — cada um ajuda a celebrar.</p>
+    <div id="contributeGiftOptions" class="grid grid-cols-2 gap-2.5 mt-4">
+      <button type="button" data-contribute-gift="Biscoito da Sorte" data-contribute-price="12" class="contribute-gift-btn border-2 border-gray-200 rounded-xl p-3 text-left hover:border-pink-400 transition">
+        <div class="w-9 h-9 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center mb-2"></div>
+        <div class="text-sm font-semibold">Biscoito da Sorte</div>
+        <div class="text-xs text-slate-400 mt-0.5">R$ 12</div>
+      </button>
+      <button type="button" data-contribute-gift="Balão de Festa" data-contribute-price="8" class="contribute-gift-btn border-2 border-gray-200 rounded-xl p-3 text-left hover:border-pink-400 transition">
+        <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-2"></div>
+        <div class="text-sm font-semibold">Balão de Festa</div>
+        <div class="text-xs text-slate-400 mt-0.5">R$ 8</div>
+      </button>
+      <button type="button" data-contribute-gift="Coroa de Aniversariante" data-contribute-price="25" class="contribute-gift-btn border-2 border-gray-200 rounded-xl p-3 text-left hover:border-pink-400 transition">
+        <div class="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-2"></div>
+        <div class="text-sm font-semibold">Coroa de Aniversariante</div>
+        <div class="text-xs text-slate-400 mt-0.5">R$ 25</div>
+      </button>
+      <button type="button" data-contribute-gift="Bolo Surpresa 3 Andares" data-contribute-price="32" class="contribute-gift-btn border-2 border-gray-200 rounded-xl p-3 text-left hover:border-pink-400 transition">
+        <div class="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-2"></div>
+        <div class="text-sm font-semibold">Bolo Surpresa 3 Andares</div>
+        <div class="text-xs text-slate-400 mt-0.5">R$ 32</div>
+      </button>
+    </div>
+    <a id="pContributeCatalogLink" href="presentes.html" class="text-xs text-purple-600 font-semibold hover:underline mt-3 inline-block">Ver catálogo completo de presentes</a>
+    <p class="text-xs text-slate-400 mt-3">Demonstração — nenhum pagamento real será processado.</p>
+    <button id="confirmContributeBtn" disabled class="btn-primary w-full rounded-xl px-6 py-3 mt-2 opacity-50 cursor-not-allowed" style="background:linear-gradient(90deg,#EC4899,#7C3AED)">Escolha um presente</button>
+  </div>
+</div>
+
+<!-- Create / edit group goal (bday) modal -->
+<div id="groupGoalFormModal" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="flex items-center justify-between">
+      <h3 class="font-extrabold text-lg flex items-center gap-2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-pink-600"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span id="groupGoalFormTitle">Personalizar bday</span>
+      </h3>
+      <button data-close-modal class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+    <p class="text-sm text-slate-500 mt-1">Escolha o que você está celebrando — seus amigos vão ver isso no seu perfil.</p>
+
+    <label class="block text-sm font-semibold mt-4 mb-1.5">O que você está celebrando?</label>
+    <div id="goalCategoryList" class="flex flex-wrap gap-1.5 mb-4">
+      <button type="button" data-goal-category="Aniversário" class="goal-category-btn border-2 border-gray-200 rounded-full py-1.5 px-3 text-xs font-semibold hover:border-pink-400">Aniversário</button>
+      <button type="button" data-goal-category="Casamento" class="goal-category-btn border-2 border-gray-200 rounded-full py-1.5 px-3 text-xs font-semibold hover:border-pink-400">Casamento</button>
+      <button type="button" data-goal-category="Chá de bebê" class="goal-category-btn border-2 border-gray-200 rounded-full py-1.5 px-3 text-xs font-semibold hover:border-pink-400">Chá de bebê</button>
+      <button type="button" data-goal-category="Chá revelação" class="goal-category-btn border-2 border-gray-200 rounded-full py-1.5 px-3 text-xs font-semibold hover:border-pink-400">Chá revelação</button>
+      <button type="button" data-goal-category="Formatura" class="goal-category-btn border-2 border-gray-200 rounded-full py-1.5 px-3 text-xs font-semibold hover:border-pink-400">Formatura</button>
+      <button type="button" data-goal-category="Nova casa" class="goal-category-btn border-2 border-gray-200 rounded-full py-1.5 px-3 text-xs font-semibold hover:border-pink-400">Nova casa</button>
+      <button type="button" data-goal-category="Viagem" class="goal-category-btn border-2 border-gray-200 rounded-full py-1.5 px-3 text-xs font-semibold hover:border-pink-400">Viagem</button>
+      <button type="button" data-goal-category="Intercâmbio" class="goal-category-btn border-2 border-gray-200 rounded-full py-1.5 px-3 text-xs font-semibold hover:border-pink-400">Intercâmbio</button>
+      <button type="button" data-goal-category="Conquista profissional" class="goal-category-btn border-2 border-gray-200 rounded-full py-1.5 px-3 text-xs font-semibold hover:border-pink-400">Conquista profissional</button>
+      <button type="button" data-goal-category="Empresa" class="goal-category-btn border-2 border-gray-200 rounded-full py-1.5 px-3 text-xs font-semibold hover:border-pink-400">Empresa</button>
+      <button type="button" data-goal-category="Outro momento especial" class="goal-category-btn border-2 border-gray-200 rounded-full py-1.5 px-3 text-xs font-semibold hover:border-pink-400">Outro momento especial</button>
+    </div>
+
+    <label class="block text-sm font-semibold mb-1">Título do seu BDAY</label>
+    <input id="groupGoalTitleInput" type="text" placeholder="Ex: Aniversário de 25 anos" maxlength="60" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400 mb-4">
+
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <div>
+        <label class="block text-sm font-semibold mb-1">Meta desejada (R$)</label>
+        <input id="groupGoalTargetInput" type="number" min="10" placeholder="Ex: 500" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400">
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1">Data da celebração</label>
+        <input id="groupGoalDateInput" type="date" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400">
+      </div>
+    </div>
+
+    <label class="block text-sm font-semibold mb-1">Conte sobre essa celebração</label>
+    <textarea id="groupGoalDescInput" rows="3" maxlength="280" placeholder="Explique para seus amigos por que esse momento é especial..." class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-pink-400 mb-4"></textarea>
+
+    <label class="block text-sm font-semibold mb-1">Imagem de capa do BDAY</label>
+    <div class="rounded-xl overflow-hidden border border-gray-100 mb-2 max-w-[200px] mx-auto">
+      <div id="groupGoalImagePreview" class="aspect-[4/5] bg-cover bg-center flex items-center justify-center text-xs text-slate-400 text-center px-3" style="background:linear-gradient(135deg,#FCE7F3,#F3E8FF);">Sem imagem</div>
+    </div>
+    <div class="flex gap-2 mb-1.5">
+      <label class="btn-secondary flex-1 rounded-xl px-4 py-2.5 text-sm text-center cursor-pointer">
+        Enviar imagem
+        <input id="groupGoalImageInput" type="file" accept="image/*" class="hidden">
+      </label>
+      <button id="removeGroupGoalImageBtn" type="button" class="btn-secondary rounded-xl px-4 py-2.5 text-sm">Remover</button>
+    </div>
+    <p class="text-xs text-slate-400 mb-4">Recomendado: 1080×1350px (proporção 4:5, estilo card de feed).</p>
+
+    <p class="text-xs text-slate-400 mt-3">Demonstração — as alterações ficam salvas apenas nesta sessão.</p>
+    <button id="saveGroupGoalBtn" class="btn-primary w-full rounded-xl px-6 py-3 mt-4" style="background:linear-gradient(90deg,#EC4899,#7C3AED)">Salvar</button>
+  </div>
+</div>
+
+<!-- Edit profile modal -->
+<div id="editProfileModal" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="flex items-center justify-between">
+      <h3 class="font-extrabold text-lg">Editar perfil</h3>
+      <button data-close-modal class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+
+    <div class="flex flex-wrap gap-x-4 gap-y-1.5 border-b border-gray-100 mt-3 mb-4" data-tab-group="editProfile">
+      <button type="button" data-tab-btn="foto" class="is-active pb-2 text-sm font-semibold border-b-2 border-purple-600 text-purple-700">Foto &amp; capa</button>
+      <button type="button" data-tab-btn="dados" class="pb-2 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700">Perfil</button>
+      <button type="button" data-tab-btn="redes" class="pb-2 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700">Redes sociais</button>
+      <button type="button" data-tab-btn="itens" class="pb-2 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700">Personalização</button>
+    </div>
+
+    <!-- Foto & capa -->
+    <div data-tab-panel="foto" data-tab-of="editProfile">
+      <div class="rounded-xl overflow-hidden border border-gray-100 mb-4">
+        <div id="editCoverPreview" class="h-20 grad-bg bg-cover bg-center"></div>
+        <div class="px-4 pb-3 flex items-end gap-3 bg-white">
+          <div id="editAvatarPreview" class="w-14 h-14 rounded-xl grad-bg flex items-center justify-center text-white font-extrabold text-lg shrink-0 -mt-7 border-4 border-white shadow bg-cover bg-center">A</div>
+          <div class="text-xs text-slate-400 pb-1">Pré-visualização</div>
+        </div>
+      </div>
+
+      <label class="block text-sm font-semibold mb-1">Foto do perfil</label>
+      <div class="flex gap-2 mb-1.5">
+        <label class="btn-secondary flex-1 rounded-xl px-4 py-2.5 text-sm text-center cursor-pointer">
+          Enviar foto
+          <input id="avatarFileInput" type="file" accept="image/*" class="hidden">
+        </label>
+        <button id="resetAvatarBtn" type="button" class="btn-secondary rounded-xl px-4 py-2.5 text-sm">Usar iniciais</button>
+      </div>
+      <p class="text-xs text-slate-400 mb-4">Recomendado: imagem quadrada (1:1), no mínimo 400×400px.</p>
+
+      <label class="block text-sm font-semibold mb-1">Capa do perfil</label>
+      <div class="grid grid-cols-5 gap-2 mb-3">
+        <button type="button" data-cover-preset="linear-gradient(135deg,#7C3AED,#EC4899)" class="cover-preset-btn h-10 rounded-lg border-2 border-transparent" style="background:linear-gradient(135deg,#7C3AED,#EC4899)"></button>
+        <button type="button" data-cover-preset="linear-gradient(135deg,#0EA5E9,#7C3AED)" class="cover-preset-btn h-10 rounded-lg border-2 border-transparent" style="background:linear-gradient(135deg,#0EA5E9,#7C3AED)"></button>
+        <button type="button" data-cover-preset="linear-gradient(135deg,#F59E0B,#EC4899)" class="cover-preset-btn h-10 rounded-lg border-2 border-transparent" style="background:linear-gradient(135deg,#F59E0B,#EC4899)"></button>
+        <button type="button" data-cover-preset="linear-gradient(135deg,#059669,#0EA5E9)" class="cover-preset-btn h-10 rounded-lg border-2 border-transparent" style="background:linear-gradient(135deg,#059669,#0EA5E9)"></button>
+        <button type="button" data-cover-preset="linear-gradient(135deg,#1E293B,#7C3AED)" class="cover-preset-btn h-10 rounded-lg border-2 border-transparent" style="background:linear-gradient(135deg,#1E293B,#7C3AED)"></button>
+      </div>
+      <label class="btn-secondary w-full rounded-xl px-4 py-2.5 text-sm text-center cursor-pointer block">
+        Enviar foto de capa
+        <input id="coverFileInput" type="file" accept="image/*" class="hidden">
+      </label>
+      <p class="text-xs text-slate-400 mt-1.5">Recomendado: 1200×300px, formato largo (proporção 4:1).</p>
+    </div>
+
+    <!-- Perfil (nome + @) -->
+    <div data-tab-panel="dados" data-tab-of="editProfile" class="hidden">
+      <label class="block text-sm font-semibold mb-1">Nome</label>
+      <input id="editNameInput" type="text" maxlength="40" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-purple-400 mb-4">
+
+      <label class="block text-sm font-semibold mb-1">Nome de usuário</label>
+      <div class="flex items-center border border-gray-200 rounded-xl px-3 py-2.5 focus-within:border-purple-400">
+        <span class="text-slate-400 text-sm shrink-0">bday.fm/</span>
+        <input id="editHandleInput" type="text" maxlength="24" placeholder="seu_usuario" class="flex-1 min-w-0 text-sm outline-none border-0 focus:ring-0 p-0 ml-0.5">
+      </div>
+      <p id="editHandleError" class="text-xs text-red-500 mt-1.5 hidden">Esse @ já está em uso. Escolha outro.</p>
+      <p class="text-xs text-slate-400 mt-1.5 mb-4">Use apenas letras, números e underline (_).</p>
+
+      <label class="block text-sm font-semibold mb-1">Sobre você</label>
+      <textarea id="editBioInput" rows="3" maxlength="200" placeholder="Conte um pouco sobre você — o que está celebrando, uma curiosidade, o que quiser." class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-purple-400"></textarea>
+      <div class="text-xs text-slate-400 text-right mt-1"><span id="editBioCount">0</span>/200</div>
+      <p class="text-xs text-slate-400 -mt-0.5">Aparece na aba "Sobre" do seu perfil.</p>
+    </div>
+
+    <!-- Redes sociais -->
+    <div data-tab-panel="redes" data-tab-of="editProfile" class="hidden space-y-2.5">
+      <div class="flex items-center gap-2">
+        <span class="w-9 h-9 rounded-lg flex items-center justify-center text-white shrink-0" style="background:linear-gradient(135deg,#F58529,#DD2A7B,#8134AF)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><line x1="17.5" y1="6.5" x2="17.5" y2="6.5"/></svg>
+        </span>
+        <input id="editSocialInstagram" type="text" placeholder="@usuario (Instagram)" class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-400">
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="w-9 h-9 rounded-lg bg-black flex items-center justify-center text-white shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M15 3v11a3.5 3.5 0 1 1-3.5-3.5c.35 0 .68.05 1 .14"/><path d="M15 3a5 5 0 0 0 5 5"/></svg>
+        </span>
+        <input id="editSocialTiktok" type="text" placeholder="@usuario (TikTok)" class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-400">
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="w-9 h-9 rounded-lg bg-red-600 flex items-center justify-center text-white shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect x="2" y="5" width="20" height="14" rx="4"/><polygon points="10 9 16 12 10 15 10 9" fill="currentColor" stroke="none"/></svg>
+        </span>
+        <input id="editSocialYoutube" type="text" placeholder="Canal (YouTube)" class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-400">
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="w-9 h-9 rounded-lg bg-blue-700 flex items-center justify-center text-white shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><rect x="2" y="2" width="20" height="20" rx="4"/><line x1="7" y1="10" x2="7" y2="16"/><line x1="7" y1="7" x2="7" y2="7"/><path d="M11 16v-4a2 2 0 0 1 4 0v4"/><line x1="11" y1="10" x2="11" y2="16"/></svg>
+        </span>
+        <input id="editSocialLinkedin" type="text" placeholder="usuario (LinkedIn)" class="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-400">
+      </div>
+      <p class="text-xs text-slate-400 pt-1">Deixe em branco para não exibir a rede no perfil.</p>
+    </div>
+
+    <!-- Personalização (itens ganhos em presentes) -->
+    <div data-tab-panel="itens" data-tab-of="editProfile" class="hidden">
+      <p class="text-xs text-slate-500 mb-3">Desbloqueados ao receber presentes especiais — equipe para exibir no seu perfil.</p>
+
+      <label class="block text-sm font-semibold mb-2">Acessórios de festa ganhos</label>
+      <div class="flex items-center justify-center gap-4 mb-3">
+        <button type="button" id="accessoryPrevBtn" class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-slate-500 hover:text-purple-600 hover:border-purple-300 transition shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="relative w-16 h-16 shrink-0">
+          <div id="accessoryPreviewAvatar" class="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl"></div>
+          <div id="accessoryPreviewIcon" class="hidden"></div>
+        </div>
+        <button type="button" id="accessoryNextBtn" class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-slate-500 hover:text-purple-600 hover:border-purple-300 transition shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <div id="editWonAccessories" class="grid grid-cols-4 gap-2 mb-4"></div>
+
+      <label class="block text-sm font-semibold mb-2">Molduras ganhas</label>
+      <div id="editWonFrames" class="grid grid-cols-4 gap-2 mb-4"></div>
+
+      <label class="block text-sm font-semibold mb-2">Emblemas ganhos</label>
+      <div id="editWonBadges" class="grid grid-cols-3 gap-2"></div>
+    </div>
+
+    <p class="text-xs text-slate-400 mt-4">Demonstração — as alterações ficam salvas apenas nesta sessão.</p>
+    <button id="saveProfileBtn" class="btn-primary w-full rounded-xl px-6 py-3 mt-3">Salvar alterações</button>
+  </div>
+</div>
+
+<!-- Share modal -->
+<div id="shareModal" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="flex items-center justify-between">
+      <h3 class="font-extrabold text-lg">Compartilhar perfil</h3>
+      <button data-close-modal class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+    <p id="pShareSubtitle" class="text-sm text-slate-500 mt-1">Divulgue o link para mais amigos poderem presentear.</p>
+    <div class="grid grid-cols-2 gap-3 mt-4">
+      <button data-share-network="instagram" class="share-btn flex items-center gap-3 border-2 border-gray-200 rounded-xl px-4 py-3 hover:border-pink-400 transition text-left">
+        <span class="w-9 h-9 rounded-lg flex items-center justify-center text-white shrink-0" style="background:linear-gradient(135deg,#F58529,#DD2A7B,#8134AF)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><line x1="17.5" y1="6.5" x2="17.5" y2="6.5"/></svg>
+        </span>
+        <span class="text-sm font-semibold">Instagram</span>
+      </button>
+      <button data-share-network="tiktok" class="share-btn flex items-center gap-3 border-2 border-gray-200 rounded-xl px-4 py-3 hover:border-slate-400 transition text-left">
+        <span class="w-9 h-9 rounded-lg bg-black flex items-center justify-center text-white shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M15 3v11a3.5 3.5 0 1 1-3.5-3.5c.35 0 .68.05 1 .14"/><path d="M15 3a5 5 0 0 0 5 5"/></svg>
+        </span>
+        <span class="text-sm font-semibold">TikTok</span>
+      </button>
+      <button data-share-network="youtube" class="share-btn flex items-center gap-3 border-2 border-gray-200 rounded-xl px-4 py-3 hover:border-red-400 transition text-left">
+        <span class="w-9 h-9 rounded-lg bg-red-600 flex items-center justify-center text-white shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect x="2" y="5" width="20" height="14" rx="4"/><polygon points="10 9 16 12 10 15 10 9" fill="currentColor" stroke="none"/></svg>
+        </span>
+        <span class="text-sm font-semibold">YouTube</span>
+      </button>
+      <button data-share-network="linkedin" class="share-btn flex items-center gap-3 border-2 border-gray-200 rounded-xl px-4 py-3 hover:border-blue-400 transition text-left">
+        <span class="w-9 h-9 rounded-lg bg-blue-700 flex items-center justify-center text-white shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect x="2" y="2" width="20" height="20" rx="4"/><line x1="7" y1="10" x2="7" y2="16"/><line x1="7" y1="7" x2="7" y2="7"/><path d="M11 16v-4a2 2 0 0 1 4 0v4"/><line x1="11" y1="10" x2="11" y2="16"/></svg>
+        </span>
+        <span class="text-sm font-semibold">LinkedIn</span>
+      </button>
+    </div>
+    <div class="mt-4 flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2.5">
+      <span id="pShareLink" class="text-sm text-slate-500 flex-1 truncate">bday.fm/ana</span>
+      <button data-copy-target="pShareLink" class="text-sm font-semibold text-purple-700 shrink-0">Copiar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Compartilhar o BDAY — link + 3 modelos de imagem prontos para os Stories -->
+<div id="groupGoalShareModal" class="modal-backdrop">
+  <div class="modal-box text-center">
+    <div class="flex items-center justify-between -mt-1">
+      <h3 class="font-extrabold text-lg">Compartilhar BDAY</h3>
+      <button data-close-modal class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+
+    <p class="text-sm font-semibold text-slate-700 mt-2">Escolha um modelo para postar:</p>
+    <div class="grid grid-cols-3 gap-2.5 mt-2.5">
+      <button data-goal-tmpl="classic" class="goal-tmpl-btn rounded-xl overflow-hidden border-2 border-purple-600 transition">
+        <canvas data-goal-tmpl-canvas="classic" width="1080" height="1920" style="width:100%;height:auto;display:block"></canvas>
+        <div class="text-[11px] font-semibold py-1 bg-white text-slate-700">Clássico</div>
+      </button>
+      <button data-goal-tmpl="minimal" class="goal-tmpl-btn rounded-xl overflow-hidden border-2 border-transparent hover:border-purple-300 transition">
+        <canvas data-goal-tmpl-canvas="minimal" width="1080" height="1920" style="width:100%;height:auto;display:block"></canvas>
+        <div class="text-[11px] font-semibold py-1 bg-white text-slate-700">Minimalista</div>
+      </button>
+      <button data-goal-tmpl="dark" class="goal-tmpl-btn rounded-xl overflow-hidden border-2 border-transparent hover:border-purple-300 transition">
+        <canvas data-goal-tmpl-canvas="dark" width="1080" height="1920" style="width:100%;height:auto;display:block"></canvas>
+        <div class="text-[11px] font-semibold py-1 bg-white text-slate-700">Escuro</div>
+      </button>
+    </div>
+
+    <!-- Prévia do modelo selecionado, no formato de Stories (9:16) -->
+    <div class="flex justify-center mt-4">
+      <canvas id="goalStoryCanvas" width="1080" height="1920" class="rounded-2xl shadow-lg" style="width:160px;height:auto;border:1px solid #eee"></canvas>
+    </div>
+
+    <div id="goalShareTitle" class="font-extrabold text-lg mt-3">Bday: viagem de aniversário</div>
+    <div id="goalShareSubtitle" class="text-sm text-slate-500 mt-0.5">Ajude a completar essa celebração.</div>
+
+    <button id="downloadGoalStoryBtn" class="btn-primary w-full rounded-xl px-6 py-3 mt-4 inline-flex items-center justify-center gap-2">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+      Baixar imagem para os Stories
+    </button>
+
+    <p class="text-sm text-slate-500 mt-4">Ou compartilhe direto:</p>
+    <div class="grid grid-cols-2 gap-3 mt-3">
+      <button id="goalShareInstagram" class="share-btn flex items-center gap-3 border-2 border-gray-200 rounded-xl px-4 py-3 hover:border-pink-400 transition text-left">
+        <span class="w-9 h-9 rounded-lg flex items-center justify-center text-white shrink-0" style="background:linear-gradient(135deg,#F58529,#DD2A7B,#8134AF)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><line x1="17.5" y1="6.5" x2="17.5" y2="6.5"/></svg>
+        </span>
+        <span class="text-sm font-semibold">Instagram</span>
+      </button>
+      <button id="goalShareFacebook" class="share-btn flex items-center gap-3 border-2 border-gray-200 rounded-xl px-4 py-3 hover:border-blue-400 transition text-left">
+        <span class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+        </span>
+        <span class="text-sm font-semibold">Facebook</span>
+      </button>
+      <button id="goalShareTiktok" class="share-btn flex items-center gap-3 border-2 border-gray-200 rounded-xl px-4 py-3 hover:border-slate-400 transition text-left">
+        <span class="w-9 h-9 rounded-lg bg-black flex items-center justify-center text-white shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M15 3v11a3.5 3.5 0 1 1-3.5-3.5c.35 0 .68.05 1 .14"/><path d="M15 3a5 5 0 0 0 5 5"/></svg>
+        </span>
+        <span class="text-sm font-semibold">TikTok</span>
+      </button>
+      <button id="goalShareLinkedin" class="share-btn flex items-center gap-3 border-2 border-gray-200 rounded-xl px-4 py-3 hover:border-blue-400 transition text-left">
+        <span class="w-9 h-9 rounded-lg bg-blue-700 flex items-center justify-center text-white shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><rect x="2" y="2" width="20" height="20" rx="4"/><line x1="7" y1="10" x2="7" y2="16"/><line x1="7" y1="7" x2="7" y2="7"/><path d="M11 16v-4a2 2 0 0 1 4 0v4"/><line x1="11" y1="10" x2="11" y2="16"/></svg>
+        </span>
+        <span class="text-sm font-semibold">LinkedIn</span>
+      </button>
+    </div>
+    <div class="mt-3 flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2.5">
+      <span id="goalShareLink" class="text-sm text-slate-500 flex-1 truncate">bday.fm/ana</span>
+      <button data-copy-target="goalShareLink" class="text-sm font-semibold text-purple-700 shrink-0">Copiar</button>
+    </div>
+    <p class="text-xs text-slate-400 mt-3">Dica: baixe a imagem e poste nos Stories marcando @bday.fm.</p>
+  </div>
+</div>
+
+<!-- Torpedo (message) modal -->
+<div id="torpedoModal" class="modal-backdrop">
+  <div class="modal-box">
+    <div class="flex items-center justify-between">
+      <h3 id="pTorpedoTitle" class="font-extrabold text-lg flex items-center gap-2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-purple-600"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.38 8.38 0 0 1 12.5 3a8.5 8.5 0 0 1 8.5 8.5z"/></svg>
+        Enviar Torpedo
+      </h3>
+      <button data-close-modal class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+    <p id="pTorpedoSubtitle" class="text-sm text-slate-500 mt-1">Uma mensagem rápida, sem valor em dinheiro.</p>
+    <label class="block text-sm font-semibold mt-4 mb-1">Sua mensagem</label>
+    <textarea id="torpedoText" rows="4" maxlength="200" placeholder="Escreva seu recado..." class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-purple-400"></textarea>
+    <div class="text-xs text-slate-400 text-right mt-1"><span id="torpedoCount">0</span>/200</div>
+    <button id="confirmTorpedoBtn" class="btn-primary w-full rounded-xl px-6 py-3 mt-3 inline-flex items-center justify-center gap-2">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      Enviar Torpedo
+    </button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="border-t border-gray-100 mt-10">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+    <div class="flex items-center gap-2 font-bold text-slate-700">
+      <img src="logo-full.png" alt="bday.fm" class="h-5 w-auto object-contain" loading="lazy">
+    </div>
+    <div class="flex flex-wrap justify-center gap-x-6 gap-y-2">
+      <a href="sobre.html" class="hover:text-purple-700">Sobre</a>
+      <a href="termos.html" class="hover:text-purple-700">Termos de uso</a>
+      <a href="privacidade.html" class="hover:text-purple-700">Privacidade</a>
+      <a href="mailto:contato@bday.fm" class="hover:text-purple-700">Contato</a>
+    </div>
+    <div>© 2026 bday.fm — protótipo de demonstração</div>
+  </div>
+</footer>
+
+<script src="icons.js"></script>
+<script src="users.js"></script>
+<script src="auth.js"></script>
+<script src="script.js"></script>
+<script>
+  const u = getUserFromQuery();
+  const authSession = (typeof authGetSession === 'function') ? authGetSession() : null;
+  const isOwner = !!(authSession && authSession.slug === u.slug);
+
+  // Só o dono do perfil pode criar/editar um bday para si — visitantes não veem o botão flutuante.
+  document.getElementById('floatingGoalWrap').style.display = isOwner ? '' : 'none';
+  document.getElementById('floatingGoalLabel').textContent = u.groupGoal ? 'Editar meu BDAY' : 'Criar meu BDAY';
+
+  document.getElementById('pageTitle').textContent = `${u.name} (@${u.handle}) — bday.fm`;
+  document.getElementById('metaDesc').setAttribute('content', `${u.status}! Envie um presente digital para ${u.name} e faça parte dessa celebração.`);
+  document.getElementById('ogTitle').setAttribute('content', `${u.name} (@${u.handle}) — bday.fm`);
+  document.getElementById('ogDesc').setAttribute('content', `${u.status}! Envie um presente digital e participe dessa celebração com ${u.name.split(' ')[0]}.`);
+
+  const avatar = document.getElementById('pAvatar');
+  // Se a pessoa já enviou uma foto de perfil antes, ela fica salva em u.avatar e
+  // deve aparecer aqui de novo (antes disso, a foto só existia na sessão do navegador
+  // e sumia toda vez que a página era recarregada). Para quem enviou a foto antes
+  // dessa correção existir, ela ainda está só na sessão — usamos como respaldo aqui
+  // e já aproveitamos para gravar em u.avatar, corrigindo a conta de uma vez.
+  if (!u.avatar && isOwner && authSession && authSession.avatarDataUrl) {
+    u.avatar = authSession.avatarDataUrl;
+    persistIfCustomUser();
+  }
+  if (u.avatar) {
+    avatar.style.backgroundImage = `url(${u.avatar})`;
+    avatar.textContent = '';
+  } else {
+    avatar.textContent = u.initial;
+  }
+  const avatarBaseClass = avatar.className.replace('grad-bg', u.grad);
+  function applyAvatarFrame() {
+    avatar.className = avatarBaseClass;
+    if (u.frame) {
+      const frame = FRAMES.find(f => f.id === u.frame);
+      if (frame) avatar.className += ' ' + frame.frameClass;
+    }
+  }
+  applyAvatarFrame();
+
+  // Emblema equipado (ganho em presentes especiais)
+  function renderBadge() {
+    const badgeEl = document.getElementById('pBadge');
+    const badge = u.badge ? BADGES.find(b => b.id === u.badge) : null;
+    if (badge) {
+      badgeEl.innerHTML = iconSize(ICONS[badge.icon], 'w-4 h-4');
+      badgeEl.title = badge.name;
+      badgeEl.classList.remove('hidden');
+      badgeEl.classList.add('flex');
+    } else {
+      badgeEl.classList.add('hidden');
+      badgeEl.classList.remove('flex');
+    }
+  }
+  renderBadge();
+
+  // Acessório de festa equipado sobre o avatar (ganho em presentes especiais) —
+  // ilustração colorida "cheia", encostando direto no avatar, sem bolha de fundo.
+  function renderAccessory() {
+    const accEl = document.getElementById('pAccessory');
+    const acc = u.accessory ? ACCESSORIES.find(a => a.id === u.accessory) : null;
+    if (acc) {
+      accEl.style.cssText = 'position:absolute; pointer-events:none; ' + acc.style;
+      accEl.innerHTML = acc.svg;
+      accEl.title = acc.name;
+      accEl.classList.remove('hidden');
+    } else {
+      accEl.classList.add('hidden');
+      accEl.removeAttribute('style');
+      accEl.innerHTML = '';
+    }
+  }
+  renderAccessory();
+
+  document.getElementById('pName').textContent = u.name;
+  // Selo de verificação (premium) — controlado pelo painel admin
+  const pVerifiedSeal = document.getElementById('pVerifiedSeal');
+  if (pVerifiedSeal) pVerifiedSeal.classList.toggle('hidden', !(typeof isUserVerified === 'function' && isUserVerified(u.slug)));
+  document.getElementById('pHandle').textContent = '@' + u.handle;
+  document.getElementById('pBreadcrumbName').textContent = u.name;
+  document.getElementById('pMainTitle').textContent = u.status;
+  // O recap anual é pessoal — só o próprio dono do perfil pode ver o seu.
+  // Visitantes não veem o recap de quem estão visitando.
+  const recapLinkEl = document.getElementById('pRecapLink');
+  if (isOwner) {
+    const recapYear = (u.recap && u.recap.year) ? u.recap.year : new Date().getFullYear();
+    recapLinkEl.href = `recap.html?user=${u.slug}`;
+    document.getElementById('pRecapBannerTitle').textContent = `Seu recap ${recapYear} está pronto!`;
+    document.getElementById('pRecapBannerBtnLabel').textContent = 'Ver meu recap';
+  } else {
+    recapLinkEl.classList.add('hidden');
+  }
+  document.getElementById('pLojaLink').href = `loja.html?user=${u.slug}`;
+
+  const firstName = u.name.split(' ')[0];
+
+  // Bio (descrição livre sobre a pessoa) — personalizável em Configurações > Perfil,
+  // exibida no topo da aba "Sobre". Só o dono vê o convite para adicionar uma.
+  function renderBio() {
+    const bioEl = document.getElementById('pBioText');
+    const addBioBtn = document.getElementById('pAddBioBtn');
+    if (u.bio) {
+      bioEl.textContent = u.bio;
+      bioEl.classList.remove('hidden');
+      addBioBtn.classList.add('hidden');
+    } else {
+      bioEl.classList.add('hidden');
+      addBioBtn.classList.toggle('hidden', !isOwner);
+    }
+  }
+  renderBio();
+
+  document.getElementById('pMainGiftBtnLabel').textContent = u.isToday
+    ? `Presentear ${u.name.split(' ')[0]} agora`
+    : `Presentear ${u.name.split(' ')[0]}`;
+
+  // Redes sociais vinculadas
+  const socialDefs = [
+    { key: 'instagram', icon: ICONS.instagram, bg: 'linear-gradient(135deg,#F58529,#DD2A7B,#8134AF)' },
+    { key: 'tiktok', icon: ICONS.tiktok, bg: '#000' },
+    { key: 'youtube', icon: ICONS.youtube, bg: '#DC2626' },
+    { key: 'linkedin', icon: ICONS.linkedin, bg: '#1D4ED8' },
+  ];
+  function renderSocials() {
+    const pSocials = document.getElementById('pSocials');
+    const linkedSocials = socialDefs.filter(s => u.socials && u.socials[s.key]);
+    if (linkedSocials.length === 0) {
+      pSocials.innerHTML = '';
+    } else {
+      pSocials.innerHTML = linkedSocials.map(s => `
+        <button data-demo-action="Abrindo @${u.socials[s.key]} no ${s.key[0].toUpperCase() + s.key.slice(1)} (demo)" title="${s.key} · @${u.socials[s.key]}" class="w-7 h-7 rounded-full flex items-center justify-center text-white shrink-0" style="background:${s.bg}">
+          ${iconSize(s.icon, 'w-3.5 h-3.5')}
+        </button>`).join('');
+    }
+  }
+  renderSocials();
+
+  // Amigos — renderiza o card lateral e a aba "Amigos" a partir de u.friendsList
+  const FRIENDS_PER_PAGE = 5;
+  let friendsPage = 0;
+  let friendsFilter = 'todos'; // 'todos' | 'presentearam'
+
+  function getGifterNames() {
+    return new Set((u.gifts || []).filter(g => g.value).map(g => g.who));
+  }
+
+  function renderFriends() {
+    const list = u.friendsList || [];
+    const n = list.length;
+    document.getElementById('pFriendsText').textContent = `${n} amigo${n === 1 ? '' : 's'} já confirmado${n === 1 ? '' : 's'}`;
+    document.getElementById('pFriendsTabTitle').textContent = `${n} amigo${n === 1 ? '' : 's'}`;
+    document.getElementById('pFriendsTabCount').textContent = `(${n})`;
+    document.getElementById('pFriendsStatValue').textContent = n;
+
+    const avatarsEl = document.getElementById('pFriendsAvatars');
+    const shown = list.slice(0, 4);
+    const extra = n - shown.length;
+    avatarsEl.innerHTML = shown.map(f =>
+      `<div class="w-9 h-9 rounded-full ${f.grad} border-2 border-white flex items-center justify-center text-white text-xs font-bold" title="${f.name}">${f.initial}</div>`
+    ).join('') + (extra > 0 ? `<div class="w-9 h-9 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-slate-600 text-xs font-bold">+${extra}</div>` : '');
+
+    const fullListEl = document.getElementById('pFriendsFullList');
+    const paginationEl = document.getElementById('pFriendsPagination');
+
+    const gifterNames = getGifterNames();
+    const filteredList = friendsFilter === 'presentearam' ? list.filter(f => gifterNames.has(f.name)) : list;
+    const fn = filteredList.length;
+
+    if (n === 0) {
+      fullListEl.innerHTML = `<div class="text-center text-slate-500 py-10 sm:col-span-2">Nenhum amigo confirmado ainda.</div>`;
+      paginationEl.innerHTML = '';
+      return;
+    }
+    if (fn === 0) {
+      fullListEl.innerHTML = `<div class="text-center text-slate-500 py-10 sm:col-span-2">Nenhum amigo te presenteou ainda.</div>`;
+      paginationEl.innerHTML = '';
+      return;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(fn / FRIENDS_PER_PAGE));
+    if (friendsPage > totalPages - 1) friendsPage = totalPages - 1;
+    if (friendsPage < 0) friendsPage = 0;
+    const start = friendsPage * FRIENDS_PER_PAGE;
+    const pageItems = filteredList.slice(start, start + FRIENDS_PER_PAGE);
+
+    fullListEl.innerHTML = pageItems.map((f) => `
+      <div class="flex items-center gap-3 p-3 rounded-xl border border-gray-100">
+        <div class="w-10 h-10 rounded-full ${f.grad} border-2 border-white shadow flex items-center justify-center text-white text-sm font-bold shrink-0">${f.initial}</div>
+        <div class="flex-1 min-w-0 font-semibold text-sm truncate">${f.name}</div>
+        <button data-remove-friend="${list.indexOf(f)}" class="text-xs font-semibold text-slate-400 hover:text-red-500 shrink-0">Remover</button>
+      </div>`).join('');
+    fullListEl.querySelectorAll('[data-remove-friend]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-remove-friend'), 10);
+        const removed = list[idx];
+        list.splice(idx, 1);
+        u.friends = list.length;
+        renderFriends();
+        showToast(`${removed.name} removido da lista de amigos. (demo)`);
+      });
+    });
+
+    if (totalPages <= 1) {
+      paginationEl.innerHTML = '';
+    } else {
+      paginationEl.innerHTML = `
+        <button id="pFriendsPrev" ${friendsPage === 0 ? 'disabled' : ''} class="px-3 py-1.5 rounded-lg text-sm font-semibold border border-gray-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent inline-flex items-center gap-1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><polyline points="15 18 9 12 15 6"/></svg> Anterior
+        </button>
+        <span class="text-xs text-slate-400">Página ${friendsPage + 1} de ${totalPages}</span>
+        <button id="pFriendsNext" ${friendsPage >= totalPages - 1 ? 'disabled' : ''} class="px-3 py-1.5 rounded-lg text-sm font-semibold border border-gray-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent inline-flex items-center gap-1">
+          Próxima <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>`;
+      const prevBtn = document.getElementById('pFriendsPrev');
+      const nextBtn = document.getElementById('pFriendsNext');
+      if (prevBtn) prevBtn.addEventListener('click', () => { friendsPage--; renderFriends(); });
+      if (nextBtn) nextBtn.addEventListener('click', () => { friendsPage++; renderFriends(); });
+    }
+  }
+  renderFriends();
+
+  // Filtro "Todos" / "Que me presentearam" na aba Amigos
+  function setFriendsFilter(filter) {
+    friendsFilter = filter;
+    friendsPage = 0;
+    document.querySelectorAll('[data-friends-filter]').forEach(b => {
+      const active = b.getAttribute('data-friends-filter') === filter;
+      b.classList.toggle('bg-purple-600', active);
+      b.classList.toggle('text-white', active);
+      b.classList.toggle('bg-slate-100', !active);
+      b.classList.toggle('text-slate-600', !active);
+    });
+    renderFriends();
+  }
+  document.querySelectorAll('[data-friends-filter]').forEach(btn => {
+    btn.addEventListener('click', () => setFriendsFilter(btn.getAttribute('data-friends-filter')));
+  });
+
+  // Card "Amigos confirmados" — clica e vai direto para a aba Amigos, já filtrada por quem presenteou
+  document.getElementById('pFriendsStatCard').addEventListener('click', () => {
+    document.querySelector('[data-tab-group="profile"] [data-tab-btn="amigos"]').dispatchEvent(new Event('click', { bubbles: true }));
+    setFriendsFilter('presentearam');
+    const amigosPanelEl = document.querySelector('[data-tab-panel="amigos"][data-tab-of="profile"]');
+    if (amigosPanelEl && typeof amigosPanelEl.scrollIntoView === 'function') {
+      amigosPanelEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+
+  document.getElementById('pDaysLabel').textContent = u.daysLabel;
+  document.getElementById('pGiftModalTitle').textContent = `Escolher um presente para ${firstName}`;
+  document.getElementById('pCatalogLink').href = `presentes.html?user=${u.slug}`;
+  document.getElementById('pTorpedoTitle').lastChild.textContent = ` Enviar Torpedo para ${firstName}`;
+  document.getElementById('pTorpedoSubtitle').textContent = `Uma mensagem rápida para ${firstName}, sem valor em dinheiro.`;
+
+  const list = document.getElementById('pGiftsList');
+  if (u.gifts.length === 0) {
+    list.innerHTML = `<div class="text-center text-slate-500 py-10">
+      <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-400 flex items-center justify-center mx-auto mb-3">${iconSize(ICONS.gift, 'w-6 h-6')}</div>
+      Nenhum presente recebido ainda. Compartilhe o link para começar a receber!
+    </div>`;
+  } else {
+    list.innerHTML = u.gifts.map(g => `
+      <div class="flex items-center gap-4 p-3 rounded-xl transition ${g.value ? 'hover:bg-slate-50' : 'bg-blue-50/70 border-l-4 border-blue-400 hover:bg-blue-50'}">
+        <div class="w-10 h-10 rounded-full ${g.value ? 'bg-purple-100 text-purple-600' : 'bg-blue-500 text-white'} flex items-center justify-center shrink-0">${g.value ? ICONS.gift : ICONS.message}</div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-sm">${g.who} <span class="font-normal text-slate-500">${g.value ? 'enviou ' + g.item : 'enviou um Torpedo'}</span> ${g.value ? '' : '<span class="ml-1 inline-block bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full align-middle">Torpedo</span>'}</div>
+          <div class="text-xs text-slate-400">"${g.msg}" · ${g.when}</div>
+        </div>
+        ${g.value ? `<div class="font-bold text-purple-700 shrink-0">${g.value}</div>` : ''}
+      </div>`).join('');
+  }
+
+  // Aba "Lembranças": momentos criados, coleção de presentes e conquistas (orgulho do perfil)
+  (function renderLembrancas() {
+    const momentsCount = (u.groupGoal ? 1 : 0) + 1; // o aniversário em si + o BDAY criado (quando houver)
+    document.getElementById('pStatMoments').textContent = momentsCount;
+    document.getElementById('pStatGifts').textContent = u.gifts.filter(g => g.value).length;
+
+    const wonFrames = (u.wonFrames || []).map(id => FRAMES.find(f => f.id === id)).filter(Boolean);
+    const wonBadges = (u.wonBadges || []).map(id => BADGES.find(b => b.id === id)).filter(Boolean);
+    const wonAccessories = (u.wonAccessories || []).map(id => ACCESSORIES.find(a => a.id === id)).filter(Boolean);
+    const totalAchievements = wonFrames.length + wonBadges.length + wonAccessories.length;
+    document.getElementById('pStatAchievements').textContent = totalAchievements;
+
+    // Prévia compacta de conquistas na barra lateral (substitui o antigo aviso de
+    // "conta criada recentemente", que se repetia ali sem trazer nada de novo).
+    const sidebarCards = [
+      ...wonBadges.map(b => ({ name: b.name, icon: ICONS[b.icon] || ICONS.star })),
+      ...wonFrames.map(f => ({ name: f.name, icon: ICONS.sparkles })),
+      ...wonAccessories.map(a => ({ name: a.name, icon: ICONS.gift })),
+    ];
+    const sidebarCountEl = document.getElementById('pSidebarAchievementsCount');
+    const sidebarPreviewEl = document.getElementById('pSidebarAchievementsPreview');
+    const sidebarEmptyEl = document.getElementById('pSidebarAchievementsEmpty');
+    sidebarCountEl.textContent = sidebarCards.length;
+    if (sidebarCards.length === 0) {
+      sidebarPreviewEl.innerHTML = '';
+      sidebarEmptyEl.classList.remove('hidden');
+    } else {
+      sidebarEmptyEl.classList.add('hidden');
+      sidebarPreviewEl.innerHTML = sidebarCards.slice(0, 6).map(c => `
+        <span title="${c.name}" class="w-7 h-7 rounded-full bg-white border border-purple-200 text-purple-600 flex items-center justify-center shrink-0">${iconSize(c.icon, 'w-3.5 h-3.5')}</span>
+      `).join('');
+    }
+
+    const giftCollectionEl = document.getElementById('pGiftCollection');
+    const receivedGifts = u.gifts.filter(g => g.value);
+    if (receivedGifts.length === 0) {
+      giftCollectionEl.innerHTML = `<div class="col-span-full text-center text-slate-400 text-sm py-6">Nenhum presente na coleção ainda.</div>`;
+    } else {
+      const byItem = {};
+      receivedGifts.forEach(g => { byItem[g.item] = (byItem[g.item] || 0) + 1; });
+      giftCollectionEl.innerHTML = Object.keys(byItem).map(item => `
+        <div class="flex items-center gap-3 p-3 rounded-xl border border-slate-100">
+          <div class="w-9 h-9 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">${iconSize(ICONS.gift, 'w-4 h-4')}</div>
+          <div class="min-w-0 flex-1">
+            <div class="text-sm font-semibold truncate">${item}</div>
+            <div class="text-xs text-slate-400">${byItem[item]}x recebido${byItem[item] > 1 ? 's' : ''}</div>
+          </div>
+        </div>`).join('');
+    }
+
+    const achievementsEl = document.getElementById('pAchievementsList');
+    const achievementCards = [
+      ...wonBadges.map(b => ({ name: b.name, desc: b.desc, icon: ICONS[b.icon] || ICONS.star, tint: 'bg-amber-50 text-amber-600' })),
+      ...wonFrames.map(f => ({ name: f.name, desc: f.desc, icon: ICONS.sparkles, tint: 'bg-purple-50 text-purple-600' })),
+      ...wonAccessories.map(a => ({ name: a.name, desc: a.desc, icon: ICONS.gift, tint: 'bg-pink-50 text-pink-600' })),
+    ];
+    if (achievementCards.length === 0) {
+      achievementsEl.innerHTML = `<div class="col-span-full text-center text-slate-400 text-sm py-6">Nenhuma conquista ganha ainda — continue celebrando para desbloquear!</div>`;
+    } else {
+      achievementsEl.innerHTML = achievementCards.map(c => `
+        <div class="p-3 rounded-xl border border-slate-100 text-center">
+          <div class="w-10 h-10 rounded-xl ${c.tint} flex items-center justify-center mx-auto mb-2">${iconSize(c.icon, 'w-5 h-5')}</div>
+          <div class="text-xs font-semibold truncate">${c.name}</div>
+        </div>`).join('');
+    }
+  })();
+
+  // Sidebar: última atividade + timeline (reaproveita u.gifts, sem alterar os dados)
+  const pLastActivity = document.getElementById('pLastActivity');
+  if (u.gifts.length > 0) {
+    const last = u.gifts[0];
+    pLastActivity.textContent = `${last.who} ${last.value ? 'enviou ' + last.item : 'enviou um Torpedo'} · ${last.when}`;
+  } else {
+    pLastActivity.textContent = 'Nenhuma atividade recente';
+  }
+  const activityTimelineEl = document.getElementById('pActivityTimeline');
+  const timelineItems = u.gifts.slice(0, 6);
+  if (timelineItems.length === 0) {
+    activityTimelineEl.innerHTML = `<div class="text-center text-slate-400 text-xs py-6">Nenhuma atividade ainda.</div>`;
+  } else {
+    activityTimelineEl.innerHTML = timelineItems.map((g, i) => `
+      <div class="flex gap-3 relative ${i < timelineItems.length - 1 ? 'pb-4' : ''}">
+        ${i < timelineItems.length - 1 ? '<div class="absolute left-[15px] top-8 bottom-0 w-px bg-gray-100"></div>' : ''}
+        <div class="w-8 h-8 rounded-full ${g.value ? 'bg-purple-100 text-purple-600' : 'bg-blue-500 text-white'} flex items-center justify-center shrink-0 z-10">${iconSize(g.value ? ICONS.gift : ICONS.message, 'w-3.5 h-3.5')}</div>
+        <div class="min-w-0 flex-1">
+          <div class="text-xs font-semibold text-slate-700 truncate">${g.who} <span class="font-normal text-slate-500">${g.value ? 'enviou ' + g.item : 'enviou um Torpedo'}</span></div>
+          <div class="text-[11px] text-slate-400 mt-0.5">${g.when}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Share modal: per-user link + network handlers
+  document.getElementById('pShareSubtitle').textContent = `Divulgue o perfil de ${firstName} para mais amigos poderem presentear.`;
+  document.getElementById('pShareLink').textContent = `bday.fm/${u.slug}`;
+  const headerCopyLinkBtn = document.getElementById('headerCopyLinkBtn');
+  if (headerCopyLinkBtn) { headerCopyLinkBtn.setAttribute('data-copy-value', `bday.fm/${u.slug}`); }
+  const shareNetworkNames = { instagram: 'Instagram', tiktok: 'TikTok', youtube: 'YouTube', linkedin: 'LinkedIn' };
+  document.querySelectorAll('.share-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const net = btn.getAttribute('data-share-network');
+      document.getElementById('shareModal').classList.remove('open');
+      showToast(`Compartilhado no ${shareNetworkNames[net]}! (demo)`);
+    });
+  });
+
+  // Torpedo modal: character counter + send
+  const torpedoText = document.getElementById('torpedoText');
+  const torpedoCount = document.getElementById('torpedoCount');
+  torpedoText.addEventListener('input', () => { torpedoCount.textContent = torpedoText.value.length; });
+  document.getElementById('confirmTorpedoBtn').addEventListener('click', () => {
+    document.getElementById('torpedoModal').classList.remove('open');
+    showToast(`Torpedo enviado para ${firstName}! (demo)`);
+    torpedoText.value = '';
+    torpedoCount.textContent = '0';
+  });
+
+  // Presentômetro — só aparece com uma meta ativa (contas novas nascem sem meta;
+  // criar um BDAY ativa o medidor na hora).
+  function renderMeter() {
+    const meterCard = document.getElementById('pMeterCard');
+    const goal = u.goal || (u.groupGoal && u.groupGoal.target) || null;
+    if (!goal) {
+      if (isOwner) {
+        meterCard.style.display = '';
+        document.getElementById('pMeterPct').textContent = '—';
+        document.getElementById('pMeterBar').style.width = '0%';
+        document.getElementById('pMeterText').textContent = 'Você ainda não tem uma meta ativa — crie um BDAY para ativar o presentômetro.';
+      } else {
+        meterCard.style.display = 'none';
+      }
+      return;
+    }
+    meterCard.style.display = '';
+    const pct = Math.min(100, Math.round((u.received / goal) * 100));
+    requestAnimationFrame(() => { document.getElementById('pMeterBar').style.width = pct + '%'; });
+    document.getElementById('pMeterPct').textContent = pct + '%';
+    const remaining = Math.max(0, goal - u.received);
+    if (isOwner) {
+      document.getElementById('pMeterText').textContent = remaining > 0
+        ? `R$ ${u.received} de R$ ${goal} recebidos em presentes este mês — faltam R$ ${remaining} para a meta!`
+        : `Meta do mês alcançada! R$ ${u.received} recebidos de R$ ${goal}.`;
+    } else {
+      document.getElementById('pMeterText').textContent = remaining > 0
+        ? `Ajude ${u.name.split(' ')[0]} a comemorar esse mês — cada presente conta! (valor exato é privado)`
+        : `Meta do mês já alcançada por ${u.name.split(' ')[0]}! (valor exato é privado)`;
+    }
+  }
+  renderMeter();
+
+  // ---- Pontos de recompensa: barra compacta (só o dono logado; resgate na Loja) ----
+  function renderRewardsCard() {
+    let barEl = document.getElementById('pRewardsBar');
+    if (!isOwner || typeof pontosSaldo !== 'function') { if (barEl) barEl.remove(); return; }
+    if (!barEl) {
+      const ref = document.getElementById('pGroupGoalEmptyCard') || document.getElementById('pGroupGoalCard');
+      if (!ref) return;
+      ref.insertAdjacentHTML('afterend', '<div id="pRewardsBar" class="card px-4 py-3 mt-4 flex items-center gap-3 flex-wrap reveal"></div>');
+      barEl = document.getElementById('pRewardsBar');
+    }
+    const saldo = pontosSaldo(u.slug);
+    barEl.innerHTML = `
+      <div class="w-8 h-8 rounded-lg grad-bg text-white flex items-center justify-center shrink-0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </div>
+      <div class="text-sm"><b class="grad-text text-base">${saldo.toLocaleString('pt-BR')}</b> <b>pontos de recompensa</b>
+        <span class="text-xs text-slate-400 block sm:inline sm:ml-1">40 pts por presente enviado na Loja de Presentes</span>
+      </div>
+      <a href="loja.html?user=${u.slug}" class="ml-auto btn-primary rounded-lg px-3 py-1.5 text-xs font-bold whitespace-nowrap">Resgatar na Loja →</a>`;
+  }
+  renderRewardsCard();
+
+  // Meta coletiva (bday em grupo) — renderiza o card existente ou o convite para criar um
+  function renderGroupGoal() {
+    const card = document.getElementById('pGroupGoalCard');
+    const emptyCard = document.getElementById('pGroupGoalEmptyCard');
+    if (u.groupGoal) {
+      const gg = u.groupGoal;
+      const ggPct = Math.min(100, Math.round((gg.current / gg.target) * 100));
+      card.classList.remove('hidden');
+      emptyCard.classList.add('hidden');
+      document.getElementById('pGroupGoalTitleText').textContent = gg.title;
+      document.getElementById('pGroupGoalPct').textContent = ggPct + '%';
+      requestAnimationFrame(() => { document.getElementById('pGroupGoalBar').style.width = ggPct + '%'; });
+      document.getElementById('pGroupGoalText').textContent = `R$ ${gg.current} de R$ ${gg.target}`;
+      document.getElementById('pGroupGoalAvatars').innerHTML = (gg.contributors || []).map(c =>
+        `<div class="w-8 h-8 rounded-full ${c.grad} border-2 border-white flex items-center justify-center text-white text-xs font-bold" title="R$ ${c.amount}">${c.initial}</div>`
+      ).join('');
+      document.getElementById('pContributeSubtitle').textContent = `Escolha um presente para ajudar ${firstName} a celebrar: ${gg.title.replace('Bday: ', '')}.`;
+
+      const imageEl = document.getElementById('pGroupGoalImage');
+      const placeholderIcon = document.getElementById('pGroupGoalImagePlaceholderIcon');
+      if (gg.image) {
+        imageEl.style.background = '';
+        imageEl.style.backgroundImage = `url(${gg.image})`;
+        placeholderIcon.classList.add('hidden');
+      } else {
+        imageEl.style.backgroundImage = '';
+        imageEl.style.background = 'linear-gradient(135deg,#7C3AED,#EC4899)';
+        placeholderIcon.classList.remove('hidden');
+      }
+      document.getElementById('pGroupGoalDesc').textContent = gg.description || 'Convide seus amigos para participar dessa celebração com presentes digitais.';
+
+      // Só o dono do perfil pode editar o bday — visitantes não veem o lápis de edição.
+      document.getElementById('editGroupGoalBtn').style.display = isOwner ? '' : 'none';
+    } else if (isOwner) {
+      // Sem bday ainda: só o dono vê o convite para criar um (visitantes não podem criar por ele).
+      card.classList.add('hidden');
+      emptyCard.classList.remove('hidden');
+      document.getElementById('pGroupGoalEmptyTitle').textContent = `Crie um bday para ${firstName}`;
+    } else {
+      card.classList.add('hidden');
+      emptyCard.classList.add('hidden');
+    }
+    const floatingGoalLabel = document.getElementById('floatingGoalLabel');
+    if (floatingGoalLabel) { floatingGoalLabel.textContent = u.groupGoal ? 'Editar meu BDAY' : 'Criar meu BDAY'; }
+  }
+  renderGroupGoal();
+
+  // ----- Compartilhar o BDAY: link + imagem pronta para os Stories (3 modelos), no mesmo
+  // padrão já usado no recap de contribuição (presentes.html) e no recap anual. -----
+  function goalRoundRect(ctx, x, y, w, h, rad) {
+    ctx.beginPath();
+    ctx.moveTo(x + rad, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rad);
+    ctx.arcTo(x + w, y + h, x, y + h, rad);
+    ctx.arcTo(x, y + h, x, y, rad);
+    ctx.arcTo(x, y, x + w, y, rad);
+    ctx.closePath();
+  }
+  function goalFitText(ctx, text, maxWidth, weight, maxSize, minSize) {
+    let size = maxSize || 56;
+    minSize = minSize || 30;
+    while (size > minSize) {
+      ctx.font = `${weight} ${size}px Inter, sans-serif`;
+      if (ctx.measureText(text).width <= maxWidth) break;
+      size -= 2;
+    }
+    ctx.font = `${weight} ${size}px Inter, sans-serif`;
+    return size;
+  }
+  let goalImageEl = null;
+  function loadGoalImage() {
+    const gg = u.groupGoal;
+    if (!gg || !gg.image) { goalImageEl = null; return Promise.resolve(null); }
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => { goalImageEl = img; resolve(img); };
+      img.onerror = () => { goalImageEl = null; resolve(null); };
+      img.src = gg.image;
+    });
+  }
+  function goalDrawPhotoOrGradient(ctx, x, y, w, h, rad, grad1, grad2) {
+    goalRoundRect(ctx, x, y, w, h, rad);
+    ctx.save(); ctx.clip();
+    if (goalImageEl) {
+      const scale = Math.max(w / goalImageEl.width, h / goalImageEl.height);
+      const iw = goalImageEl.width * scale, ih = goalImageEl.height * scale;
+      ctx.drawImage(goalImageEl, x + w / 2 - iw / 2, y + h / 2 - ih / 2, iw, ih);
+    } else {
+      const bg = ctx.createLinearGradient(x, y, x + w, y + h);
+      bg.addColorStop(0, grad1); bg.addColorStop(1, grad2);
+      ctx.fillStyle = bg; ctx.fillRect(x, y, w, h);
+    }
+    ctx.restore();
+  }
+  function goalProgressRing(ctx, cx, cy, r, pct, trackColor, fillColor, lineWidth) {
+    ctx.save();
+    ctx.lineWidth = lineWidth; ctx.lineCap = 'round';
+    ctx.strokeStyle = trackColor;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = fillColor;
+    ctx.beginPath(); ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * pct / 100));
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawGoalClassic(ctx, W, H) {
+    const gg = u.groupGoal; if (!gg) return;
+    const pct = Math.min(100, Math.round((gg.current / gg.target) * 100));
+    ctx.clearRect(0, 0, W, H);
+    const bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, '#7C3AED'); bg.addColorStop(1, '#EC4899');
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.beginPath(); ctx.arc(W - 100, 200, 260, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(70, H - 260, 220, 0, Math.PI * 2); ctx.fill();
+
+    ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
+    ctx.font = '600 40px Inter, sans-serif'; ctx.fillText('bday.fm', W / 2, 190);
+
+    goalDrawPhotoOrGradient(ctx, W / 2 - 300, 250, 600, 520, 40, 'rgba(255,255,255,0.25)', 'rgba(255,255,255,0.08)');
+
+    ctx.fillStyle = '#fff';
+    goalFitText(ctx, gg.title, W - 140, '800', 64, 40);
+    ctx.fillText(gg.title, W / 2, 870);
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = '600 36px Inter, sans-serif';
+    ctx.fillText(`Ajude a celebrar com ${u.name.split(' ')[0]}!`, W / 2, 920);
+
+    goalProgressRing(ctx, W / 2, 1130, 150, pct, 'rgba(255,255,255,0.25)', '#fff', 22);
+    ctx.fillStyle = '#fff';
+    ctx.font = '800 76px Inter, sans-serif'; ctx.fillText(`${pct}%`, W / 2, 1150);
+
+    ctx.font = '700 42px Inter, sans-serif';
+    ctx.fillText(`R$ ${gg.current} de R$ ${gg.target}`, W / 2, 1340);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = '600 34px Inter, sans-serif'; ctx.fillText('Contribua também em', W / 2, H - 200);
+    ctx.fillStyle = '#fff';
+    ctx.font = '800 50px Inter, sans-serif'; ctx.fillText(`bday.fm/${u.slug}`, W / 2, H - 130);
+  }
+
+  function drawGoalMinimal(ctx, W, H) {
+    const gg = u.groupGoal; if (!gg) return;
+    const pct = Math.min(100, Math.round((gg.current / gg.target) * 100));
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(124,58,237,0.06)';
+    ctx.beginPath(); ctx.arc(W - 100, 180, 300, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(236,72,153,0.06)';
+    ctx.beginPath(); ctx.arc(80, H - 220, 260, 0, Math.PI * 2); ctx.fill();
+
+    ctx.textAlign = 'center';
+    const brandGrad = ctx.createLinearGradient(W / 2 - 120, 0, W / 2 + 120, 0);
+    brandGrad.addColorStop(0, '#7C3AED'); brandGrad.addColorStop(1, '#EC4899');
+    ctx.fillStyle = brandGrad;
+    ctx.font = '700 40px Inter, sans-serif'; ctx.fillText('bday.fm', W / 2, 190);
+
+    goalDrawPhotoOrGradient(ctx, W / 2 - 300, 250, 600, 520, 40, '#F3E8FF', '#FCE7F3');
+
+    ctx.fillStyle = '#0F172A';
+    goalFitText(ctx, gg.title, W - 140, '800', 64, 40);
+    ctx.fillText(gg.title, W / 2, 870);
+    ctx.fillStyle = '#64748B';
+    ctx.font = '600 36px Inter, sans-serif';
+    ctx.fillText(`Ajude a celebrar com ${u.name.split(' ')[0]}!`, W / 2, 920);
+
+    goalProgressRing(ctx, W / 2, 1130, 150, pct, '#F3E8FF', '#7C3AED', 22);
+    ctx.fillStyle = '#7C3AED';
+    ctx.font = '800 76px Inter, sans-serif'; ctx.fillText(`${pct}%`, W / 2, 1150);
+
+    ctx.fillStyle = '#0F172A';
+    ctx.font = '700 42px Inter, sans-serif';
+    ctx.fillText(`R$ ${gg.current} de R$ ${gg.target}`, W / 2, 1340);
+
+    ctx.fillStyle = '#64748B';
+    ctx.font = '600 34px Inter, sans-serif'; ctx.fillText('Contribua também em', W / 2, H - 200);
+    ctx.fillStyle = brandGrad;
+    ctx.font = '800 50px Inter, sans-serif'; ctx.fillText(`bday.fm/${u.slug}`, W / 2, H - 130);
+  }
+
+  function drawGoalDark(ctx, W, H) {
+    const gg = u.groupGoal; if (!gg) return;
+    const pct = Math.min(100, Math.round((gg.current / gg.target) * 100));
+    ctx.clearRect(0, 0, W, H);
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0B0B14'); bg.addColorStop(1, '#1B0F2E');
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(236,72,153,0.12)';
+    ctx.beginPath(); ctx.arc(W - 100, 200, 280, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(124,58,237,0.15)';
+    ctx.beginPath(); ctx.arc(60, H - 240, 240, 0, Math.PI * 2); ctx.fill();
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#F472B6';
+    ctx.font = '700 38px Inter, sans-serif'; ctx.fillText('bday.fm', W / 2, 190);
+
+    goalDrawPhotoOrGradient(ctx, W / 2 - 300, 250, 600, 520, 40, 'rgba(244,114,182,0.18)', 'rgba(124,58,237,0.18)');
+
+    ctx.fillStyle = '#fff';
+    goalFitText(ctx, gg.title, W - 140, '800', 64, 40);
+    ctx.fillText(gg.title, W / 2, 870);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '600 36px Inter, sans-serif';
+    ctx.fillText(`Ajude a celebrar com ${u.name.split(' ')[0]}!`, W / 2, 920);
+
+    goalProgressRing(ctx, W / 2, 1130, 150, pct, 'rgba(255,255,255,0.12)', '#22D3EE', 22);
+    ctx.fillStyle = '#22D3EE'; ctx.shadowColor = '#22D3EE'; ctx.shadowBlur = 20;
+    ctx.font = '800 76px Inter, sans-serif'; ctx.fillText(`${pct}%`, W / 2, 1150);
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = '#fff';
+    ctx.font = '700 42px Inter, sans-serif';
+    ctx.fillText(`R$ ${gg.current} de R$ ${gg.target}`, W / 2, 1340);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '600 34px Inter, sans-serif'; ctx.fillText('Contribua também em', W / 2, H - 200);
+    ctx.fillStyle = '#F472B6';
+    ctx.font = '800 50px Inter, sans-serif'; ctx.fillText(`bday.fm/${u.slug}`, W / 2, H - 130);
+  }
+
+  const GOAL_TEMPLATES = { classic: drawGoalClassic, minimal: drawGoalMinimal, dark: drawGoalDark };
+  let currentGoalTemplate = 'classic';
+
+  function renderGoalTemplate(canvasEl, templateId) {
+    const ctx = canvasEl.getContext('2d');
+    (GOAL_TEMPLATES[templateId] || drawGoalClassic)(ctx, canvasEl.width, canvasEl.height);
+  }
+  function renderGoalStory() {
+    renderGoalTemplate(document.getElementById('goalStoryCanvas'), currentGoalTemplate);
+    document.querySelectorAll('[data-goal-tmpl-canvas]').forEach(c => {
+      renderGoalTemplate(c, c.getAttribute('data-goal-tmpl-canvas'));
+    });
+  }
+  document.querySelectorAll('.goal-tmpl-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentGoalTemplate = btn.getAttribute('data-goal-tmpl');
+      document.querySelectorAll('.goal-tmpl-btn').forEach(b => {
+        b.classList.remove('border-purple-600');
+        b.classList.add('border-transparent');
+      });
+      btn.classList.remove('border-transparent');
+      btn.classList.add('border-purple-600');
+      renderGoalTemplate(document.getElementById('goalStoryCanvas'), currentGoalTemplate);
+    });
+  });
+
+  function downloadGoalStoryBlob(blob, toastMsg) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bdayfm-bday-${u.slug}-${currentGoalTemplate}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast(toastMsg);
+  }
+  async function shareOrDownloadGoalStory() {
+    const canvas = document.getElementById('goalStoryCanvas');
+    canvas.toBlob(async (blob) => {
+      const file = new File([blob], `bdayfm-bday-${u.slug}.png`, { type: 'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: `Meu BDAY no bday.fm` });
+          return;
+        } catch (e) { /* usuário cancelou ou navegador sem suporte — cai no download abaixo */ }
+      }
+      downloadGoalStoryBlob(blob, 'Imagem baixada! Abra o Instagram ou TikTok, crie um Stories e selecione a imagem da galeria (demo).');
+    }, 'image/png');
+  }
+  const downloadGoalStoryBtn = document.getElementById('downloadGoalStoryBtn');
+  if (downloadGoalStoryBtn) downloadGoalStoryBtn.addEventListener('click', () => {
+    const canvas = document.getElementById('goalStoryCanvas');
+    canvas.toBlob((blob) => downloadGoalStoryBlob(blob, 'Imagem baixada! Poste nos Stories e marque @bday.fm'), 'image/png');
+  });
+  const goalShareInstagramBtn = document.getElementById('goalShareInstagram');
+  if (goalShareInstagramBtn) goalShareInstagramBtn.addEventListener('click', shareOrDownloadGoalStory);
+  const goalShareTiktokBtn = document.getElementById('goalShareTiktok');
+  if (goalShareTiktokBtn) goalShareTiktokBtn.addEventListener('click', shareOrDownloadGoalStory);
+
+  // Facebook e LinkedIn têm um jeito real de compartilhar um link (sem precisar de imagem
+  // baixada) — abrimos a janela de compartilhamento oficial de cada rede com o link do BDAY.
+  const goalShareFacebookBtn = document.getElementById('goalShareFacebook');
+  if (goalShareFacebookBtn) goalShareFacebookBtn.addEventListener('click', () => {
+    const url = encodeURIComponent(`https://bday.fm/perfil.html?user=${u.slug}`);
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'noopener,noreferrer,width=600,height=600');
+  });
+  const goalShareLinkedinBtn = document.getElementById('goalShareLinkedin');
+  if (goalShareLinkedinBtn) goalShareLinkedinBtn.addEventListener('click', () => {
+    const url = encodeURIComponent(`https://bday.fm/perfil.html?user=${u.slug}`);
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank', 'noopener,noreferrer,width=600,height=600');
+  });
+
+  const shareGroupGoalBtn = document.getElementById('shareGroupGoalBtn');
+  if (shareGroupGoalBtn) shareGroupGoalBtn.addEventListener('click', () => {
+    if (!u.groupGoal) return;
+    document.getElementById('goalShareTitle').textContent = u.groupGoal.title;
+    document.getElementById('goalShareSubtitle').textContent = `Ajude ${u.name.split(' ')[0]} a completar essa celebração.`;
+    document.getElementById('goalShareLink').textContent = `bday.fm/${u.slug}`;
+    const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+    Promise.all([fontsReady, loadGoalImage()]).then(renderGoalStory);
+  });
+
+  // Personalizar / criar BDAY: categoria da celebração + campo livre + meta de valor
+  let pendingGoalCategory = null;
+  document.querySelectorAll('.goal-category-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.goal-category-btn').forEach(b => {
+        b.classList.remove('border-pink-500', 'bg-pink-50');
+        b.classList.add('border-gray-200');
+      });
+      btn.classList.remove('border-gray-200');
+      btn.classList.add('border-pink-500', 'bg-pink-50');
+      pendingGoalCategory = btn.getAttribute('data-goal-category');
+      const titleInput = document.getElementById('groupGoalTitleInput');
+      if (!titleInput.value.trim()) { titleInput.value = pendingGoalCategory; }
+    });
+  });
+
+  let pendingGoalImage = { type: 'none' };
+  const groupGoalImagePreview = document.getElementById('groupGoalImagePreview');
+  const DEFAULT_GOAL_IMAGE_BG = 'linear-gradient(135deg,#FCE7F3,#F3E8FF)';
+
+  function setGoalImagePreview(url) {
+    if (url) {
+      groupGoalImagePreview.style.background = '';
+      groupGoalImagePreview.style.backgroundImage = `url(${url})`;
+      groupGoalImagePreview.textContent = '';
+    } else {
+      groupGoalImagePreview.style.backgroundImage = '';
+      groupGoalImagePreview.style.background = DEFAULT_GOAL_IMAGE_BG;
+      groupGoalImagePreview.textContent = 'Sem imagem';
+    }
+  }
+
+  function openGroupGoalForm() {
+    const isEdit = !!u.groupGoal;
+    document.getElementById('groupGoalFormTitle').textContent = isEdit ? 'Personalizar BDAY' : 'Criar BDAY';
+    document.getElementById('saveGroupGoalBtn').textContent = isEdit ? 'Salvar alterações' : 'Criar meu BDAY';
+    document.getElementById('groupGoalTitleInput').value = isEdit ? u.groupGoal.title : '';
+    document.getElementById('groupGoalTargetInput').value = isEdit ? u.groupGoal.target : '';
+    document.getElementById('groupGoalDescInput').value = isEdit ? (u.groupGoal.description || '') : '';
+    document.getElementById('groupGoalDateInput').value = isEdit ? (u.groupGoal.date || '') : '';
+    pendingGoalImage = { type: 'none' };
+    pendingGoalCategory = isEdit ? (u.groupGoal.category || null) : null;
+    setGoalImagePreview(isEdit ? u.groupGoal.image : null);
+    document.querySelectorAll('.goal-category-btn').forEach(b => {
+      const isSelected = isEdit && b.getAttribute('data-goal-category') === pendingGoalCategory;
+      b.classList.toggle('border-pink-500', isSelected);
+      b.classList.toggle('bg-pink-50', isSelected);
+      b.classList.toggle('border-gray-200', !isSelected);
+    });
+  }
+  document.getElementById('editGroupGoalBtn').addEventListener('click', openGroupGoalForm);
+  document.getElementById('createGroupGoalBtn').addEventListener('click', openGroupGoalForm);
+
+  document.getElementById('groupGoalImageInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!validateImageFile(file)) { e.target.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      pendingGoalImage = { type: 'image', value: reader.result };
+      setGoalImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('removeGroupGoalImageBtn').addEventListener('click', () => {
+    pendingGoalImage = { type: 'remove' };
+    setGoalImagePreview(null);
+  });
+
+  document.getElementById('saveGroupGoalBtn').addEventListener('click', () => {
+    const title = bdaySanitize(document.getElementById('groupGoalTitleInput').value);
+    const target = parseInt(document.getElementById('groupGoalTargetInput').value, 10);
+    const description = bdaySanitize(document.getElementById('groupGoalDescInput').value);
+    const date = document.getElementById('groupGoalDateInput').value || null;
+    if (!pendingGoalCategory) { showToast('Escolha o que você está celebrando.'); return; }
+    if (!title) { showToast('Dê um título para o seu BDAY.'); return; }
+    if (!target || target < 10) { showToast('Defina uma meta desejada válida (mínimo R$ 10).'); return; }
+
+    const wasEdit = !!u.groupGoal;
+    if (wasEdit) {
+      u.groupGoal.title = title;
+      u.groupGoal.target = target;
+      u.groupGoal.description = description || null;
+      u.groupGoal.category = pendingGoalCategory;
+      u.groupGoal.date = date;
+    } else {
+      u.groupGoal = { title, target, description: description || null, category: pendingGoalCategory, date, image: null, current: 0, contributors: [] };
+    }
+    if (pendingGoalImage.type === 'image') {
+      u.groupGoal.image = pendingGoalImage.value;
+    } else if (pendingGoalImage.type === 'remove') {
+      u.groupGoal.image = null;
+    }
+    renderGroupGoal();
+    if (!u.goal) { u.goal = target; }
+    renderMeter();
+    persistIfCustomUser();
+    document.getElementById('groupGoalFormModal').classList.remove('open');
+    showToast(wasEdit ? 'BDAY atualizado! (demo)' : 'BDAY criado! Compartilhe o link para começar a receber presentes. (demo)');
+
+    // O BDAY agora fica em destaque, sempre visível na página (fora de qualquer aba) —
+    // só rolamos a tela até o card para o usuário ver a celebração recém-criada/editada.
+    const goalCardEl = document.getElementById('pGroupGoalCard');
+    if (goalCardEl && typeof goalCardEl.scrollIntoView === 'function') {
+      goalCardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+
+  // Contribuir para o bday = escolher um presente para enviar (o produto são os presentes, não Pix livre).
+  document.getElementById('pContributeCatalogLink').href = `presentes.html?user=${u.slug}`;
+  const CONTRIBUTE_GIFT_ICONS = { 'Biscoito da Sorte': ICONS.cookie, 'Balão de Festa': ICONS.balloon, 'Coroa de Aniversariante': ICONS.crown, 'Bolo Surpresa 3 Andares': ICONS.cake };
+  document.querySelectorAll('.contribute-gift-btn').forEach(btn => {
+    btn.querySelector('div').innerHTML = iconSize(CONTRIBUTE_GIFT_ICONS[btn.getAttribute('data-contribute-gift')], 'w-5 h-5');
+  });
+
+  let pendingContributeGift = null;
+  const confirmContributeBtn = document.getElementById('confirmContributeBtn');
+  document.querySelectorAll('.contribute-gift-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.contribute-gift-btn').forEach(b => {
+        b.classList.remove('border-pink-500', 'bg-pink-50');
+        b.classList.add('border-gray-200');
+      });
+      btn.classList.remove('border-gray-200');
+      btn.classList.add('border-pink-500', 'bg-pink-50');
+      pendingContributeGift = { name: btn.getAttribute('data-contribute-gift'), price: parseInt(btn.getAttribute('data-contribute-price'), 10) };
+      confirmContributeBtn.disabled = false;
+      confirmContributeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      confirmContributeBtn.textContent = `Enviar ${pendingContributeGift.name} — R$ ${pendingContributeGift.price}`;
+    });
+  });
+  confirmContributeBtn.addEventListener('click', () => {
+    if (!pendingContributeGift || !u.groupGoal) return;
+    const gg = u.groupGoal;
+    gg.current = (gg.current || 0) + pendingContributeGift.price;
+    gg.contributors = gg.contributors || [];
+    gg.contributors.push({ initial: 'V', grad: 'bg-purple-500', amount: pendingContributeGift.price });
+    renderGroupGoal();
+    persistIfCustomUser();
+    document.getElementById('contributeModal').classList.remove('open');
+    showToast(`Você enviou ${pendingContributeGift.name} para o BDAY de ${firstName}! (demo)`);
+    document.querySelectorAll('.contribute-gift-btn').forEach(b => {
+      b.classList.remove('border-pink-500', 'bg-pink-50');
+      b.classList.add('border-gray-200');
+    });
+    pendingContributeGift = null;
+    confirmContributeBtn.disabled = true;
+    confirmContributeBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    confirmContributeBtn.textContent = 'Escolha um presente';
+  });
+
+  // Editar perfil: foto, capa, nome e redes sociais
+  const pCover = document.getElementById('pCover');
+  const editAvatarPreview = document.getElementById('editAvatarPreview');
+  const editCoverPreview = document.getElementById('editCoverPreview');
+  const DEFAULT_COVER_CSS = 'linear-gradient(135deg,#7C3AED,#EC4899)';
+  const AVATAR_COLOR_MAP = { 'bg-blue-500': '#3B82F6', 'bg-pink-500': '#EC4899', 'bg-amber-500': '#F59E0B', 'bg-emerald-500': '#10B981', 'bg-indigo-500': '#6366F1', 'bg-rose-500': '#F43F5E' };
+  function getUserColorCss() {
+    return u.grad === 'grad-bg' ? DEFAULT_COVER_CSS : (AVATAR_COLOR_MAP[u.grad] || '#7C3AED');
+  }
+
+  let pendingAvatar = { type: 'none' };
+  let pendingCover = { type: 'none' };
+  let pendingFrame = u.frame || null;
+  let pendingBadge = u.badge || null;
+  let pendingAccessory = u.accessory || null;
+
+  // Acessórios de festa ganhos — carrossel (setas) + grade, no estilo do seletor de avatar do Notion AI
+  function renderAccessoryPicker() {
+    const won = u.wonAccessories || [];
+    const options = [null].concat(won);
+    const previewAvatarEl = document.getElementById('accessoryPreviewAvatar');
+    const previewIconEl = document.getElementById('accessoryPreviewIcon');
+    const gridEl = document.getElementById('editWonAccessories');
+
+    function renderPreview() {
+      previewAvatarEl.className = previewAvatarEl.className.replace(/\bbg-\S+|\bgrad-bg\b/g, '').replace(/\s+/g, ' ').trim() + ' ' + u.grad;
+      previewAvatarEl.textContent = u.initial;
+      const acc = pendingAccessory ? ACCESSORIES.find(a => a.id === pendingAccessory) : null;
+      if (acc) {
+        previewIconEl.style.cssText = 'position:absolute; pointer-events:none; ' + acc.style;
+        previewIconEl.innerHTML = acc.svg;
+        previewIconEl.classList.remove('hidden');
+      } else {
+        previewIconEl.classList.add('hidden');
+        previewIconEl.removeAttribute('style');
+        previewIconEl.innerHTML = '';
+      }
+    }
+
+    function renderGrid() {
+      if (won.length === 0) {
+        gridEl.innerHTML = `<div class="col-span-4 text-center text-slate-400 text-xs py-4">Nenhum acessório ganho ainda. Receba presentes de festa para desbloquear!</div>`;
+        return;
+      }
+      const gridOptions = [{ id: null, name: 'Nenhum' }].concat(won.map(id => ACCESSORIES.find(a => a.id === id)).filter(Boolean));
+      gridEl.innerHTML = gridOptions.map(a => `
+        <button type="button" data-equip-accessory="${a.id || ''}" class="accessory-option-btn flex flex-col items-center gap-1 p-2 rounded-xl border-2 ${pendingAccessory === a.id ? 'border-purple-600' : 'border-gray-200'}">
+          <div class="relative w-10 h-10">
+            <div class="w-10 h-10 rounded-full ${u.grad} flex items-center justify-center text-white text-xs font-bold">${u.initial}</div>
+            ${a.id ? `<div class="absolute" style="pointer-events:none; ${a.style}">${a.svg}</div>` : ''}
+          </div>
+          <span class="text-[10px] text-slate-500 text-center">${a.name}</span>
+        </button>`).join('');
+      gridEl.querySelectorAll('[data-equip-accessory]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          pendingAccessory = btn.getAttribute('data-equip-accessory') || null;
+          renderPreview();
+          renderGrid();
+        });
+      });
+    }
+
+    document.getElementById('accessoryPrevBtn').onclick = () => {
+      let idx = options.indexOf(pendingAccessory);
+      idx = (idx - 1 + options.length) % options.length;
+      pendingAccessory = options[idx];
+      renderPreview();
+      renderGrid();
+    };
+    document.getElementById('accessoryNextBtn').onclick = () => {
+      let idx = options.indexOf(pendingAccessory);
+      idx = (idx + 1) % options.length;
+      pendingAccessory = options[idx];
+      renderPreview();
+      renderGrid();
+    };
+
+    renderPreview();
+    renderGrid();
+  }
+
+  // Molduras e emblemas ganhos em presentes (não comprados na loja)
+  function renderWonItemsPicker() {
+    const framesEl = document.getElementById('editWonFrames');
+    const won = u.wonFrames || [];
+    if (won.length === 0) {
+      framesEl.innerHTML = `<div class="col-span-4 text-center text-slate-400 text-xs py-4">Nenhuma moldura ganha ainda. Receba presentes especiais para desbloquear!</div>`;
+    } else {
+      const options = [{ id: null, name: 'Nenhuma', frameClass: '' }].concat(won.map(id => FRAMES.find(f => f.id === id)).filter(Boolean));
+      framesEl.innerHTML = options.map(f => `
+        <button type="button" data-equip-frame="${f.id || ''}" class="frame-option-btn flex flex-col items-center gap-1 p-2 rounded-xl border-2 ${pendingFrame === f.id ? 'border-purple-600' : 'border-gray-200'}">
+          <div class="w-10 h-10 rounded-full ${u.grad} flex items-center justify-center text-white text-xs font-bold ${f.frameClass || ''}">${u.initial}</div>
+          <span class="text-[10px] text-slate-500 text-center">${f.name}</span>
+        </button>`).join('');
+      framesEl.querySelectorAll('[data-equip-frame]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          pendingFrame = btn.getAttribute('data-equip-frame') || null;
+          renderWonItemsPicker();
+        });
+      });
+    }
+
+    const badgesEl = document.getElementById('editWonBadges');
+    const wonB = u.wonBadges || [];
+    if (wonB.length === 0) {
+      badgesEl.innerHTML = `<div class="col-span-3 text-center text-slate-400 text-xs py-4">Nenhum emblema ganho ainda.</div>`;
+    } else {
+      const badgeOptions = [{ id: null, name: 'Nenhum', icon: null }].concat(wonB.map(id => BADGES.find(b => b.id === id)).filter(Boolean));
+      badgesEl.innerHTML = badgeOptions.map(b => `
+        <button type="button" data-equip-badge="${b.id || ''}" class="badge-option-btn flex flex-col items-center gap-1 p-2 rounded-xl border-2 ${pendingBadge === b.id ? 'border-purple-600' : 'border-gray-200'}">
+          <div class="w-9 h-9 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center">${b.icon ? iconSize(ICONS[b.icon], 'w-4 h-4') : '—'}</div>
+          <span class="text-[10px] text-slate-500 text-center">${b.name}</span>
+        </button>`).join('');
+      badgesEl.querySelectorAll('[data-equip-badge]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          pendingBadge = btn.getAttribute('data-equip-badge') || null;
+          renderWonItemsPicker();
+        });
+      });
+    }
+  }
+
+  function sanitizeHandle(raw) {
+    return raw.trim().toLowerCase().replace(/^@/, '').replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+  }
+  function isHandleTaken(handle, excludeSlug) {
+    const inDemo = Object.keys(USERS).some(slug => slug !== excludeSlug && USERS[slug].handle.toLowerCase() === handle);
+    if (inDemo) return true;
+    const custom = (typeof getCustomUsers === 'function') ? getCustomUsers() : {};
+    return Object.keys(custom).some(slug => slug !== excludeSlug && (custom[slug].handle || '').toLowerCase() === handle);
+  }
+
+  // Sem backend real, o estado só existe no armazenamento local deste navegador.
+  // Vale para QUALQUER conta — inclusive as fixas de demonstração (ana, rafael, admin),
+  // que por padrão só existem como objeto em memória e perderiam qualquer edição
+  // (moldura, emblema, acessório, bio, etc.) ao recarregar. findAnyUser() prioriza esse
+  // registro sobre o perfil fixo. Chamado depois de toda mudança feita pelo dono da conta.
+  function persistIfCustomUser() {
+    if (typeof saveCustomUser !== 'function') return;
+    saveCustomUser({ ...u });
+  }
+
+  function openEditProfileModal() {
+    if (avatar.style.backgroundImage) {
+      editAvatarPreview.style.backgroundImage = avatar.style.backgroundImage;
+      editAvatarPreview.style.background = '';
+      editAvatarPreview.textContent = '';
+    } else {
+      editAvatarPreview.style.backgroundImage = '';
+      editAvatarPreview.style.background = getUserColorCss();
+      editAvatarPreview.textContent = u.initial;
+    }
+    if (pCover.style.backgroundImage) {
+      editCoverPreview.style.backgroundImage = pCover.style.backgroundImage;
+      editCoverPreview.style.background = '';
+    } else {
+      editCoverPreview.style.backgroundImage = '';
+      editCoverPreview.style.background = pCover.style.background || DEFAULT_COVER_CSS;
+    }
+
+    document.getElementById('editNameInput').value = u.name;
+    document.getElementById('editHandleInput').value = u.handle;
+    document.getElementById('editHandleError').classList.add('hidden');
+    document.getElementById('editBioInput').value = u.bio || '';
+    document.getElementById('editBioCount').textContent = (u.bio || '').length;
+    document.getElementById('editSocialInstagram').value = u.socials.instagram || '';
+    document.getElementById('editSocialTiktok').value = u.socials.tiktok || '';
+    document.getElementById('editSocialYoutube').value = u.socials.youtube || '';
+    document.getElementById('editSocialLinkedin').value = u.socials.linkedin || '';
+
+    pendingAvatar = { type: 'none' };
+    pendingCover = { type: 'none' };
+    pendingFrame = u.frame || null;
+    pendingBadge = u.badge || null;
+    pendingAccessory = u.accessory || null;
+    document.querySelectorAll('.cover-preset-btn').forEach(b => b.classList.remove('border-purple-600'));
+    renderWonItemsPicker();
+    renderAccessoryPicker();
+  }
+  document.querySelectorAll('.open-edit-profile').forEach(btn => btn.addEventListener('click', openEditProfileModal));
+  document.getElementById('editHandleInput').addEventListener('input', () => {
+    document.getElementById('editHandleError').classList.add('hidden');
+  });
+  const editBioInput = document.getElementById('editBioInput');
+  const editBioCount = document.getElementById('editBioCount');
+  if (editBioInput) editBioInput.addEventListener('input', () => { editBioCount.textContent = editBioInput.value.length; });
+
+  // "+ Adicionar uma descrição sobre você" já abre o modal (via data-open-modal do
+  // botão); aqui só garantimos que ele abra direto na aba "Perfil", onde fica o campo.
+  const pAddBioBtn = document.getElementById('pAddBioBtn');
+  if (pAddBioBtn) pAddBioBtn.addEventListener('click', () => {
+    const dadosTabBtn = document.querySelector('[data-tab-group="editProfile"] [data-tab-btn="dados"]');
+    if (dadosTabBtn) dadosTabBtn.click();
+  });
+
+  document.getElementById('avatarFileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!validateImageFile(file)) { e.target.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      pendingAvatar = { type: 'image', value: reader.result };
+      editAvatarPreview.style.background = '';
+      editAvatarPreview.style.backgroundImage = `url(${reader.result})`;
+      editAvatarPreview.textContent = '';
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('resetAvatarBtn').addEventListener('click', () => {
+    pendingAvatar = { type: 'reset' };
+    editAvatarPreview.style.backgroundImage = '';
+    editAvatarPreview.style.background = getUserColorCss();
+    editAvatarPreview.textContent = u.initial;
+  });
+
+  document.querySelectorAll('.cover-preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const val = btn.getAttribute('data-cover-preset');
+      pendingCover = { type: 'preset', value: val };
+      document.querySelectorAll('.cover-preset-btn').forEach(b => b.classList.remove('border-purple-600'));
+      btn.classList.add('border-purple-600');
+      editCoverPreview.style.backgroundImage = '';
+      editCoverPreview.style.background = val;
+    });
+  });
+  document.getElementById('coverFileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!validateImageFile(file)) { e.target.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      pendingCover = { type: 'image', value: reader.result };
+      editCoverPreview.style.background = '';
+      editCoverPreview.style.backgroundImage = `url(${reader.result})`;
+      document.querySelectorAll('.cover-preset-btn').forEach(b => b.classList.remove('border-purple-600'));
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('saveProfileBtn').addEventListener('click', () => {
+    // Valida o @ antes de aplicar qualquer alteração
+    const rawHandle = document.getElementById('editHandleInput').value;
+    const newHandle = sanitizeHandle(rawHandle);
+    const handleError = document.getElementById('editHandleError');
+    if (!newHandle) {
+      handleError.textContent = 'Escolha um nome de usuário.';
+      handleError.classList.remove('hidden');
+      return;
+    }
+    if (isHandleTaken(newHandle, u.slug)) {
+      handleError.textContent = 'Esse @ já está em uso. Escolha outro.';
+      handleError.classList.remove('hidden');
+      return;
+    }
+    handleError.classList.add('hidden');
+    u.handle = newHandle;
+    document.getElementById('pHandle').textContent = '@' + u.handle;
+
+    const newName = bdaySanitize(document.getElementById('editNameInput').value);
+    if (newName) {
+      u.name = newName;
+      document.getElementById('pName').textContent = u.name;
+    }
+    u.socials.instagram = bdaySanitize(document.getElementById('editSocialInstagram').value) || null;
+    u.socials.tiktok = bdaySanitize(document.getElementById('editSocialTiktok').value) || null;
+    u.socials.youtube = bdaySanitize(document.getElementById('editSocialYoutube').value) || null;
+    u.socials.linkedin = bdaySanitize(document.getElementById('editSocialLinkedin').value) || null;
+    renderSocials();
+
+    u.bio = bdaySanitize(document.getElementById('editBioInput').value) || null;
+    renderBio();
+
+    u.frame = pendingFrame || null;
+    applyAvatarFrame();
+    u.badge = pendingBadge || null;
+    renderBadge();
+    u.accessory = pendingAccessory || null;
+    renderAccessory();
+
+    if (pendingAvatar.type === 'image') {
+      avatar.style.backgroundImage = `url(${pendingAvatar.value})`;
+      avatar.textContent = '';
+      u.avatar = pendingAvatar.value;
+      if (typeof authSyncAvatar === 'function') authSyncAvatar(u.slug, pendingAvatar.value);
+    } else if (pendingAvatar.type === 'reset') {
+      avatar.style.backgroundImage = '';
+      avatar.textContent = u.initial;
+      u.avatar = null;
+      if (typeof authSyncAvatar === 'function') authSyncAvatar(u.slug, null);
+    }
+    if (pendingCover.type === 'image') {
+      pCover.style.background = '';
+      pCover.style.backgroundImage = `url(${pendingCover.value})`;
+    } else if (pendingCover.type === 'preset') {
+      pCover.style.backgroundImage = '';
+      pCover.style.background = pendingCover.value;
+    }
+
+    document.getElementById('editProfileModal').classList.remove('open');
+    persistIfCustomUser();
+    showToast('Perfil atualizado! (demo)');
+  });
+</script>
+</body>
+</html>

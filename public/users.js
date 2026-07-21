@@ -1,0 +1,365 @@
+// Anti-XSS: remove os caracteres < e > de qualquer texto digitado pelo usuário
+// antes de salvar/exibir (nome, bio, posts, comentários, título/descrição do BDAY).
+function bdaySanitize(str) {
+  return String(str == null ? '' : str).replace(/[<>]/g, '').trim();
+}
+
+// bday.fm prototype — shared demo user data (fake, for illustration only)
+
+const USERS = {
+  ana: {
+    name: "Ana Beatriz", handle: "ana", initial: "A", grad: "grad-bg",
+    status: "Faz 25 anos em 3 dias", daysLabel: "3 dias", isToday: false,
+    received: 214, friends: 8,
+    friendsList: [{ name: "Rafael Mendes", initial: "R", grad: "bg-blue-500" }, { name: "Marina Souza", initial: "M", grad: "bg-pink-500" }, { name: "João Vitor", initial: "J", grad: "bg-amber-500" }, { name: "Thainá Carvalho", initial: "T", grad: "bg-emerald-500" }, { name: "Mauricio Lima", initial: "M", grad: "bg-indigo-500" }, { name: "Carolina de Sousa", initial: "C", grad: "bg-rose-500" }, { name: "Bruno Costa", initial: "B", grad: "bg-blue-500" }, { name: "Camila Rocha", initial: "C", grad: "bg-pink-500" }], giftsCount: 12, goal: null, frame: "aurora", inBirthdayMonth: true, wonFrames: ["aurora", "estelar"], wonBadges: ["popular", "querido"], accessory: "chapeu-festa", wonAccessories: ["chapeu-festa", "confete"],
+    socials: { instagram: "ana.beatriz", tiktok: "ana.beatriz", youtube: null, linkedin: null },
+    gifts: [
+      { who: "Rafael Mendes", item: "Biscoito da Sorte", value: "R$ 12,00", msg: "Feliz aniversário, vem tomar uma cerveja com a gente!", when: "há 2 dias" },
+      { who: "Marina Souza", item: "Balão de Festa", value: "R$ 8,00", msg: "Que venha mais um ano incrível! 🎉", when: "há 3 dias" },
+      { who: "João Vitor", item: "Torpedo", value: null, msg: "Aniversário chegando! Já separei o presente 😉", when: "há 4 dias" }
+    ],
+    groupGoal: {
+      title: "Bday: viagem de aniversário",
+      target: 500, current: 260,
+      contributors: [
+        { initial: "R", grad: "bg-blue-500", amount: 60 },
+        { initial: "M", grad: "bg-pink-500", amount: 100 },
+        { initial: "J", grad: "bg-amber-500", amount: 50 },
+        { initial: "T", grad: "bg-emerald-500", amount: 50 }
+      ]
+    },
+    recap: {
+      year: 2025, totalReceived: 892, giftsReceived: 34, friendsParticipated: 19,
+      topGifter: "Rafael Mendes", topGifterAmount: 156,
+      topMessage: "\"Melhor amiga do mundo, obrigada por tudo esse ano!\" — Marina Souza",
+      rankPercent: 8
+    }
+  },
+  rafael: {
+    name: "Rafael Mendes", handle: "rafael", initial: "R", grad: "bg-blue-500",
+    status: "Faz aniversário em 12 dias", daysLabel: "12 dias", isToday: false,
+    received: 0, friends: 15,
+    friendsList: [{ name: "Ana Beatriz", initial: "A", grad: "grad-bg" }, { name: "Marina Souza", initial: "M", grad: "bg-pink-500" }, { name: "João Vitor", initial: "J", grad: "bg-amber-500" }, { name: "Thainá Carvalho", initial: "T", grad: "bg-emerald-500" }, { name: "Mauricio Lima", initial: "M", grad: "bg-indigo-500" }, { name: "Carolina de Sousa", initial: "C", grad: "bg-rose-500" }, { name: "Bruno Costa", initial: "B", grad: "bg-blue-500" }, { name: "Camila Rocha", initial: "C", grad: "bg-pink-500" }, { name: "Diego Alves", initial: "D", grad: "bg-amber-500" }, { name: "Fernanda Lima", initial: "F", grad: "bg-emerald-500" }, { name: "Gustavo Ramos", initial: "G", grad: "bg-indigo-500" }, { name: "Isabela Martins", initial: "I", grad: "bg-rose-500" }, { name: "Lucas Pereira", initial: "L", grad: "bg-cyan-500" }, { name: "Mariana Dias", initial: "M", grad: "bg-violet-500" }, { name: "Otávio Nunes", initial: "O", grad: "bg-blue-500" }], giftsCount: 0, goal: null, frame: null, inBirthdayMonth: false, wonFrames: [], wonBadges: [], accessory: null, wonAccessories: [],
+    socials: { instagram: "rafael.mendes", tiktok: null, youtube: "RafaelMendesVlogs", linkedin: "rafael-mendes" },
+    gifts: [],
+    groupGoal: null,
+    recap: { year: 2025, totalReceived: 340, giftsReceived: 14, friendsParticipated: 9, topGifter: "Ana Beatriz", topGifterAmount: 80, topMessage: "\"Vai ser um ano incrível pra você!\" — Ana Beatriz", rankPercent: 22 }
+  },
+  marina: {
+    name: "Marina Souza", handle: "marina", initial: "M", grad: "bg-pink-500",
+    status: "Faz 22 anos hoje!", daysLabel: "hoje", isToday: true,
+    received: 96, friends: 21,
+    friendsList: [{ name: "Ana Beatriz", initial: "A", grad: "grad-bg" }, { name: "Rafael Mendes", initial: "R", grad: "bg-blue-500" }, { name: "João Vitor", initial: "J", grad: "bg-amber-500" }, { name: "Thainá Carvalho", initial: "T", grad: "bg-emerald-500" }, { name: "Mauricio Lima", initial: "M", grad: "bg-indigo-500" }, { name: "Carolina de Sousa", initial: "C", grad: "bg-rose-500" }, { name: "Bruno Costa", initial: "B", grad: "bg-blue-500" }, { name: "Camila Rocha", initial: "C", grad: "bg-pink-500" }, { name: "Diego Alves", initial: "D", grad: "bg-amber-500" }, { name: "Fernanda Lima", initial: "F", grad: "bg-emerald-500" }, { name: "Gustavo Ramos", initial: "G", grad: "bg-indigo-500" }, { name: "Isabela Martins", initial: "I", grad: "bg-rose-500" }, { name: "Lucas Pereira", initial: "L", grad: "bg-cyan-500" }, { name: "Mariana Dias", initial: "M", grad: "bg-violet-500" }, { name: "Otávio Nunes", initial: "O", grad: "bg-blue-500" }, { name: "Patrícia Gomes", initial: "P", grad: "bg-pink-500" }, { name: "Renata Ferreira", initial: "R", grad: "bg-amber-500" }, { name: "Sérgio Barbosa", initial: "S", grad: "bg-emerald-500" }, { name: "Tatiane Rodrigues", initial: "T", grad: "bg-indigo-500" }, { name: "Vinícius Cardoso", initial: "V", grad: "bg-rose-500" }, { name: "Yasmin Teixeira", initial: "Y", grad: "bg-cyan-500" }], giftsCount: 6, goal: null, frame: "estelar", inBirthdayMonth: true, wonFrames: ["estelar"], wonBadges: ["querido"], accessory: null, wonAccessories: ["balao"],
+    socials: { instagram: "marina.souza", tiktok: "marina.souza", youtube: null, linkedin: null },
+    gifts: [
+      { who: "Ana Beatriz", item: "Coroa de Aniversariante", value: "R$ 25,00", msg: "Rainha do dia! 👑", when: "há 1 hora" },
+      { who: "Thainá Carvalho", item: "Kit Confete", value: "R$ 10,00", msg: "Parabéns migaaa!!", when: "há 3 horas" }
+    ],
+    groupGoal: null,
+    recap: { year: 2025, totalReceived: 610, giftsReceived: 28, friendsParticipated: 16, topGifter: "Ana Beatriz", topGifterAmount: 120, topMessage: "\"Rainha do dia, sempre!\" — Ana Beatriz", rankPercent: 14 }
+  },
+  joao: {
+    name: "João Vitor", handle: "joao", initial: "J", grad: "bg-amber-500",
+    status: "Faz aniversário em 27 dias", daysLabel: "27 dias", isToday: false,
+    received: 0, friends: 6,
+    friendsList: [{ name: "Ana Beatriz", initial: "A", grad: "grad-bg" }, { name: "Rafael Mendes", initial: "R", grad: "bg-blue-500" }, { name: "Marina Souza", initial: "M", grad: "bg-pink-500" }, { name: "Thainá Carvalho", initial: "T", grad: "bg-emerald-500" }, { name: "Mauricio Lima", initial: "M", grad: "bg-indigo-500" }, { name: "Carolina de Sousa", initial: "C", grad: "bg-rose-500" }], giftsCount: 0, goal: null, frame: null, inBirthdayMonth: false, wonFrames: [], wonBadges: [], accessory: null, wonAccessories: [],
+    socials: { instagram: null, tiktok: null, youtube: null, linkedin: "joao-vitor-oliveira" },
+    gifts: [], groupGoal: null,
+    recap: { year: 2025, totalReceived: 120, giftsReceived: 6, friendsParticipated: 5, topGifter: "Mauricio Lima", topGifterAmount: 30, topMessage: "\"Parabéns, parceiro!\" — Mauricio Lima", rankPercent: 41 }
+  },
+  thaina: {
+    name: "Thainá Carvalho", handle: "thaina", initial: "T", grad: "bg-emerald-500",
+    status: "Faz 29 anos hoje!", daysLabel: "hoje", isToday: true,
+    received: 58, friends: 11,
+    friendsList: [{ name: "Ana Beatriz", initial: "A", grad: "grad-bg" }, { name: "Rafael Mendes", initial: "R", grad: "bg-blue-500" }, { name: "Marina Souza", initial: "M", grad: "bg-pink-500" }, { name: "João Vitor", initial: "J", grad: "bg-amber-500" }, { name: "Mauricio Lima", initial: "M", grad: "bg-indigo-500" }, { name: "Carolina de Sousa", initial: "C", grad: "bg-rose-500" }, { name: "Bruno Costa", initial: "B", grad: "bg-blue-500" }, { name: "Camila Rocha", initial: "C", grad: "bg-pink-500" }, { name: "Diego Alves", initial: "D", grad: "bg-amber-500" }, { name: "Fernanda Lima", initial: "F", grad: "bg-emerald-500" }, { name: "Gustavo Ramos", initial: "G", grad: "bg-indigo-500" }], giftsCount: 4, goal: null, frame: null, inBirthdayMonth: true, wonFrames: [], wonBadges: ["querido"], accessory: null, wonAccessories: ["confete"],
+    socials: { instagram: "thaina.carvalho", tiktok: "thainacarvalho", youtube: null, linkedin: null },
+    gifts: [
+      { who: "Mauricio Lima", item: "Vale Café", value: "R$ 6,00", msg: "Parabéns! Um café por minha conta.", when: "há 5 horas" }
+    ],
+    groupGoal: null,
+    recap: { year: 2025, totalReceived: 280, giftsReceived: 11, friendsParticipated: 8, topGifter: "Ana Beatriz", topGifterAmount: 45, topMessage: "\"Você merece o mundo!\" — Ana Beatriz", rankPercent: 19 }
+  },
+  mauricio: {
+    name: "Mauricio Lima", handle: "mauricio", initial: "M", grad: "bg-indigo-500",
+    status: "Faz aniversário em 5 dias", daysLabel: "5 dias", isToday: false,
+    received: 30, friends: 9,
+    friendsList: [{ name: "Ana Beatriz", initial: "A", grad: "grad-bg" }, { name: "Rafael Mendes", initial: "R", grad: "bg-blue-500" }, { name: "Marina Souza", initial: "M", grad: "bg-pink-500" }, { name: "João Vitor", initial: "J", grad: "bg-amber-500" }, { name: "Thainá Carvalho", initial: "T", grad: "bg-emerald-500" }, { name: "Carolina de Sousa", initial: "C", grad: "bg-rose-500" }, { name: "Bruno Costa", initial: "B", grad: "bg-blue-500" }, { name: "Camila Rocha", initial: "C", grad: "bg-pink-500" }, { name: "Diego Alves", initial: "D", grad: "bg-amber-500" }], giftsCount: 2, goal: null, frame: null, inBirthdayMonth: true, wonFrames: [], wonBadges: [], accessory: null, wonAccessories: [],
+    socials: { instagram: "mauricio.lima", tiktok: null, youtube: null, linkedin: "mauricio-lima" },
+    gifts: [
+      { who: "Ana Beatriz", item: "Vale Compras R$5", value: "R$ 5,00", msg: "Já separando o presente principal 😄", when: "há 1 dia" }
+    ],
+    groupGoal: null,
+    recap: { year: 2025, totalReceived: 195, giftsReceived: 9, friendsParticipated: 7, topGifter: "Thainá Carvalho", topGifterAmount: 40, topMessage: "\"Você é demais, parabéns!\" — Thainá Carvalho", rankPercent: 33 }
+  },
+  carolina: {
+    name: "Carolina de Sousa", handle: "carolina", initial: "C", grad: "bg-rose-500",
+    status: "Faz aniversário em 19 dias", daysLabel: "19 dias", isToday: false,
+    received: 0, friends: 4,
+    friendsList: [{ name: "Ana Beatriz", initial: "A", grad: "grad-bg" }, { name: "Rafael Mendes", initial: "R", grad: "bg-blue-500" }, { name: "Marina Souza", initial: "M", grad: "bg-pink-500" }, { name: "João Vitor", initial: "J", grad: "bg-amber-500" }], giftsCount: 0, goal: null, frame: null, inBirthdayMonth: false, wonFrames: [], wonBadges: [], accessory: null, wonAccessories: [],
+    socials: { instagram: null, tiktok: null, youtube: null, linkedin: null },
+    gifts: [], groupGoal: null,
+    recap: { year: 2025, totalReceived: 0, giftsReceived: 0, friendsParticipated: 0, topGifter: null, topGifterAmount: 0, topMessage: null, rankPercent: null }
+  }
+};
+
+// Cosmetic frames purchasable in the "Loja de Personalização" using wallet balance (or won for free via gifts)
+const FRAMES = [
+  { id: "aurora", name: "Moldura Aurora", price: 40, frameClass: "frame-aurora", desc: "Um anel de gradiente colorido girando ao redor do seu avatar." },
+  { id: "estelar", name: "Moldura Estelar", price: 35, frameClass: "frame-estelar", desc: "Um brilho dourado pulsante, como uma constelação de estrelas." },
+  { id: "aurea", name: "Moldura Áurea", price: 60, frameClass: "frame-aurea", desc: "Status vip com uma luz dourada passando pela moldura." },
+  { id: "cristal", name: "Moldura Cristal", price: 30, frameClass: "frame-cristal", desc: "Um halo gelado, translúcido e moderno." },
+];
+
+// Emblemas conquistados ao receber presentes especiais (não são comprados, só ganhos)
+// "icon" referencia uma chave de ICONS (icons.js) — nunca emoji.
+const BADGES = [
+  { id: "querido", name: "Querido(a)", icon: "heart", desc: "Recebeu presentes de pelo menos 5 amigos diferentes." },
+  { id: "popular", name: "Popular", icon: "star", desc: "Recebeu mais de R$ 100 em presentes em um único mês." },
+  { id: "veterano", name: "Veterano(a)", icon: "medal", desc: "Já comemorou 2 aniversários no bday.fm." },
+];
+
+// Acessórios de festa que ficam sobre o avatar — ganhos em presentes (wonAccessories) OU
+// comprados na loja com o saldo da carteira (preço em "price", entre R$1 e R$5).
+// Ilustração colorida "cheia" (sem contorno de linha, sem bolha de fundo), encostando direto
+// no avatar — "style" é a posição/tamanho em % (relativos ao container do avatar) e "svg" é a
+// ilustração em si. Desenho próprio, não copiado de nenhuma marca.
+const ACCESSORIES = [
+  {
+    id: "confete", name: "Chuva de Confete", price: 1,
+    desc: "Confete comemorativo flutuando sobre o seu avatar.",
+    style: "top:-18%; left:50%; width:82%; height:60%; transform:translateX(-50%);",
+    svg: `<svg viewBox="0 0 100 90" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><rect x="6" y="22" width="13" height="7" rx="2" fill="#7C3AED" stroke="#fff" stroke-width="1.5" transform="rotate(25 12 25)"/><rect x="74" y="8" width="11" height="7" rx="2" fill="#EC4899" stroke="#fff" stroke-width="1.5" transform="rotate(-20 79 11)"/><circle cx="50" cy="12" r="5.5" fill="#F59E0B" stroke="#fff" stroke-width="1.5"/><rect x="30" y="46" width="11" height="7" rx="2" fill="#10B981" stroke="#fff" stroke-width="1.5" transform="rotate(15 35 49)"/><circle cx="82" cy="50" r="4.5" fill="#0EA5E9" stroke="#fff" stroke-width="1.5"/><rect x="55" y="66" width="11" height="7" rx="2" fill="#F43F5E" stroke="#fff" stroke-width="1.5" transform="rotate(-30 60 69)"/><circle cx="14" cy="60" r="4.5" fill="#A78BFA" stroke="#fff" stroke-width="1.5"/><circle cx="64" cy="30" r="4" fill="#10B981" stroke="#fff" stroke-width="1.5"/></svg>`
+  },
+  {
+    id: "laco", name: "Laço de Festa", price: 2,
+    desc: "Um laço colorido decorando o seu avatar.",
+    style: "bottom:-16%; left:50%; width:48%; height:34%; transform:translateX(-50%);",
+    svg: `<svg viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><path d="M48 30 L14 9 Q4 6 7 21 L21 30 L7 39 Q4 54 14 51 Z" fill="#EC4899" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M52 30 L86 9 Q96 6 93 21 L79 30 L93 39 Q96 54 86 51 Z" fill="#EC4899" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><circle cx="50" cy="30" r="10" fill="#F43F5E" stroke="#fff" stroke-width="2"/></svg>`
+  },
+  {
+    id: "balao", name: "Balão de Festa", price: 2,
+    desc: "Um balãozinho colorido do lado do seu avatar.",
+    style: "top:-46%; right:-16%; width:42%; height:60%; transform:rotate(8deg);",
+    svg: `<svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><ellipse cx="50" cy="46" rx="36" ry="42" fill="#0EA5E9" stroke="#fff" stroke-width="2"/><ellipse cx="37" cy="30" rx="10" ry="14" fill="#fff" opacity="0.3"/><path d="M40 86 Q50 93 60 86 L55 102 L45 102 Z" fill="#0EA5E9" stroke="#fff" stroke-width="2"/><path d="M50 102 Q39 116 50 126 Q61 136 50 140" stroke="#94A3B8" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`
+  },
+  {
+    id: "vela", name: "Velinha de Aniversário", price: 3,
+    desc: "Uma velinha de bolo em cima do seu avatar.",
+    style: "top:-30%; left:50%; width:26%; height:52%; transform:translateX(-50%) rotate(-4deg);",
+    svg: `<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><ellipse cx="30" cy="13" rx="9" ry="13" fill="#FDBA74"/><ellipse cx="30" cy="16" rx="5" ry="8" fill="#F59E0B"/><rect x="19" y="28" width="22" height="62" rx="5" fill="#EC4899" stroke="#fff" stroke-width="2"/><rect x="19" y="45" width="22" height="9" fill="#fff"/><rect x="19" y="66" width="22" height="9" fill="#fff"/></svg>`
+  },
+  {
+    id: "chapeu-festa", name: "Chapéu de Festa", price: 4,
+    desc: "Um chapeuzinho de festa em cima do seu avatar.",
+    style: "top:-24%; left:50%; width:56%; height:56%; transform:translateX(-50%) rotate(-6deg);",
+    svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><path d="M50 6 L80 84 L20 84 Z" fill="#7C3AED" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M50 6 L61 36 L39 36 Z" fill="#EC4899"/><path d="M43 52 L57 52 L63 68 L37 68 Z" fill="#F59E0B"/><circle cx="45" cy="44" r="3.5" fill="#fff"/><circle cx="58" cy="60" r="3.5" fill="#fff"/><circle cx="39" cy="76" r="3.5" fill="#fff"/><ellipse cx="50" cy="84" rx="32" ry="7" fill="#EC4899" stroke="#fff" stroke-width="2"/><circle cx="50" cy="7" r="8" fill="#FDE68A" stroke="#fff" stroke-width="2"/></svg>`
+  },
+  {
+    id: "coroa", name: "Coroa de Aniversariante", price: 5,
+    desc: "Uma coroinha dourada para o rei ou rainha do dia.",
+    style: "top:-22%; left:50%; width:60%; height:42%; transform:translateX(-50%);",
+    svg: `<svg viewBox="0 0 100 76" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><path d="M12 50 L22 16 L38 38 L50 12 L62 38 L78 16 L88 50 Z" fill="#FBBF24" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><rect x="12" y="50" width="76" height="18" rx="4" fill="#F59E0B" stroke="#fff" stroke-width="2"/><circle cx="22" cy="16" r="4.5" fill="#fff"/><circle cx="50" cy="12" r="4.5" fill="#fff"/><circle cx="78" cy="16" r="4.5" fill="#fff"/><circle cx="34" cy="59" r="4" fill="#EC4899"/><circle cx="50" cy="59" r="4" fill="#0EA5E9"/><circle cx="66" cy="59" r="4" fill="#10B981"/></svg>`
+  },
+];
+
+const USERS_ORDER = ["ana","marina","thaina","rafael","joao","mauricio","carolina"];
+
+// ===== Contas criadas pelo formulário de Cadastro (sem backend real) =====
+// Como o protótipo não tem servidor/banco de dados, uma conta criada em "Criar conta
+// grátis" é guardada no armazenamento local deste navegador. Isso resolve o bug de
+// sempre abrir o perfil da Ana: quem se cadastra passa a ter o próprio perfil de
+// verdade (mesmo que só "de mentira" neste navegador), e quem faz login volta a cair
+// exatamente na própria conta, não em uma conta fixa de demonstração.
+
+// E-mails de atalho para explorar as contas de demonstração já populadas (Ana, Rafael...)
+const DEMO_EMAILS = {
+  'ana@bday.fm': 'ana',
+  'rafael@bday.fm': 'rafael',
+  'marina@bday.fm': 'marina',
+  'joao@bday.fm': 'joao',
+  'thaina@bday.fm': 'thaina',
+  'mauricio@bday.fm': 'mauricio',
+  'carolina@bday.fm': 'carolina',
+  'admin@bday.fm': 'admin',   // painel de administração (admin.html)
+};
+
+
+// ---- Selo de verificação (premium) — concedido/revogado no painel admin ----
+// Estado em localStorage (bdayfm_verified: { slug: true/false }); alguns perfis
+// de demonstração já nascem verificados por padrão.
+const VERIFIED_DEFAULTS = ['ana'];
+function getVerifiedMap() {
+  try { return JSON.parse(localStorage.getItem('bdayfm_verified') || 'null') || {}; } catch (e) { return {}; }
+}
+function setUserVerified(slug, on) {
+  const m = getVerifiedMap();
+  m[slug] = !!on;
+  try { localStorage.setItem('bdayfm_verified', JSON.stringify(m)); } catch (e) {}
+}
+function isUserVerified(slug) {
+  const m = getVerifiedMap();
+  if (slug in m) return !!m[slug];
+  return VERIFIED_DEFAULTS.includes(slug);
+}
+
+// ---- Pontos de recompensa (ganhos enviando presentes na Loja; resgatados no perfil) ----
+const PONTOS_POR_ENVIO = 40;
+const PONTOS_BONUS_MISSAO = 80;   // ao completar 3 envios na semana
+// Custo em pontos dos itens de personalização do perfil
+const RESGATE_PONTOS = {
+  frames: { cristal: 120, estelar: 160, aurora: 240, aurea: 400 },
+  accessories: { confete: 80, laco: 120, balao: 120, vela: 200, coroa: 320 },
+};
+function pontosEnvios(slug) {
+  try {
+    let l = JSON.parse(localStorage.getItem('bdayfm_loja_envios_' + slug) || 'null');
+    if (!l) {
+      // migração: a primeira versão guardava os envios sem separar por usuário
+      const antigo = JSON.parse(localStorage.getItem('bdayfm_loja_envios') || 'null');
+      if (antigo && antigo.length) {
+        l = antigo;
+        localStorage.setItem('bdayfm_loja_envios_' + slug, JSON.stringify(l));
+        localStorage.removeItem('bdayfm_loja_envios');
+      }
+    }
+    return l || [];
+  } catch (e) { return []; }
+}
+function pontosRegistrarEnvio(slug, nome) {
+  if (!slug || !nome) return;
+  const l = pontosEnvios(slug);
+  l.push({ nome, ts: Date.now() });
+  try { localStorage.setItem('bdayfm_loja_envios_' + slug, JSON.stringify(l)); } catch (e) {}
+}
+function pontosGastos(slug) {
+  try { return JSON.parse(localStorage.getItem('bdayfm_pontos_gastos_' + slug) || '0') || 0; } catch (e) { return 0; }
+}
+function pontosGanhos(slug) {
+  const envios = pontosEnvios(slug);
+  const semana = envios.filter(e => Date.now() - e.ts < 7 * 86400000).length;
+  return envios.length * PONTOS_POR_ENVIO + (semana >= 3 ? PONTOS_BONUS_MISSAO : 0);
+}
+function pontosSaldo(slug) { return Math.max(0, pontosGanhos(slug) - pontosGastos(slug)); }
+function pontosGastar(slug, valor) {
+  if (pontosSaldo(slug) < valor) return false;
+  try { localStorage.setItem('bdayfm_pontos_gastos_' + slug, JSON.stringify(pontosGastos(slug) + valor)); } catch (e) { return false; }
+  return true;
+}
+
+const CUSTOM_USERS_KEY = 'bdayfm_custom_users';
+
+function getCustomUsers() {
+  try {
+    const all = JSON.parse(localStorage.getItem(CUSTOM_USERS_KEY) || '{}');
+    // Migração: contas criadas antes da correção nasciam com uma meta automática
+    // (R$ 200) sem o usuário nunca ter criado um BDAY. A meta só existe quando
+    // vem de um BDAY — zera qualquer meta solta dessas contas antigas.
+    let migrated = false;
+    Object.values(all).forEach(u => {
+      if (u && u.goal != null && !u.groupGoal) { u.goal = null; migrated = true; }
+    });
+    if (migrated) { try { localStorage.setItem(CUSTOM_USERS_KEY, JSON.stringify(all)); } catch (e) {} }
+    return all;
+  } catch (e) { return {}; }
+}
+
+function saveCustomUser(user) {
+  const all = getCustomUsers();
+  all[user.slug] = user;
+  try { localStorage.setItem(CUSTOM_USERS_KEY, JSON.stringify(all)); } catch (e) {}
+}
+
+function isSlugTaken(slug) {
+  return !!USERS[slug] || !!getCustomUsers()[slug];
+}
+
+function hashCode(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; }
+  return hash;
+}
+
+// Gera um @ (nome de usuário) limpo a partir do texto digitado no cadastro — minúsculas,
+// sem acento, só letras/números/ponto — e garante que não colida com um @ já existente
+// (das contas de demonstração ou de outra conta já criada neste navegador).
+function slugifyUsername(raw) {
+  let base = (raw || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9.]/g, '');
+  if (!base) base = 'usuario';
+  let slug = base;
+  let i = 2;
+  while (isSlugTaken(slug)) { slug = `${base}${i}`; i++; }
+  return slug;
+}
+
+// Cria o registro de um novo usuário a partir dos dados do formulário de cadastro.
+function createCustomUser({ name, slug, email, birthdate }) {
+  const initial = (name.trim()[0] || '?').toUpperCase();
+  const grads = ['bg-blue-500', 'bg-pink-500', 'bg-amber-500', 'bg-emerald-500', 'bg-indigo-500', 'bg-rose-500', 'bg-cyan-500', 'bg-violet-500'];
+  const grad = grads[Math.abs(hashCode(slug)) % grads.length];
+  const user = {
+    name: name.trim(), handle: slug, initial, grad, email, avatar: null,
+    status: 'Bem-vindo(a) ao bday.fm', daysLabel: null, isToday: false,
+    received: 0, friends: 0, friendsList: [], giftsCount: 0, goal: null,
+    frame: null, inBirthdayMonth: false, wonFrames: [], wonBadges: [], accessory: null, wonAccessories: [],
+    socials: { instagram: null, tiktok: null, youtube: null, linkedin: null },
+    gifts: [], groupGoal: null,
+    recap: { year: 2025, totalReceived: 0, giftsReceived: 0, friendsParticipated: 0, topGifter: null, topGifterAmount: 0, topMessage: null, rankPercent: null },
+  };
+  saveCustomUser({ ...user, slug });
+  return { ...user, slug };
+}
+
+// Busca um usuário tanto nos perfis fixos de demonstração (USERS) quanto nos criados
+// neste navegador via cadastro (localStorage) — usada por getUserFromQuery e pelo
+// cabeçalho logado (auth.js), para que os dois "conheçam" contas criadas de verdade.
+// Perfil da conta admin — não fica dentro de USERS (nem de USERS_ORDER) de propósito:
+// assim ela não aparece em Explorar/Feed/ranking nem na lista de usuários do próprio
+// painel admin, mas ainda resolve normalmente por findAnyUser() para o cabeçalho do
+// site público mostrar "logado" ao navegar via "Ver site". Saldo alto de propósito
+// (usado de verdade como saldo gastável na Loja de Personalização) para o admin poder
+// testar qualquer fluxo sem ficar limitado por saldo.
+const ADMIN_PROFILE = {
+  name: "Admin", handle: "admin", initial: "A", grad: "grad-bg",
+  status: "Conta administrativa", daysLabel: "—", isToday: false,
+  received: 999999, friends: 0, friendsList: [], giftsCount: 0, goal: null,
+  frame: null, inBirthdayMonth: false, wonFrames: [], wonBadges: [], accessory: null, wonAccessories: [],
+  socials: { instagram: null, tiktok: null, youtube: null, linkedin: null },
+  gifts: [], groupGoal: null,
+  recap: { year: 2025, totalReceived: 0, giftsReceived: 0, friendsParticipated: 0, topGifter: null, topGifterAmount: 0, topMessage: null, rankPercent: 0 }
+};
+
+function findAnyUser(slug) {
+  if (!slug) return null;
+  // Contas fixas de demonstração (ana, rafael... e a admin) começam só como objeto
+  // em memória — mas qualquer edição feita nelas (perfil, moldura, acessório, emblema,
+  // compras na loja) é gravada em getCustomUsers() do mesmo jeito que uma conta criada
+  // pelo cadastro (ver persistIfCustomUser em perfil.html e persistirConquistas em
+  // loja.html). Por isso o registro customizado tem PRIORIDADE aqui: se existir, ele é
+  // mesclado por cima do perfil fixo (que serve de base — amigos, presentes, recap etc.
+  // continuam vindo do fixo, só o que foi de fato alterado é sobrescrito).
+  const base = slug === 'admin' ? ADMIN_PROFILE : (USERS[slug] || null);
+  const custom = getCustomUsers();
+  if (custom[slug]) {
+    const cu = { ...(base || {}), ...custom[slug], slug };
+    // Contas criadas antes da mensagem de boas-vindas existir ficaram com o texto
+    // antigo "Conta criada recentemente" salvo no navegador — normaliza aqui na
+    // leitura, sem precisar que a pessoa edite o perfil pra corrigir.
+    if (cu.status === 'Conta criada recentemente') cu.status = 'Bem-vindo(a) ao bday.fm';
+    return cu;
+  }
+  if (base) return { ...base, slug };
+  return null;
+}
+
+function getUserFromQuery() {
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get('user');
+  const found = findAnyUser(slug);
+  if (found) return found;
+  // Sem ?user= válido na URL: se houver alguém logado, abre o perfil de quem está
+  // logado — em vez de sempre cair no perfil fixo da Ana.
+  const session = (typeof authGetSession === 'function') ? authGetSession() : null;
+  const ownProfile = session && findAnyUser(session.slug);
+  if (ownProfile) return ownProfile;
+  return { ...USERS.ana, slug: 'ana' };
+}

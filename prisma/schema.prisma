@@ -1,0 +1,129 @@
+// bday.fm — schema do banco (PostgreSQL)
+// Fase 1: usuários + sessões (autenticação real).
+// Já modelados para as próximas fases: presentes, carteira (ledger), metas de grupo.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id           String    @id @default(cuid())
+  slug         String    @unique // bday.fm/<slug>
+  name         String
+  email        String    @unique
+  passwordHash String
+  birthdate    DateTime? @db.Date
+  bio          String?
+  avatarUrl    String?
+  role         Role      @default(USER)
+  // campos visuais que o front já usa (frame, accessory, badges)
+  frame        String?
+  accessory    String?
+  badges       String[]  @default([])
+  socials      Json?     // { instagram, tiktok, youtube, linkedin }
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions          Session[]
+  giftsReceived     GiftSent[]         @relation("receiver")
+  giftsGiven        GiftSent[]         @relation("sender")
+  walletEntries     WalletEntry[]
+  goals             Goal[]
+  goalContributions GoalContribution[]
+
+  @@index([email])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique // sha256 do token; o token em si só vive no cookie
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userAgent String?
+  ip        String?
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ---------- Fase 2 (já modelado, sem uso ainda) ----------
+
+// Catálogo de presentes digitais (Biscoito da Sorte, Balão de Festa, etc.)
+model GiftItem {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  emoji      String?
+  priceCents Int        // preço em centavos (nunca float para dinheiro)
+  active     Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  sent       GiftSent[]
+}
+
+model GiftSent {
+  id         String   @id @default(cuid())
+  giftItemId String
+  giftItem   GiftItem @relation(fields: [giftItemId], references: [id])
+  senderId   String
+  sender     User     @relation("sender", fields: [senderId], references: [id])
+  receiverId String
+  receiver   User     @relation("receiver", fields: [receiverId], references: [id])
+  message    String?
+  valueCents Int
+  createdAt  DateTime @default(now())
+
+  @@index([receiverId, createdAt])
+}
+
+enum WalletEntryType {
+  GIFT_RECEIVED
+  WITHDRAWAL_PIX
+  ADJUSTMENT
+}
+
+// Ledger imutável: saldo = soma dos lançamentos. Nunca se edita, só se acrescenta.
+model WalletEntry {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+  type        WalletEntryType
+  amountCents Int             // positivo = crédito, negativo = débito
+  reference   String?         // id do GiftSent, id da transação Pix no gateway, etc.
+  createdAt   DateTime        @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Goal {
+  id           String             @id @default(cuid())
+  userId       String
+  user         User               @relation(fields: [userId], references: [id])
+  title        String
+  targetCents  Int
+  active       Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  contributions GoalContribution[]
+}
+
+model GoalContribution {
+  id          String   @id @default(cuid())
+  goalId      String
+  goal        Goal     @relation(fields: [goalId], references: [id])
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  amountCents Int
+  createdAt   DateTime @default(now())
+
+  @@index([goalId])
+}

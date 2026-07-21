@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="favicon.png">
+<title>Entrar — bday.fm</title>
+<meta name="description" content="Acesse sua conta bday.fm.">
+<meta name="robots" content="noindex">
+<meta property="og:title" content="Entrar — bday.fm">
+<meta property="og:description" content="Acesse sua conta bday.fm.">
+<meta property="og:image" content="og-image.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tailwind-prod.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-white">
+
+<div class="demo-banner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 inline-block align-[-2px] mr-1"><path d="M9 2v6L4 20a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2L15 8V2"/><path d="M9 2h6"/><line x1="8" y1="14" x2="16" y2="14"/></svg> <b>Protótipo de demonstração</b> — dados fictícios, nenhum pagamento ou ação aqui é real.</div>
+
+<header class="sticky top-0 z-50 bg-white/85 backdrop-blur border-b border-gray-100">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2 font-extrabold text-lg">
+      <img src="logo-full.png" alt="bday.fm" class="h-8 w-auto object-contain">
+    </a>
+    <a href="cadastro.html" class="text-sm font-semibold text-slate-500 hover:text-purple-700">Criar conta grátis →</a>
+  </div>
+</header>
+
+<main class="max-w-md mx-auto px-5 sm:px-8 py-16">
+  <div class="text-center reveal">
+    <div class="flex items-center justify-center mx-auto mb-3">
+      <img src="logo-full.png" alt="bday.fm" class="h-14 w-auto object-contain">
+    </div>
+    <h1 class="text-2xl font-extrabold">Bem-vindo de volta</h1>
+    <p class="text-slate-500 mt-2 text-sm">Entre para ver seus presentes e sua carteira.</p>
+  </div>
+
+  <form id="loginForm" class="card p-6 sm:p-8 mt-8 space-y-4 reveal" novalidate>
+    <div>
+      <label class="block text-sm font-semibold mb-1">E-mail</label>
+      <input required name="email" type="email" placeholder="voce@email.com" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-purple-400">
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-1">Senha</label>
+      <input required name="senha" type="password" placeholder="Sua senha" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-purple-400">
+      <button type="button" data-demo-action="Em breve: recuperação de senha por e-mail." class="text-xs text-purple-700 hover:underline mt-1 inline-block">Esqueci minha senha</button>
+    </div>
+    <button type="submit" class="btn-primary w-full rounded-xl px-6 py-3 mt-2">Entrar</button>
+  </form>
+
+  <p class="text-center text-sm text-slate-500 mt-6">
+    Não tem conta? <a href="cadastro.html" class="text-purple-700 font-semibold hover:underline">Criar conta grátis</a>
+  </p>
+</main>
+
+<script src="users.js"></script>
+<script src="auth.js"></script>
+<script src="script.js"></script>
+<script>
+  document.getElementById('loginForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!e.target.checkValidity()) { e.target.reportValidity(); return; }
+
+    // Login real: autentica no servidor (sessão em cookie httpOnly).
+    const emailDigitado = e.target.elements.email.value.trim().toLowerCase();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: emailDigitado, password: e.target.elements.senha.value })
+    }).then(async (res) => {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Não foi possível entrar. Tente novamente.');
+        btn.disabled = false;
+        return;
+      }
+      authLogin(data.slug); // mantém o comportamento visual do header/menus
+      showToast('Login realizado!');
+      const next = new URLSearchParams(window.location.search).get('next');
+      let dest = next && /^[a-zA-Z0-9_\-]+\.html(\?.*)?$/.test(next) ? next : `perfil.html?user=${data.slug}`;
+      if (data.role === 'ADMIN') { dest = 'admin.html'; }   // conta administrativa vai para o painel
+      setTimeout(() => { window.location.href = dest; }, 700);
+    }).catch(() => {
+      showToast('Falha de conexão. Tente novamente.');
+      btn.disabled = false;
+    });
+  });
+</script>
+</body>
+</html>

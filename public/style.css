@@ -1,0 +1,315 @@
+/* bday.fm prototype — shared styles */
+
+:root{
+  --purple: #7C3AED;
+  --purple-dark: #5B21B6;
+  --pink: #EC4899;
+  --ink: #0F172A;
+  --gray: #64748B;
+  --line: #E7E5FF;
+  --bg-soft: #FAF9FF;
+}
+
+*{ box-sizing: border-box; }
+
+html{ scroll-behavior: smooth; }
+
+/* Em telas pequenas, o Safari do iOS dá zoom automático em qualquer campo com
+   font-size abaixo de 16px ao tocar nele. Os inputs do site usam text-sm (14px)
+   por design — aqui só forçamos 16px no mobile, sem mudar o tamanho visual em
+   telas maiores, para o toque não disparar esse zoom indesejado. */
+@media (max-width: 640px){
+  input, textarea, select { font-size: 16px; }
+}
+
+body{
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--ink);
+  background: #ffffff;
+  -webkit-font-smoothing: antialiased;
+}
+
+.grad-text{
+  background: linear-gradient(90deg, var(--purple), var(--pink));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.grad-bg{
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+}
+
+.btn-primary{
+  background: linear-gradient(90deg, var(--purple), var(--pink));
+  color:#fff;
+  font-weight:600;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+  box-shadow: 0 8px 20px -6px rgba(124,58,237,.45);
+}
+.btn-primary:hover{ transform: translateY(-2px); filter: brightness(1.06); box-shadow: 0 12px 26px -6px rgba(124,58,237,.55); }
+.btn-primary:active{ transform: translateY(0); }
+
+.btn-secondary{
+  background:#fff;
+  border:1.5px solid var(--line);
+  color: var(--ink);
+  font-weight:600;
+  transition: all .18s ease;
+}
+.btn-secondary:hover{ border-color: var(--purple); color: var(--purple-dark); transform: translateY(-2px); }
+
+.card{
+  background:#fff;
+  border:1px solid #EEF0F6;
+  border-radius: 20px;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.card:hover{ transform: translateY(-4px); box-shadow: 0 16px 30px -14px rgba(15,23,42,.18); border-color: var(--line); }
+
+.nav-link{
+  color: var(--gray);
+  font-weight: 500;
+  transition: color .15s ease;
+}
+.nav-link:hover, .nav-link.active{ color: var(--purple-dark); }
+
+.pill{
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:12px; font-weight:700; padding:4px 10px; border-radius:999px;
+}
+
+/* HERO cinematográfica — vídeo ocupando 100% da hero, conteúdo sobreposto */
+.hero-cine{
+  background:#17102B; /* fallback enquanto o vídeo carrega */
+  border:1px solid rgba(255,255,255,.15);
+  box-shadow: 0 30px 70px -35px rgba(23,16,43,.55);
+}
+.hero-cine .hero-video{
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  object-fit:cover;
+  pointer-events:none;
+}
+.hero-cine .hero-overlay{
+  position:absolute; inset:0; pointer-events:none;
+  background:
+    linear-gradient(180deg, rgba(15,15,25,.08), rgba(15,15,25,.28)),
+    linear-gradient(100deg, rgba(15,10,30,.85) 0%, rgba(15,10,30,.62) 38%, rgba(15,10,30,.24) 64%, rgba(15,10,30,.08) 84%);
+}
+@media (max-width:1023px){
+  .hero-cine .hero-overlay{
+    background: linear-gradient(180deg, rgba(15,10,30,.74) 0%, rgba(15,10,30,.58) 55%, rgba(15,10,30,.74) 100%);
+  }
+}
+/* no fundo escuro do vídeo, o gradiente do título usa tons mais claros da marca */
+.hero-cine .grad-text{
+  background: linear-gradient(90deg, #C4B5FD, #F9A8D4);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* floating hero mockup animation */
+@keyframes floatY{
+  0%, 100% { transform: translateY(0px) rotate(-1.5deg); }
+  50% { transform: translateY(-14px) rotate(1deg); }
+}
+.float-mock{ animation: floatY 6s ease-in-out infinite; }
+
+@keyframes floatSlow{
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+.float-badge{ animation: floatSlow 4.5s ease-in-out infinite; }
+
+/* scroll reveal */
+.reveal{ opacity:0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+.reveal.in{ opacity:1; transform: translateY(0); }
+
+/* fade utility for staggered children */
+.reveal-stagger > * { opacity:0; transform: translateY(16px); transition: opacity .5s ease, transform .5s ease; }
+.reveal-stagger.in > *{ opacity:1; transform: translateY(0); }
+.reveal-stagger.in > *:nth-child(1){ transition-delay: .02s; }
+.reveal-stagger.in > *:nth-child(2){ transition-delay: .08s; }
+.reveal-stagger.in > *:nth-child(3){ transition-delay: .14s; }
+.reveal-stagger.in > *:nth-child(4){ transition-delay: .2s; }
+.reveal-stagger.in > *:nth-child(5){ transition-delay: .26s; }
+.reveal-stagger.in > *:nth-child(6){ transition-delay: .32s; }
+.reveal-stagger.in > *:nth-child(7){ transition-delay: .38s; }
+.reveal-stagger.in > *:nth-child(8){ transition-delay: .44s; }
+
+/* modal */
+.modal-backdrop{
+  position: fixed; inset:0; background: rgba(15,23,42,.5);
+  display:flex; align-items:center; justify-content:center; padding:16px;
+  opacity:0; pointer-events:none; transition: opacity .2s ease; z-index:60;
+}
+.modal-backdrop.open{ opacity:1; pointer-events:auto; }
+.modal-box{
+  background:#fff; border-radius: 20px; max-width: 460px; width:100%;
+  padding: 28px; transform: scale(.95) translateY(10px); transition: transform .2s ease;
+  max-height: 88vh; overflow:auto;
+}
+.modal-backdrop.open .modal-box{ transform: scale(1) translateY(0); }
+
+/* accordion */
+.faq-item .faq-a{
+  max-height:0; overflow:hidden; transition: max-height .28s ease, padding .28s ease;
+}
+.faq-item.open .faq-a{ max-height: 260px; }
+.faq-item .chev{ transition: transform .2s ease; }
+.faq-item.open .chev{ transform: rotate(180deg); }
+
+/* toast */
+#toast{
+  position: fixed; bottom: 24px; left:50%; transform: translate(-50%, 20px);
+  background: var(--ink); color:#fff; padding:14px 22px; border-radius:12px;
+  font-weight:600; font-size:14px; opacity:0; pointer-events:none;
+  transition: opacity .25s ease, transform .25s ease; z-index:80; box-shadow: 0 12px 30px -10px rgba(0,0,0,.4);
+}
+#toast.show{ opacity:1; transform: translate(-50%, 0); }
+
+/* mobile nav */
+#mobileMenu{ max-height:0; overflow:hidden; transition: max-height .3s ease; }
+#mobileMenu.open{ max-height: 420px; }
+
+.demo-banner{
+  background: linear-gradient(90deg,#111827,#312e81);
+  color:#fff; text-align:center; font-size:12.5px; padding:7px 12px; letter-spacing:.2px;
+}
+.demo-banner b{ color:#FBCFE8; }
+
+::selection{ background: var(--purple); color:#fff; }
+
+/* ===== Molduras de personalização (avatar frames) — ganhas ou compradas ===== */
+@keyframes frameShine{ 0%{ background-position:220% 0; } 100%{ background-position:-60% 0; } }
+@keyframes frameTwinkle{
+  0%,100%{ box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(251,191,36,.85), 0 0 14px 2px rgba(251,191,36,.4); }
+  50%{ box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(251,191,36,1), 0 0 24px 6px rgba(251,191,36,.8); }
+}
+@keyframes frameGlow{
+  0%,100%{ box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(103,232,249,.7), 0 0 14px 3px rgba(103,232,249,.35); }
+  50%{ box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(103,232,249,.95), 0 0 22px 6px rgba(103,232,249,.6); }
+}
+
+/* Aurora — anel de gradiente estático (roxo/rosa/âmbar/verde/azul) */
+.frame-aurora{ position:relative; }
+.frame-aurora::before{
+  content:''; position:absolute; inset:-6px; border-radius:inherit; padding:3px;
+  background: conic-gradient(from 0deg, #7C3AED, #EC4899, #F59E0B, #10B981, #0EA5E9, #7C3AED);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+
+/* Estelar — brilho dourado pulsante, como uma constelação de estrelas */
+.frame-estelar{
+  position:relative;
+  animation: frameTwinkle 2.4s ease-in-out infinite;
+}
+
+/* Áurea — moldura dourada com brilho de luz passando por cima */
+.frame-aurea{ position:relative; }
+.frame-aurea::before{
+  content:''; position:absolute; inset:-5px; border-radius:inherit; padding:3px;
+  background: linear-gradient(135deg, #FDE68A, #F59E0B, #FDE68A, #FBBF24);
+}
+.frame-aurea::after{
+  content:''; position:absolute; inset:-5px; border-radius:inherit; pointer-events:none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.9) 50%, transparent 70%);
+  background-size: 220% 220%;
+  animation: frameShine 2.8s ease-in-out infinite;
+  mix-blend-mode: overlay;
+}
+
+/* Cristal — halo gelado azul-esverdeado, efeito de vidro */
+.frame-cristal{
+  position:relative;
+  animation: frameGlow 3s ease-in-out infinite;
+}
+
+/* ===== Botão metalizado (efeito de luz passando) — atalho "Conte sobre seu bday" ===== */
+.btn-metallic{
+  position: relative; overflow: hidden;
+  background: linear-gradient(90deg, var(--purple), var(--pink));
+  color:#fff; border: none;
+  box-shadow: 0 8px 20px -6px rgba(124,58,237,.45);
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+.btn-metallic::after{
+  content:''; position:absolute; inset:0; pointer-events:none; border-radius:inherit;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.85) 50%, transparent 70%);
+  background-size: 220% 220%;
+  animation: frameShine 2.6s ease-in-out infinite;
+  mix-blend-mode: overlay;
+}
+.btn-metallic:hover{ transform: translateY(-2px); filter: brightness(1.06); box-shadow: 0 12px 26px -6px rgba(124,58,237,.55); }
+.btn-metallic:active{ transform: translateY(0); }
+
+/* ===== Cards estilo Stories (Explorar Perfis) ===== */
+.story-ring{
+  background: conic-gradient(from 180deg, #F58529, #DD2A7B, #8134AF, #515BD4, #F58529);
+}
+
+/* Esconde a barra de rolagem em carrosséis horizontais (ex: benefícios) — o scroll-snap
+   já indica a navegação, então a scrollbar nativa só polui visualmente. */
+.no-scrollbar::-webkit-scrollbar{ display:none; }
+.no-scrollbar{ -ms-overflow-style:none; scrollbar-width:none; }
+
+/* ---- Otimizações mobile ---- */
+/* remove o flash azul/cinza ao tocar em links e botões no celular */
+a, button{ -webkit-tap-highlight-color: transparent; }
+
+/* No celular, o respiro gigante entre seções (pensado para desktop) é reduzido
+   globalmente — corta os grandes vazios entre FAQ, depoimentos, banner etc. */
+@media (max-width:639px){
+  .py-24{ padding-top:3.25rem !important; padding-bottom:3.25rem !important; }
+  .py-16{ padding-top:2.75rem !important; padding-bottom:2.75rem !important; }
+  .py-14{ padding-top:2.5rem !important; padding-bottom:2.5rem !important; }
+  .mt-14{ margin-top:2rem !important; }
+  .mt-12{ margin-top:1.75rem !important; }
+}
+
+/* overlay do banner CTA final: gradiente lateral no desktop, véu uniforme no mobile
+   (o texto fica centralizado sobre a imagem sem brigar com o bolo/celular) */
+.cta-overlay{ background: linear-gradient(100deg, rgba(30,8,64,.88) 0%, rgba(30,8,64,.68) 34%, rgba(30,8,64,.22) 56%, rgba(30,8,64,0) 72%); }
+@media (max-width:639px){
+  .cta-overlay{ background: rgba(30,8,64,.74); }
+}
+
+@media (max-width:639px){
+  /* Loja de Personalização: molduras e decorações em 2 colunas no celular */
+  #framesGrid, #accessoriesGrid{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  #framesGrid > .card, #accessoriesGrid > .card{ padding:14px 10px; }
+  #framesGrid h3, #accessoriesGrid h3{ font-size:13.5px; line-height:1.3; }
+  #framesGrid p, #accessoriesGrid p{ font-size:10.5px; }
+
+  /* Modais compactos no celular: menos padding, mais área útil */
+  .modal-backdrop{ padding:10px; }
+  .modal-box{ padding:18px 16px; border-radius:16px; max-height:92vh; }
+  .modal-box h3{ font-size:16px; }
+  .modal-box label.block{ font-size:12.5px; margin-bottom:4px; }
+  .modal-box input, .modal-box textarea, .modal-box select{ padding-top:8px; padding-bottom:8px; }
+
+  /* chips de categoria do "Personalizar bday": grade uniforme de 2 colunas */
+  #goalCategoryList{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .goal-category-btn{ border-radius:12px; text-align:center; padding:8px 6px; font-size:11px; line-height:1.25; border-width:1.5px; }
+
+  /* preview de capa do BDAY menor no celular */
+  #groupGoalFormModal .max-w-\[200px\]{ max-width:130px; }
+
+  /* abas do "Editar perfil": uma linha só, com scroll horizontal (sem quebrar
+     a aba Personalização para fora da vista) */
+  [data-tab-group="editProfile"]{ flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; gap:16px; }
+  [data-tab-group="editProfile"]::-webkit-scrollbar{ display:none; }
+  [data-tab-group="editProfile"] [data-tab-btn]{ white-space:nowrap; flex-shrink:0; }
+
+  /* composer do feed: uma linha com reticências em vez de texto gigante */
+  #composerPrompt{ font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:8px 14px; }
+  #composerAvatar{ width:36px; height:36px; font-size:13px; }
+  #composerBdayBtn{ padding-top:8px; padding-bottom:8px; font-size:12.5px; }
+
+  /* menu mobile: itens mais compactos */
+  #mobileMenu .nav-link{ font-size:14px; padding:2px 0; }
+  #mobileMenu .btn-secondary, #mobileMenu .btn-primary{ padding-top:8px; padding-bottom:8px; font-size:13px; }
+}

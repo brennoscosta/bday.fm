@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="favicon.png">
+<title id="pageTitle">Meu Recap — bday.fm</title>
+<meta name="description" content="Veja o resumo do seu ano no bday.fm — presentes recebidos, amigos que participaram e muito mais.">
+<meta property="og:title" content="Meu Recap — bday.fm">
+<meta property="og:description" content="Um ano de momentos especiais celebrados com quem eu amo. Veja meu recap no bday.fm.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tailwind-prod.css">
+<link rel="stylesheet" href="style.css">
+<style>
+  .recap-slide { border-radius: 28px; padding: 40px 28px; color: #fff; position: relative; overflow: hidden; }
+  .recap-blob { position:absolute; border-radius:999px; opacity:.18; background:#fff; filter: blur(2px); }
+</style>
+</head>
+<body class="bg-white">
+
+<div class="demo-banner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 inline-block align-[-2px] mr-1"><path d="M9 2v6L4 20a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2L15 8V2"/><path d="M9 2h6"/><line x1="8" y1="14" x2="16" y2="14"/></svg> <b>Protótipo de demonstração</b> — dados fictícios, nenhum pagamento ou ação aqui é real.</div>
+
+<header class="sticky top-0 z-50 bg-white/85 backdrop-blur border-b border-gray-100">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2 font-extrabold text-lg">
+      <img src="logo-full.png" alt="bday.fm" class="h-8 w-auto object-contain">
+    </a>
+    <a id="pBackLink" href="perfil.html" class="text-sm font-semibold text-slate-500 hover:text-purple-700">← Voltar ao perfil</a>
+  </div>
+</header>
+
+<main class="max-w-xl mx-auto px-5 sm:px-8 py-10">
+
+  <div class="text-center reveal mb-8">
+    <div id="rAvatar" class="w-16 h-16 rounded-2xl grad-bg mx-auto flex items-center justify-center text-white font-extrabold text-2xl">A</div>
+    <h1 class="text-2xl font-extrabold mt-3">Recap <span id="rYear">2025</span> de <span id="rName">Ana</span></h1>
+    <p class="text-slate-500 text-sm mt-1">Um resumo do ano no bday.fm</p>
+  </div>
+
+  <!-- Instagram Stories share template -->
+  <div class="card p-6 mb-8 reveal">
+    <h3 class="font-bold flex items-center gap-2 mb-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5" style="color:#DD2A7B"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><line x1="17.5" y1="6.5" x2="17.5" y2="6.5"/></svg>
+      Compartilhar nos Stories do Instagram
+    </h3>
+    <p class="text-sm text-slate-500 mb-4">Geramos modelos prontos no formato de Stories (9:16) — escolha o que combina mais com você.</p>
+
+    <div class="grid grid-cols-3 gap-3 mb-5">
+      <button data-template="classic" class="tmpl-btn rounded-xl overflow-hidden border-2 border-purple-600 transition">
+        <canvas data-tmpl-canvas="classic" width="1080" height="1920" style="width:100%;height:auto;display:block"></canvas>
+        <div class="text-xs font-semibold py-1.5 bg-white text-slate-700">Clássico</div>
+      </button>
+      <button data-template="minimal" class="tmpl-btn rounded-xl overflow-hidden border-2 border-transparent hover:border-purple-300 transition">
+        <canvas data-tmpl-canvas="minimal" width="1080" height="1920" style="width:100%;height:auto;display:block"></canvas>
+        <div class="text-xs font-semibold py-1.5 bg-white text-slate-700">Minimalista</div>
+      </button>
+      <button data-template="dark" class="tmpl-btn rounded-xl overflow-hidden border-2 border-transparent hover:border-purple-300 transition">
+        <canvas data-tmpl-canvas="dark" width="1080" height="1920" style="width:100%;height:auto;display:block"></canvas>
+        <div class="text-xs font-semibold py-1.5 bg-white text-slate-700">Escuro</div>
+      </button>
+    </div>
+
+    <div class="flex flex-col sm:flex-row gap-5 items-center sm:items-start">
+      <canvas id="storyCanvas" width="1080" height="1920" class="rounded-2xl shadow-lg" style="width:150px;height:auto;border:1px solid #eee"></canvas>
+      <div class="flex-1 w-full space-y-2.5">
+        <button id="downloadStoryBtn" class="btn-primary w-full rounded-xl px-5 py-3 text-sm inline-flex items-center justify-center gap-2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>
+          Baixar imagem para os Stories
+        </button>
+        <button id="shareStoryBtn" class="btn-secondary w-full rounded-xl px-5 py-3 text-sm inline-flex items-center justify-center gap-2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
+          Compartilhar no Instagram
+        </button>
+        <p class="text-xs text-slate-400">Dica: baixe a imagem e poste nos Stories marcando @bday.fm — assim mais amigos descobrem seu perfil.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="space-y-5">
+    <div class="recap-slide reveal" style="background:linear-gradient(135deg,#7C3AED,#EC4899)">
+      <div class="recap-blob w-40 h-40 -top-10 -right-10"></div>
+      <div class="recap-blob w-24 h-24 bottom-0 left-0"></div>
+      <p class="text-sm font-semibold opacity-90 relative">No total, você recebeu</p>
+      <div id="rTotal" class="text-6xl font-extrabold mt-2 relative">R$ 0</div>
+      <p class="text-sm opacity-90 mt-2 relative">em presentes de aniversário este ano.</p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-5">
+      <div class="recap-slide reveal" style="background:linear-gradient(135deg,#0EA5E9,#7C3AED)">
+        <div class="recap-blob w-28 h-28 -bottom-8 -left-8"></div>
+        <p class="text-sm font-semibold opacity-90 relative">Presentes recebidos</p>
+        <div id="rGiftsCount" class="text-4xl font-extrabold mt-2 relative">0</div>
+      </div>
+      <div class="recap-slide reveal" style="background:linear-gradient(135deg,#F59E0B,#EC4899)">
+        <div class="recap-blob w-28 h-28 -top-8 -right-8"></div>
+        <p class="text-sm font-semibold opacity-90 relative">Amigos que participaram</p>
+        <div id="rFriendsCount" class="text-4xl font-extrabold mt-2 relative">0</div>
+      </div>
+    </div>
+
+    <div id="rTopGifterSlide" class="recap-slide reveal" style="background:linear-gradient(135deg,#059669,#0EA5E9)">
+      <div class="recap-blob w-32 h-32 -bottom-10 -right-10"></div>
+      <p class="text-sm font-semibold opacity-90 relative">Seu maior presenteador do ano foi</p>
+      <div id="rTopGifter" class="text-3xl font-extrabold mt-2 relative">—</div>
+      <p id="rTopGifterAmount" class="text-sm opacity-90 mt-1 relative">R$ 0 em presentes enviados</p>
+    </div>
+
+    <div id="rMessageSlide" class="recap-slide reveal" style="background:linear-gradient(135deg,#DB2777,#7C3AED)">
+      <div class="recap-blob w-32 h-32 -top-10 -left-10"></div>
+      <p class="text-sm font-semibold opacity-90 relative">A mensagem mais marcante que você recebeu</p>
+      <div id="rTopMessage" class="text-lg font-semibold mt-3 relative leading-snug">—</div>
+    </div>
+
+    <div class="recap-slide reveal" style="background:linear-gradient(135deg,#1E293B,#7C3AED)">
+      <div class="recap-blob w-36 h-36 -bottom-12 -right-12"></div>
+      <p class="text-sm font-semibold opacity-90 relative">Isso te coloca entre os</p>
+      <div id="rRankPercent" class="text-5xl font-extrabold mt-2 relative">Top 0%</div>
+      <p class="text-sm opacity-90 mt-2 relative">perfis mais presenteados do bday.fm em 2025.</p>
+    </div>
+  </div>
+
+  <div class="mt-6 flex flex-col sm:flex-row gap-3 reveal">
+    <a id="rProfileLink" href="perfil.html" class="btn-secondary flex-1 rounded-xl px-6 py-3 text-center">Ver meu perfil</a>
+  </div>
+</main>
+
+<footer class="border-t border-gray-100 mt-10">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+    <div class="flex items-center gap-2 font-bold text-slate-700">
+      <img src="logo-full.png" alt="bday.fm" class="h-5 w-auto object-contain" loading="lazy">
+    </div>
+    <div>© 2026 bday.fm — protótipo de demonstração</div>
+  </div>
+</footer>
+
+<script src="icons.js"></script>
+<script src="users.js"></script>
+<script src="auth.js"></script>
+<script src="script.js"></script>
+<script>
+  const u = getUserFromQuery();
+  const r = u.recap || { year: 2025, totalReceived: 0, giftsReceived: 0, friendsParticipated: 0, topGifter: null, topGifterAmount: 0, topMessage: null, rankPercent: null };
+  const firstName = u.name.split(' ')[0];
+
+  document.getElementById('pageTitle').textContent = `Recap ${r.year} de ${firstName} — bday.fm`;
+  document.getElementById('pBackLink').href = `perfil.html?user=${u.slug}`;
+  document.getElementById('rProfileLink').href = `perfil.html?user=${u.slug}`;
+
+  const avatar = document.getElementById('rAvatar');
+  avatar.textContent = u.initial;
+  avatar.className = avatar.className.replace('grad-bg', u.grad);
+
+  document.getElementById('rYear').textContent = r.year;
+  document.getElementById('rName').textContent = firstName;
+  document.getElementById('rTotal').textContent = `R$ ${r.totalReceived}`;
+  document.getElementById('rGiftsCount').textContent = r.giftsReceived;
+  document.getElementById('rFriendsCount').textContent = r.friendsParticipated;
+
+  if (r.topGifter) {
+    document.getElementById('rTopGifter').textContent = r.topGifter;
+    document.getElementById('rTopGifterAmount').textContent = `R$ ${r.topGifterAmount} em presentes enviados`;
+  } else {
+    document.getElementById('rTopGifterSlide').classList.add('hidden');
+  }
+
+  if (r.topMessage) {
+    document.getElementById('rTopMessage').textContent = r.topMessage;
+  } else {
+    document.getElementById('rMessageSlide').classList.add('hidden');
+  }
+
+  document.getElementById('rRankPercent').textContent = r.rankPercent ? `Top ${r.rankPercent}%` : '—';
+
+  // Generate a shareable Instagram Stories (1080x1920) template on canvas
+  function roundRect(ctx, x, y, w, h, rad) {
+    ctx.beginPath();
+    ctx.moveTo(x + rad, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rad);
+    ctx.arcTo(x + w, y + h, x, y + h, rad);
+    ctx.arcTo(x, y + h, x, y, rad);
+    ctx.arcTo(x, y, x + w, y, rad);
+    ctx.closePath();
+  }
+
+  // Map each user's avatar color class to an actual color for canvas rendering
+  const gradColorMap = {
+    'bg-blue-500': '#3B82F6',
+    'bg-pink-500': '#EC4899',
+    'bg-amber-500': '#F59E0B',
+    'bg-emerald-500': '#10B981',
+    'bg-indigo-500': '#6366F1',
+    'bg-rose-500': '#F43F5E',
+  };
+
+  // Shrinks font-size until text fits maxWidth, so longer titles never overflow the canvas
+  function fitText(ctx, text, maxWidth, weight, maxSize, minSize) {
+    let size = maxSize || 56;
+    minSize = minSize || 30;
+    while (size > minSize) {
+      ctx.font = `${weight} ${size}px Inter, sans-serif`;
+      if (ctx.measureText(text).width <= maxWidth) break;
+      size -= 2;
+    }
+    ctx.font = `${weight} ${size}px Inter, sans-serif`;
+    return size;
+  }
+
+  // Shared avatar drawing (matches the user's profile avatar — initials on their color/gradient)
+  function getAvatarFill(ctx, cx, cy, r) {
+    if (u.grad === 'grad-bg') {
+      const g = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
+      g.addColorStop(0, '#7C3AED');
+      g.addColorStop(1, '#EC4899');
+      return g;
+    }
+    return gradColorMap[u.grad] || '#7C3AED';
+  }
+
+  function drawAvatar(ctx, cx, cy, r, opts) {
+    opts = opts || {};
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.fillStyle = getAvatarFill(ctx, cx, cy, r);
+    ctx.fill();
+    if (opts.ring !== false) {
+      if (opts.glow) { ctx.shadowColor = opts.ringColor; ctx.shadowBlur = 30; }
+      ctx.lineWidth = opts.ringWidth || 10;
+      ctx.strokeStyle = opts.ringColor || 'rgba(255,255,255,0.9)';
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = opts.textColor || '#fff';
+    ctx.font = `800 ${Math.round(r * 0.92)}px Inter, sans-serif`;
+    ctx.fillText(u.initial, cx, cy + r * 0.06);
+    ctx.restore();
+  }
+
+  // Decoração de festa equipada (mesma ilustração do perfil) — pré-carregada como imagem
+  // para poder ser desenhada sobre o avatar do canvas.
+  const equippedAccessory = u.accessory ? ACCESSORIES.find(a => a.id === u.accessory) : null;
+  let accessoryImg = null;
+  function loadAccessoryImage() {
+    return new Promise((resolve) => {
+      if (!equippedAccessory) { resolve(); return; }
+      const img = new Image();
+      img.onload = () => { accessoryImg = img; resolve(); };
+      img.onerror = () => resolve();
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(equippedAccessory.svg)));
+    });
+  }
+
+  function parseAccessoryStyle(styleStr) {
+    const d = {};
+    styleStr.split(';').forEach(part => {
+      part = part.trim();
+      if (!part) return;
+      const idx = part.indexOf(':');
+      d[part.slice(0, idx).trim()] = part.slice(idx + 1).trim();
+    });
+    let rotateDeg = 0;
+    const m = /rotate\(([-\d.]+)deg\)/.exec(d.transform || '');
+    if (m) rotateDeg = parseFloat(m[1]);
+    return { top: d.top, left: d.left, right: d.right, bottom: d.bottom, width: d.width, height: d.height, rotateDeg };
+  }
+  function pctToPx(v, total) { return v ? parseFloat(v) / 100 * total : 0; }
+
+  // Desenha a decoração equipada sobre o avatar (mesmo posicionamento em % usado no perfil)
+  function drawAccessoryOverlay(ctx, cx, cy, r) {
+    if (!accessoryImg || !equippedAccessory) return;
+    const box = r * 2;
+    const s = parseAccessoryStyle(equippedAccessory.style);
+    const w = pctToPx(s.width, box);
+    const h = pctToPx(s.height, box);
+    const x = s.left !== undefined ? (cx - r) + pctToPx(s.left, box) - w / 2 : (cx + r) - pctToPx(s.right, box) - w;
+    const y = s.top !== undefined ? (cy - r) + pctToPx(s.top, box) : (cy + r) - pctToPx(s.bottom, box) - h;
+    ctx.save();
+    ctx.translate(x + w / 2, y + h / 2);
+    ctx.rotate(s.rotateDeg * Math.PI / 180);
+    ctx.drawImage(accessoryImg, -w / 2, -h / 2, w, h);
+    ctx.restore();
+  }
+
+  // Template 1: Clássico — gradiente roxo/rosa da marca
+  function drawTemplateClassic(ctx, W, H) {
+    const bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, '#7C3AED'); bg.addColorStop(1, '#EC4899');
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.beginPath(); ctx.arc(W - 120, 220, 260, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(60, H - 260, 220, 0, Math.PI * 2); ctx.fill();
+
+    drawAvatar(ctx, W / 2, 250, 100, { ringColor: 'rgba(255,255,255,0.9)' });
+    drawAccessoryOverlay(ctx, W / 2, 250, 100);
+
+    ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
+    ctx.font = '600 40px Inter, sans-serif'; ctx.fillText('bday.fm', W / 2, 430);
+    fitText(ctx, 'Resumo do meu aniversário', W - 140, '800', 52, 30);
+    ctx.fillText('Resumo do meu aniversário', W / 2, 540);
+    ctx.font = '600 40px Inter, sans-serif'; ctx.fillText(`${firstName} • ${r.year}`, W / 2, 600);
+
+    const cardX = 90, cardY = 740, cardW = W - 180, cardH = 300;
+    ctx.fillStyle = 'rgba(255,255,255,0.14)';
+    roundRect(ctx, cardX, cardY, cardW, cardH, 40); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = '600 34px Inter, sans-serif'; ctx.fillText('Presentes recebidos este ano', W / 2, cardY + 90);
+    ctx.font = '800 150px Inter, sans-serif'; ctx.fillText(String(r.giftsReceived), W / 2, cardY + 235);
+
+    const stY = cardY + cardH + 50, stH = 220, gap = 30, stW = (cardW - gap) / 2;
+    ctx.fillStyle = 'rgba(255,255,255,0.14)';
+    roundRect(ctx, cardX, stY, stW, stH, 32); ctx.fill();
+    roundRect(ctx, cardX + stW + gap, stY, stW, stH, 32); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = '600 28px Inter, sans-serif';
+    ctx.fillText('Amigos', cardX + stW / 2, stY + 70);
+    ctx.fillText('Ranking', cardX + stW + gap + stW / 2, stY + 70);
+    ctx.font = '800 80px Inter, sans-serif';
+    ctx.fillText(String(r.friendsParticipated), cardX + stW / 2, stY + 160);
+    ctx.font = r.rankPercent ? '800 56px Inter, sans-serif' : '800 80px Inter, sans-serif';
+    ctx.fillText(r.rankPercent ? `Top ${r.rankPercent}%` : '—', cardX + stW + gap + stW / 2, stY + 160);
+
+    if (r.topGifter) {
+      const rY = stY + stH + 50, rH = 230;
+      ctx.fillStyle = 'rgba(255,255,255,0.14)';
+      roundRect(ctx, cardX, rY, cardW, rH, 40); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '600 30px Inter, sans-serif'; ctx.fillText('Maior presenteador do ano', W / 2, rY + 85);
+      ctx.font = '800 60px Inter, sans-serif'; ctx.fillText(r.topGifter, W / 2, rY + 165);
+    }
+
+    ctx.font = '600 34px Inter, sans-serif'; ctx.fillText('Faça seu recap em', W / 2, H - 160);
+    ctx.font = '800 46px Inter, sans-serif'; ctx.fillText('bday.fm', W / 2, H - 100);
+  }
+
+  // Template 2: Minimalista — fundo claro, cartões sóbrios
+  function drawTemplateMinimal(ctx, W, H) {
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(124,58,237,0.06)';
+    ctx.beginPath(); ctx.arc(W - 100, 180, 300, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(236,72,153,0.06)';
+    ctx.beginPath(); ctx.arc(80, H - 220, 260, 0, Math.PI * 2); ctx.fill();
+
+    drawAvatar(ctx, W / 2, 250, 100, { ringColor: '#EDE4FC', ringWidth: 12 });
+    drawAccessoryOverlay(ctx, W / 2, 250, 100);
+
+    ctx.textAlign = 'center';
+    const brandGrad = ctx.createLinearGradient(W / 2 - 120, 0, W / 2 + 120, 0);
+    brandGrad.addColorStop(0, '#7C3AED'); brandGrad.addColorStop(1, '#EC4899');
+    ctx.fillStyle = brandGrad;
+    ctx.font = '700 40px Inter, sans-serif'; ctx.fillText('bday.fm', W / 2, 430);
+
+    ctx.fillStyle = '#0F172A';
+    fitText(ctx, 'Resumo do meu aniversário', W - 140, '800', 52, 30);
+    ctx.fillText('Resumo do meu aniversário', W / 2, 540);
+    ctx.fillStyle = '#64748B';
+    ctx.font = '600 36px Inter, sans-serif'; ctx.fillText(`${firstName} • ${r.year}`, W / 2, 598);
+
+    function card(x, y, w, h, accent) {
+      ctx.fillStyle = '#F8FAFC';
+      roundRect(ctx, x, y, w, h, 32); ctx.fill();
+      ctx.strokeStyle = '#E2E8F0'; ctx.lineWidth = 2;
+      roundRect(ctx, x, y, w, h, 32); ctx.stroke();
+      ctx.fillStyle = accent;
+      roundRect(ctx, x, y, 10, h, 5); ctx.fill();
+    }
+
+    const cardX = 90, cardY = 740, cardW = W - 180, cardH = 300;
+    card(cardX, cardY, cardW, cardH, '#7C3AED');
+    ctx.fillStyle = '#64748B';
+    ctx.font = '600 32px Inter, sans-serif'; ctx.fillText('Presentes recebidos este ano', W / 2, cardY + 90);
+    ctx.fillStyle = '#7C3AED';
+    ctx.font = '800 145px Inter, sans-serif'; ctx.fillText(String(r.giftsReceived), W / 2, cardY + 232);
+
+    const stY = cardY + cardH + 50, stH = 220, gap = 30, stW = (cardW - gap) / 2;
+    card(cardX, stY, stW, stH, '#EC4899');
+    card(cardX + stW + gap, stY, stW, stH, '#0EA5E9');
+    ctx.fillStyle = '#64748B';
+    ctx.font = '600 26px Inter, sans-serif';
+    ctx.fillText('Amigos', cardX + stW / 2, stY + 70);
+    ctx.fillText('Ranking', cardX + stW + gap + stW / 2, stY + 70);
+    ctx.fillStyle = '#0F172A';
+    ctx.font = '800 78px Inter, sans-serif';
+    ctx.fillText(String(r.friendsParticipated), cardX + stW / 2, stY + 160);
+    ctx.font = r.rankPercent ? '800 54px Inter, sans-serif' : '800 78px Inter, sans-serif';
+    ctx.fillText(r.rankPercent ? `Top ${r.rankPercent}%` : '—', cardX + stW + gap + stW / 2, stY + 160);
+
+    if (r.topGifter) {
+      const rY = stY + stH + 50, rH = 230;
+      card(cardX, rY, cardW, rH, '#F59E0B');
+      ctx.fillStyle = '#64748B';
+      ctx.font = '600 28px Inter, sans-serif'; ctx.fillText('Maior presenteador do ano', W / 2, rY + 85);
+      ctx.fillStyle = '#0F172A';
+      ctx.font = '800 58px Inter, sans-serif'; ctx.fillText(r.topGifter, W / 2, rY + 165);
+    }
+
+    ctx.fillStyle = '#64748B';
+    ctx.font = '600 32px Inter, sans-serif'; ctx.fillText('Faça seu recap em', W / 2, H - 160);
+    ctx.fillStyle = brandGrad;
+    ctx.font = '800 46px Inter, sans-serif'; ctx.fillText('bday.fm', W / 2, H - 100);
+  }
+
+  // Template 3: Escuro — fundo dark com detalhes neon
+  function drawTemplateDark(ctx, W, H) {
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0B0B14'); bg.addColorStop(1, '#1B0F2E');
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = 'rgba(236,72,153,0.12)';
+    ctx.beginPath(); ctx.arc(W - 100, 200, 280, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(124,58,237,0.15)';
+    ctx.beginPath(); ctx.arc(60, H - 240, 240, 0, Math.PI * 2); ctx.fill();
+
+    drawAvatar(ctx, W / 2, 250, 100, { ringColor: '#EC4899', ringWidth: 8, glow: true });
+    drawAccessoryOverlay(ctx, W / 2, 250, 100);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#F472B6';
+    ctx.font = '700 38px Inter, sans-serif'; ctx.fillText('bday.fm', W / 2, 430);
+    ctx.fillStyle = '#fff';
+    fitText(ctx, 'Resumo do meu aniversário', W - 140, '800', 52, 30);
+    ctx.fillText('Resumo do meu aniversário', W / 2, 540);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '600 36px Inter, sans-serif'; ctx.fillText(`${firstName} • ${r.year}`, W / 2, 598);
+
+    function card(x, y, w, h) {
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      roundRect(ctx, x, y, w, h, 32); ctx.fill();
+      ctx.strokeStyle = 'rgba(236,72,153,0.35)'; ctx.lineWidth = 2;
+      roundRect(ctx, x, y, w, h, 32); ctx.stroke();
+    }
+
+    const cardX = 90, cardY = 740, cardW = W - 180, cardH = 300;
+    card(cardX, cardY, cardW, cardH);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '600 32px Inter, sans-serif'; ctx.fillText('Presentes recebidos este ano', W / 2, cardY + 90);
+    ctx.fillStyle = '#22D3EE';
+    ctx.shadowColor = '#22D3EE'; ctx.shadowBlur = 20;
+    ctx.font = '800 145px Inter, sans-serif'; ctx.fillText(String(r.giftsReceived), W / 2, cardY + 232);
+    ctx.shadowBlur = 0;
+
+    const stY = cardY + cardH + 50, stH = 220, gap = 30, stW = (cardW - gap) / 2;
+    card(cardX, stY, stW, stH); card(cardX + stW + gap, stY, stW, stH);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '600 26px Inter, sans-serif';
+    ctx.fillText('Amigos', cardX + stW / 2, stY + 70);
+    ctx.fillText('Ranking', cardX + stW + gap + stW / 2, stY + 70);
+    ctx.fillStyle = '#F472B6';
+    ctx.font = '800 78px Inter, sans-serif';
+    ctx.fillText(String(r.friendsParticipated), cardX + stW / 2, stY + 160);
+    ctx.font = r.rankPercent ? '800 54px Inter, sans-serif' : '800 78px Inter, sans-serif';
+    ctx.fillText(r.rankPercent ? `Top ${r.rankPercent}%` : '—', cardX + stW + gap + stW / 2, stY + 160);
+
+    if (r.topGifter) {
+      const rY = stY + stH + 50, rH = 230;
+      card(cardX, rY, cardW, rH);
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.font = '600 28px Inter, sans-serif'; ctx.fillText('Maior presenteador do ano', W / 2, rY + 85);
+      ctx.fillStyle = '#fff';
+      ctx.font = '800 58px Inter, sans-serif'; ctx.fillText(r.topGifter, W / 2, rY + 165);
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '600 32px Inter, sans-serif'; ctx.fillText('Faça seu recap em', W / 2, H - 160);
+    ctx.fillStyle = '#F472B6';
+    ctx.font = '800 46px Inter, sans-serif'; ctx.fillText('bday.fm', W / 2, H - 100);
+  }
+
+  const TEMPLATES = { classic: drawTemplateClassic, minimal: drawTemplateMinimal, dark: drawTemplateDark };
+  let currentTemplate = 'classic';
+
+  function renderTemplate(canvasEl, templateId) {
+    const ctx = canvasEl.getContext('2d');
+    const W = canvasEl.width, H = canvasEl.height;
+    ctx.clearRect(0, 0, W, H);
+    (TEMPLATES[templateId] || drawTemplateClassic)(ctx, W, H);
+  }
+
+  function renderAll() {
+    renderTemplate(document.getElementById('storyCanvas'), currentTemplate);
+    document.querySelectorAll('[data-tmpl-canvas]').forEach(c => {
+      renderTemplate(c, c.getAttribute('data-tmpl-canvas'));
+    });
+  }
+
+  // Render once fonts + a eventual decoração do avatar estiverem prontos
+  Promise.all([
+    document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve(),
+    loadAccessoryImage()
+  ]).then(renderAll);
+
+  document.querySelectorAll('.tmpl-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentTemplate = btn.getAttribute('data-template');
+      document.querySelectorAll('.tmpl-btn').forEach(b => {
+        b.classList.remove('border-purple-600');
+        b.classList.add('border-transparent');
+      });
+      btn.classList.remove('border-transparent');
+      btn.classList.add('border-purple-600');
+      renderTemplate(document.getElementById('storyCanvas'), currentTemplate);
+    });
+  });
+
+  function downloadStoryBlob(blob, toastMsg) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bdayfm-recap-${u.slug}-${r.year}-${currentTemplate}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast(toastMsg);
+  }
+
+  document.getElementById('downloadStoryBtn').addEventListener('click', () => {
+    document.getElementById('storyCanvas').toBlob((blob) => {
+      downloadStoryBlob(blob, 'Imagem baixada! Poste nos Stories e marque @bday.fm');
+    }, 'image/png');
+  });
+
+  document.getElementById('shareStoryBtn').addEventListener('click', () => {
+    document.getElementById('storyCanvas').toBlob(async (blob) => {
+      const file = new File([blob], `bdayfm-recap-${u.slug}.png`, { type: 'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: `Resumo do meu aniversário no bday.fm` });
+          return;
+        } catch (e) { /* user cancelled or unsupported — fall back to download below */ }
+      }
+      downloadStoryBlob(blob, 'Imagem baixada! Abra o Instagram, crie um Stories e selecione a imagem da galeria (demo).');
+    }, 'image/png');
+  });
+</script>
+</body>
+</html>

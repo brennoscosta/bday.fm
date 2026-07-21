@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="favicon.png">
+<title>Loja de Personalização — bday.fm</title>
+<meta name="description" content="Use seu saldo para desbloquear molduras exclusivas para o seu avatar no bday.fm.">
+<meta property="og:title" content="Loja de Personalização — bday.fm">
+<meta property="og:description" content="Use seu saldo para desbloquear itens exclusivos para o seu avatar.">
+<meta property="og:image" content="og-image.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tailwind-prod.css">
+<link rel="stylesheet" href="style.css">
+<script>
+  // Acesso à Loja exige login — redireciona antes que o conteúdo apareça.
+  // Também tenta restaurar a sessão a partir de ?session=slug (rede de segurança
+  // para quando o storage não é compartilhado entre páginas abertas via file://).
+  (function () {
+    var KEY = 'bdayfm_session';
+    var urlSlug = new URLSearchParams(window.location.search).get('session');
+    var existing = null;
+    try { existing = localStorage.getItem(KEY) || sessionStorage.getItem(KEY); } catch (e) {}
+    if (urlSlug && !existing) {
+      var s = JSON.stringify({ slug: urlSlug, avatarDataUrl: null });
+      try { localStorage.setItem(KEY, s); } catch (e) {}
+      try { sessionStorage.setItem(KEY, s); } catch (e) {}
+      existing = s;
+    }
+    if (!existing) {
+      window.location.replace('login.html?next=loja.html');
+    }
+  })();
+</script>
+</head>
+<body class="bg-white">
+
+<div class="demo-banner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 inline-block align-[-2px] mr-1"><path d="M9 2v6L4 20a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2L15 8V2"/><path d="M9 2h6"/><line x1="8" y1="14" x2="16" y2="14"/></svg> <b>Protótipo de demonstração</b> — dados fictícios, nenhum pagamento ou ação aqui é real.</div>
+
+<header class="sticky top-0 z-50 bg-white/85 backdrop-blur border-b border-gray-100">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2 font-extrabold text-lg">
+      <img src="logo-full.png" alt="bday.fm" class="h-8 w-auto object-contain">
+    </a>
+    <nav class="hidden md:flex items-center gap-8">
+      <a href="index.html#como-funciona" class="nav-link">Como Funciona</a>
+      <a href="explorar.html" class="nav-link">Explorar Celebrações</a>
+      <a href="feed.html" class="nav-link">Feed</a>
+      <a href="presentes.html" class="nav-link">Presentes</a>
+      <a href="carteira.html" id="navCarteiraD" class="nav-link hidden">Carteira</a>
+    </nav>
+    <div id="authArea" class="hidden md:flex items-center gap-3">
+      <a href="login.html" class="btn-secondary px-4 py-2 rounded-xl text-sm">Entrar</a>
+      <a href="cadastro.html" class="btn-primary px-4 py-2 rounded-xl text-sm">Criar conta grátis</a>
+    </div>
+    <button id="menuBtn" class="md:hidden p-2" aria-label="Abrir menu" aria-expanded="false">
+      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div id="mobileMenu" class="md:hidden">
+    <div class="px-5 pb-4 flex flex-col gap-3 border-t border-gray-100 pt-3">
+      <a href="index.html#como-funciona" class="nav-link">Como Funciona</a>
+      <a href="explorar.html" class="nav-link">Explorar Celebrações</a>
+      <a href="feed.html" class="nav-link">Feed</a>
+      <a href="presentes.html" class="nav-link">Presentes</a>
+      <a href="carteira.html" id="navCarteiraM" class="nav-link hidden">Carteira</a>
+      <div id="authAreaMobile" class="flex flex-col gap-3">
+        <a href="login.html" class="btn-secondary px-4 py-2 rounded-xl text-sm text-center">Entrar</a>
+        <a href="cadastro.html" class="btn-primary px-4 py-2 rounded-xl text-sm text-center">Criar conta grátis</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-5 sm:px-8 py-10">
+  <div class="reveal">
+    <h1 class="text-2xl sm:text-3xl font-extrabold flex items-center gap-2">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-purple-600"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      Loja de Personalização
+    </h1>
+    <p class="text-slate-500 mt-1">Sua coleção de itens para deixar o perfil com a sua cara — cada um com categoria e raridade próprias.</p>
+  </div>
+
+  <div class="card p-6 mt-6 flex flex-col sm:flex-row items-center gap-6 reveal">
+    <div class="relative w-24 h-24 shrink-0">
+      <div id="previewAvatar" class="w-24 h-24 rounded-2xl grad-bg flex items-center justify-center text-white font-extrabold text-3xl">A</div>
+      <div id="previewAccessory" class="hidden"></div>
+    </div>
+    <div class="flex-1 text-center sm:text-left">
+      <div class="text-sm text-slate-500">Prévia do seu avatar</div>
+      <div id="previewName" class="font-bold text-lg">Ana Beatriz</div>
+      <div id="previewFrameLabel" class="text-sm text-purple-600 font-semibold mt-1">Nenhuma moldura equipada</div>
+      <div id="previewAccessoryLabel" class="text-sm text-pink-600 font-semibold mt-0.5">Nenhuma decoração equipada</div>
+    </div>
+    <div class="text-center sm:text-right">
+      <div class="text-sm text-slate-500">Saldo disponível</div>
+      <div id="walletBalance" class="text-2xl font-extrabold grad-text">R$ 0</div>
+      <div id="pontosWrap" class="hidden mt-1.5 inline-flex items-center gap-1.5 rounded-full px-3 py-1" style="background:linear-gradient(90deg,rgba(124,58,237,.10),rgba(236,72,153,.08))">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span class="text-xs font-bold text-purple-700"><span id="pontosBalance">0</span> pontos de recompensa</span>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="font-bold mt-10 mb-1 reveal">Molduras <span class="text-xs font-semibold text-slate-400 align-middle">· categoria</span></h2>
+  <p class="text-sm text-slate-500 mb-4 reveal">Um anel colecionável ao redor do seu avatar.</p>
+  <div id="framesGrid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 reveal-stagger"></div>
+
+  <h2 class="font-bold mt-10 mb-1 reveal">Decorações de festa <span class="text-xs font-semibold text-slate-400 align-middle">· categoria</span></h2>
+  <p class="text-sm text-slate-500 mb-4 reveal">Itens colecionáveis ilustrados que ficam sobre o seu avatar — a partir de R$ 1.</p>
+  <div id="accessoriesGrid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 reveal-stagger"></div>
+</main>
+
+<footer class="border-t border-gray-100 mt-10">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+    <div class="flex items-center gap-2 font-bold text-slate-700">
+      <img src="logo-full.png" alt="bday.fm" class="h-5 w-auto object-contain" loading="lazy">
+    </div>
+    <div>© 2026 bday.fm — protótipo de demonstração</div>
+  </div>
+</footer>
+
+<script src="icons.js"></script>
+<script src="users.js"></script>
+<script src="auth.js"></script>
+<script src="script.js"></script>
+<script>
+  const u = getUserFromQuery();
+  let currentFrame = u.frame || null;
+  let currentAccessory = u.accessory || null;
+  let balance = u.received;
+
+  // Pontos de recompensa: só na loja do PRÓPRIO usuário logado (ganhos na Loja de Presentes)
+  const lojaSessao = authGetSession();
+  const lojaEuMesmo = !!(lojaSessao && lojaSessao.slug === u.slug && typeof pontosSaldo === 'function');
+  function atualizarPontos() {
+    if (!lojaEuMesmo) return;
+    document.getElementById('pontosWrap').classList.remove('hidden');
+    document.getElementById('pontosBalance').textContent = pontosSaldo(u.slug).toLocaleString('pt-BR');
+  }
+  function persistirConquistas() {
+    // Grava molduras/acessórios comprados/equipados para QUALQUER conta — inclusive
+    // as fixas de demonstração (ana, rafael, admin...), que por padrão só existem como
+    // objeto em memória. findAnyUser() prioriza este registro sobre o perfil fixo, então
+    // a compra passa a valer nos próximos acessos/recarregamentos.
+    if (typeof getCustomUsers === 'function' && typeof saveCustomUser === 'function') {
+      saveCustomUser({ ...(getCustomUsers()[u.slug] || {}), slug: u.slug, frame: currentFrame, accessory: currentAccessory,
+        wonFrames: u.wonFrames || [], wonAccessories: u.wonAccessories || [] });
+    }
+  }
+
+  document.getElementById('previewName').textContent = u.name;
+
+  const previewAvatar = document.getElementById('previewAvatar');
+  const previewAccessory = document.getElementById('previewAccessory');
+  const previewLabel = document.getElementById('previewFrameLabel');
+  const previewAccessoryLabel = document.getElementById('previewAccessoryLabel');
+  const walletBalanceEl = document.getElementById('walletBalance');
+
+  // Estrutura de raridade/categoria dos itens colecionáveis — preparada para evoluir no futuro
+  // (ex: novos itens com raridade "Mítico", categorias adicionais, etc.) sem quebrar o layout.
+  const RARITY_STYLE = {
+    'Comum':    'bg-slate-100 text-slate-600',
+    'Raro':     'bg-blue-50 text-blue-600',
+    'Épico':    'bg-purple-50 text-purple-600',
+    'Lendário': 'bg-amber-50 text-amber-700',
+  };
+  const FRAME_RARITY = { cristal: 'Comum', estelar: 'Raro', aurora: 'Épico', aurea: 'Lendário' };
+  const ACCESSORY_RARITY = { confete: 'Comum', laco: 'Raro', balao: 'Raro', vela: 'Épico', coroa: 'Lendário' };
+
+  function rarityPillHTML(category, rarity) {
+    const cls = RARITY_STYLE[rarity] || RARITY_STYLE['Comum'];
+    return `
+      <div class="flex items-center justify-center gap-1.5 mt-2">
+        <span class="text-[10px] font-bold uppercase tracking-wide text-slate-400">${category}</span>
+        <span class="text-slate-300">·</span>
+        <span class="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${cls}">${rarity}</span>
+      </div>`;
+  }
+
+  function baseAvatarClass() {
+    return `w-24 h-24 rounded-2xl ${u.grad} flex items-center justify-center text-white font-extrabold text-3xl`;
+  }
+
+  function renderPreview() {
+    previewAvatar.textContent = u.initial;
+    previewAvatar.className = baseAvatarClass();
+    walletBalanceEl.textContent = `R$ ${balance}`;
+    if (currentFrame) {
+      const f = FRAMES.find(x => x.id === currentFrame);
+      previewAvatar.className += ' ' + f.frameClass;
+      previewLabel.textContent = `Equipada: ${f.name}`;
+    } else {
+      previewLabel.textContent = 'Nenhuma moldura equipada';
+    }
+    if (currentAccessory) {
+      const a = ACCESSORIES.find(x => x.id === currentAccessory);
+      previewAccessory.style.cssText = 'position:absolute; pointer-events:none; ' + a.style;
+      previewAccessory.innerHTML = a.svg;
+      previewAccessory.classList.remove('hidden');
+      previewAccessoryLabel.textContent = `Equipada: ${a.name}`;
+    } else {
+      previewAccessory.classList.add('hidden');
+      previewAccessory.removeAttribute('style');
+      previewAccessory.innerHTML = '';
+      previewAccessoryLabel.textContent = 'Nenhuma decoração equipada';
+    }
+  }
+
+  function renderGrid() {
+    document.getElementById('framesGrid').innerHTML = FRAMES.map(f => {
+      const owned = currentFrame === f.id;
+      return `
+      <div class="card p-5 text-center">
+        <div class="w-16 h-16 rounded-2xl ${u.grad} ${f.frameClass} flex items-center justify-center text-white font-extrabold text-xl mx-auto">${u.initial}</div>
+        <h3 class="font-bold mt-3">${f.name}</h3>
+        <p class="text-xs text-slate-500 mt-1">${f.desc}</p>
+        ${rarityPillHTML('Moldura', FRAME_RARITY[f.id] || 'Comum')}
+        <div class="font-extrabold text-purple-700 mt-2">R$ ${f.price}</div>
+        <button data-frame-id="${f.id}" class="frame-btn w-full rounded-lg py-2 text-sm mt-3 ${owned ? 'btn-secondary' : 'btn-primary'}" ${owned ? 'disabled' : ''}>
+          ${owned ? 'Equipada ✓' : 'Usar saldo e equipar'}
+        </button>
+        ${!owned && lojaEuMesmo ? (pontosSaldo(u.slug) >= (RESGATE_PONTOS.frames[f.id] || 999)
+          ? `<button data-frame-pts="${f.id}" class="frame-pts-btn w-full rounded-lg py-1.5 text-xs font-bold mt-1.5 border-2 border-purple-200 text-purple-600 hover:border-purple-400 transition">✦ Resgatar com ${RESGATE_PONTOS.frames[f.id]} pts</button>`
+          : `<div class="text-[11px] text-slate-400 mt-1.5">ou ${RESGATE_PONTOS.frames[f.id]} pontos de recompensa</div>`) : ''}
+      </div>`;
+    }).join('');
+
+    document.querySelectorAll('.frame-pts-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-frame-pts');
+        const f = FRAMES.find(x => x.id === id);
+        const custo = RESGATE_PONTOS.frames[id];
+        if (!pontosGastar(u.slug, custo)) { showToast('Pontos insuficientes.'); return; }
+        u.wonFrames = u.wonFrames || []; if (!u.wonFrames.includes(id)) u.wonFrames.push(id);
+        currentFrame = id;
+        persistirConquistas(); atualizarPontos(); renderPreview(); renderGrid();
+        showToast(`Moldura "${f.name}" resgatada com ${custo} pontos e equipada!`);
+      });
+    });
+
+    document.querySelectorAll('.frame-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-frame-id');
+        const f = FRAMES.find(x => x.id === id);
+        if (balance < f.price) {
+          showToast(`Saldo insuficiente — faltam R$ ${f.price - balance} (demo).`);
+          return;
+        }
+        balance -= f.price;
+        currentFrame = id;
+        u.wonFrames = u.wonFrames || []; if (!u.wonFrames.includes(id)) u.wonFrames.push(id);
+        persistirConquistas();
+        renderPreview();
+        renderGrid();
+        showToast(`Moldura "${f.name}" equipada! (demo, sem gasto real)`);
+      });
+    });
+  }
+
+  function renderAccessoriesGrid() {
+    document.getElementById('accessoriesGrid').innerHTML = ACCESSORIES.map(a => {
+      const owned = currentAccessory === a.id;
+      return `
+      <div class="card p-5 text-center">
+        <div class="relative w-16 h-16 mx-auto">
+          <div class="w-16 h-16 rounded-2xl ${u.grad} flex items-center justify-center text-white font-extrabold text-xl">${u.initial}</div>
+          <div class="absolute" style="pointer-events:none; ${a.style}">${a.svg}</div>
+        </div>
+        <h3 class="font-bold mt-3">${a.name}</h3>
+        <p class="text-xs text-slate-500 mt-1">${a.desc}</p>
+        ${rarityPillHTML('Decoração', ACCESSORY_RARITY[a.id] || 'Comum')}
+        <div class="font-extrabold text-purple-700 mt-2">R$ ${a.price}</div>
+        <button data-accessory-id="${a.id}" class="accessory-btn w-full rounded-lg py-2 text-sm mt-3 ${owned ? 'btn-secondary' : 'btn-primary'}" ${owned ? 'disabled' : ''}>
+          ${owned ? 'Equipada ✓' : 'Usar saldo e equipar'}
+        </button>
+        ${!owned && lojaEuMesmo ? (pontosSaldo(u.slug) >= (RESGATE_PONTOS.accessories[a.id] || 999)
+          ? `<button data-accessory-pts="${a.id}" class="accessory-pts-btn w-full rounded-lg py-1.5 text-xs font-bold mt-1.5 border-2 border-pink-200 text-pink-600 hover:border-pink-400 transition">✦ Resgatar com ${RESGATE_PONTOS.accessories[a.id]} pts</button>`
+          : `<div class="text-[11px] text-slate-400 mt-1.5">ou ${RESGATE_PONTOS.accessories[a.id]} pontos de recompensa</div>`) : ''}
+      </div>`;
+    }).join('');
+
+    document.querySelectorAll('.accessory-pts-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-accessory-pts');
+        const a = ACCESSORIES.find(x => x.id === id);
+        const custo = RESGATE_PONTOS.accessories[id];
+        if (!pontosGastar(u.slug, custo)) { showToast('Pontos insuficientes.'); return; }
+        u.wonAccessories = u.wonAccessories || []; if (!u.wonAccessories.includes(id)) u.wonAccessories.push(id);
+        currentAccessory = id;
+        persistirConquistas(); atualizarPontos(); renderPreview(); renderAccessoriesGrid();
+        showToast(`Decoração "${a.name}" resgatada com ${custo} pontos e equipada!`);
+      });
+    });
+
+    document.querySelectorAll('.accessory-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-accessory-id');
+        const a = ACCESSORIES.find(x => x.id === id);
+        if (balance < a.price) {
+          showToast(`Saldo insuficiente — falta R$ ${a.price - balance} (demo).`);
+          return;
+        }
+        balance -= a.price;
+        currentAccessory = id;
+        u.wonAccessories = u.wonAccessories || []; if (!u.wonAccessories.includes(id)) u.wonAccessories.push(id);
+        persistirConquistas();
+        renderPreview();
+        renderAccessoriesGrid();
+        showToast(`Decoração "${a.name}" equipada! (demo, sem gasto real)`);
+      });
+    });
+  }
+
+  renderPreview();
+  renderGrid();
+  renderAccessoriesGrid();
+  atualizarPontos();
+</script>
+</body>
+</html>
