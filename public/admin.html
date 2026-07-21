@@ -607,9 +607,9 @@ function notifPreview(tipo){
 }
 function tipoLabelNotif(t){ return t === 'dia' ? 'Aniversariantes do dia' : 'Aniversariantes do mês'; }
 
-R.usuarios = () =>R.usuarios = () => `
+R.usuarios = () => `
   <div class="flex items-center justify-between flex-wrap gap-3 mb-5">
-    <h1 class="text-xl font-extrabold">Usuários <span class="adm-muted font-semibold text-base">(${(1000 + ADMIN_USERS.length).toLocaleString('pt-BR')})</span></h1>
+    <h1 class="text-xl font-extrabold">Usuários <span class="adm-muted font-semibold text-base">(${ADMIN_USERS.length.toLocaleString('pt-BR')})</span></h1>
     <div class="flex items-center gap-2">
       <input id="userSearch" class="adm-input" style="width:240px" placeholder="Buscar por nome, email...">
       <select id="userMonth" class="adm-input" style="width:150px">
@@ -1129,13 +1129,13 @@ R.relatorios = () => {
   const painel = {
     geral: () => {
       exportarAtual = f => exportRows(f, 'Resumo Geral', ['Indicador', 'Valor'], [
-        ['Usuários cadastrados', 1000 + ADMIN_USERS.length], ['BDAYs criados', ADMIN_BDAYS.length + 214],
+        ['Usuários cadastrados', ADMIN_USERS.length], ['BDAYs criados', ADMIN_BDAYS.length],
         ['Presentes enviados (30d)', T.presentes.length], ['Valor movimentado (30d)', fmtBRL(T.movimentado)],
         ['Valor sacado (30d)', fmtBRL(T.sacado)], ['Comissão da plataforma (30d)', fmtBRL(T.comissao)],
         ['Lucro líquido (30d)', fmtBRL(T.comissao * 0.83)]]);
       return `
       <div class="grid sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        ${[['Usuários cadastrados', (1000 + ADMIN_USERS.length).toLocaleString('pt-BR'), AI.users], ['BDAYs criados', (ADMIN_BDAYS.length + 214), AI.gift],
+        ${[['Usuários cadastrados', ADMIN_USERS.length.toLocaleString('pt-BR'), AI.users], ['BDAYs criados', ADMIN_BDAYS.length, AI.gift],
            ['Presentes enviados (30d)', T.presentes.length, AI.send], ['Valor movimentado (30d)', fmtBRL(T.movimentado), AI.money],
            ['Valor sacado (30d)', fmtBRL(T.sacado), AI.bank], ['Comissão da plataforma', fmtBRL(T.comissao), AI.params],
            ['Lucro líquido estimado', fmtBRL(T.comissao * 0.83), AI.spark], ['Ticket médio', fmtBRL(T.movimentado / Math.max(1, T.presentes.length)), AI.report]].map(c => `
@@ -1271,10 +1271,10 @@ R.envios = () => {
   <p class="text-xs adm-muted mb-4">Presentes e torpedos enviados na plataforma — clique em um envio para ver todos os detalhes.</p>
 
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">Total de envios</div><div class="text-xl font-extrabold mt-1">619</div></div>
-    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">🎁 Presentes</div><div class="text-xl font-extrabold mt-1 text-purple-600">187</div></div>
-    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">💬 Torpedos</div><div class="text-xl font-extrabold mt-1">432</div></div>
-    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">Valor em presentes</div><div class="text-xl font-extrabold mt-1 text-green-600">${fmtBRL(1642.13)}</div></div>
+    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">Total de envios</div><div class="text-xl font-extrabold mt-1">${ADMIN_ENVIOS.length}</div></div>
+    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">🎁 Presentes</div><div class="text-xl font-extrabold mt-1 text-purple-600">${ADMIN_ENVIOS.filter(e => e.tipo === 'Presente').length}</div></div>
+    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">💬 Torpedos</div><div class="text-xl font-extrabold mt-1">${ADMIN_ENVIOS.filter(e => e.tipo === 'Torpedo').length}</div></div>
+    <div class="adm-card p-4"><div class="text-xs adm-muted font-semibold">Valor em presentes</div><div class="text-xl font-extrabold mt-1 text-green-600">${fmtBRL(ADMIN_ENVIOS.reduce((t, e) => t + (e.valor || 0), 0))}</div></div>
   </div>
 
   <div class="flex items-center gap-2 flex-wrap mb-4">
@@ -1290,7 +1290,7 @@ R.envios = () => {
       <tbody id="envioRows"></tbody>
     </table>
   </div>
-  <div class="flex items-center justify-between text-xs adm-muted mt-3"><span>Mostrando os envios mais recentes de 619 no total — exporte para ver tudo</span><span>‹ 1 2 3 4 … ›</span></div>`;
+  <div class="flex items-center justify-between text-xs adm-muted mt-3"><span>${ADMIN_ENVIOS.length ? `Mostrando os ${ADMIN_ENVIOS.length} envios registrados` : `Nenhum envio ainda — esta lista preenche quando presentes e torpedos reais forem enviados`}</span><span></span></div>`;
 };
 
 function renderEnvioRows(){
