@@ -328,6 +328,44 @@ const ADMIN_PROFILE = {
   recap: { year: 2025, totalReceived: 0, giftsReceived: 0, friendsParticipated: 0, topGifter: null, topGifterAmount: 0, topMessage: null, rankPercent: 0 }
 };
 
+
+// Busca o usuário REAL no servidor (conta criada de verdade via cadastro/login) e
+// grava uma cópia local no formato que as páginas do site esperam. Usa XHR síncrono
+// de propósito: o fluxo de renderização das páginas é todo síncrono, e esta consulta
+// acontece no máximo uma vez por slug (depois fica em cache via saveCustomUser).
+function fetchRealUser(slug) {
+  try { if (sessionStorage.getItem('bdayfm_miss_' + slug)) return null; } catch (e) {}
+  try {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/users/' + encodeURIComponent(slug), false); // síncrono
+    xhr.send(null);
+    if (xhr.status !== 200) {
+      try { sessionStorage.setItem('bdayfm_miss_' + slug, '1'); } catch (e) {}
+      return null;
+    }
+    const data = JSON.parse(xhr.responseText || '{}');
+    const u = data && data.user;
+    if (!u) return null;
+    const name = (u.name || slug).trim();
+    const initial = (name[0] || '?').toUpperCase();
+    const grads = ['bg-blue-500', 'bg-pink-500', 'bg-amber-500', 'bg-emerald-500', 'bg-indigo-500', 'bg-rose-500', 'bg-cyan-500', 'bg-violet-500'];
+    const grad = grads[Math.abs(hashCode(slug)) % grads.length];
+    const record = {
+      name, handle: u.slug || slug, initial, grad, email: null, avatar: u.avatarUrl || null,
+      status: u.bio || 'Bem-vindo(a) ao bday.fm', daysLabel: null, isToday: false,
+      received: 0, friends: 0, friendsList: [], giftsCount: 0, goal: null,
+      frame: u.frame || null, inBirthdayMonth: false, wonFrames: [], wonBadges: Array.isArray(u.badges) ? u.badges : [],
+      accessory: u.accessory || null, wonAccessories: [],
+      socials: u.socials || { instagram: null, tiktok: null, youtube: null, linkedin: null },
+      gifts: [], groupGoal: null,
+      recap: { year: 2025, totalReceived: 0, giftsReceived: 0, friendsParticipated: 0, topGifter: null, topGifterAmount: 0, topMessage: null, rankPercent: null },
+      slug: u.slug || slug,
+    };
+    saveCustomUser(record);
+    return record;
+  } catch (e) { return null; }
+}
+
 function findAnyUser(slug) {
   if (!slug) return null;
   // Contas fixas de demonstração (ana, rafael... e a admin) começam só como objeto
@@ -348,7 +386,9 @@ function findAnyUser(slug) {
     return cu;
   }
   if (base) return { ...base, slug };
-  return null;
+  // Não está nos perfis de demonstração nem nos criados neste navegador:
+  // procura a conta REAL no servidor antes de desistir.
+  return fetchRealUser(slug);
 }
 
 function getUserFromQuery() {
