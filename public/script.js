@@ -172,9 +172,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('depositAmountInput');
     const value = input ? parseFloat(input.value) : NaN;
     if (!value || value <= 0) { showToast('Digite um valor válido para depositar.'); return; }
-    document.getElementById('depositModal').classList.remove('open');
-    showToast('Depósito simulado com sucesso (demo).');
-    if (input) input.value = '';
+    // Depósito REAL: cria a preferência no Mercado Pago e redireciona pro checkout.
+    confirmDeposit.disabled = true;
+    fetch('/api/wallet/deposit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: value })
+    }).then(async (res) => {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.checkoutUrl) {
+        showToast(data.error || 'Não foi possível iniciar o pagamento.');
+        confirmDeposit.disabled = false;
+        return;
+      }
+      window.location.href = data.checkoutUrl; // checkout seguro do Mercado Pago
+    }).catch(() => { showToast('Falha de conexão. Tente novamente.'); confirmDeposit.disabled = false; });
   });
   const confirmWithdraw = document.getElementById('confirmWithdraw');
   if (confirmWithdraw) confirmWithdraw.addEventListener('click', () => {

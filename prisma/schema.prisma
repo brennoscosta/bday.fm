@@ -87,6 +87,7 @@ model GiftSent {
 }
 
 enum WalletEntryType {
+  DEPOSIT_MP
   GIFT_RECEIVED
   WITHDRAWAL_PIX
   ADJUSTMENT

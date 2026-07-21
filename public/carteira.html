@@ -238,19 +238,44 @@
   // saque instantâneo) é tratado de forma centralizada em script.js, para evitar duas
   // mensagens de toast concorrendo entre si.
 
-  // Esta página mostra um saldo fixo de demonstração (R$ 0,00) pra qualquer conta —
-  // exceto para o admin, que precisa de saldo "ilimitado" pra testar qualquer fluxo
-  // (saque, depósito, gastar na loja) sem ficar travado num valor de exemplo.
+  // Carteira REAL: saldo e transações vêm do servidor (ledger no banco de dados).
   (function () {
-    const session = (typeof authGetSession === 'function') ? authGetSession() : null;
-    if (!session || session.slug !== 'admin') return;
-    const texto = 'Ilimitado';
-    const main = document.getElementById('walletMainBalance');
-    const dep = document.getElementById('depositCurrentBalance');
-    const wit = document.getElementById('withdrawAvailableBalance');
-    if (main) main.textContent = texto;
-    if (dep) dep.textContent = texto;
-    if (wit) wit.textContent = texto;
+    const fmtBRL = (cents) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const TYPE_LABEL = {
+      DEPOSIT_MP: 'Depósito via Mercado Pago',
+      GIFT_RECEIVED: 'Presente recebido',
+      WITHDRAWAL_PIX: 'Saque via Pix',
+      ADJUSTMENT: 'Ajuste',
+    };
+    fetch('/api/wallet').then(async (res) => {
+      if (res.status === 401) { window.location.href = 'login.html?next=carteira.html'; return; }
+      const data = await res.json().catch(() => null);
+      if (!data) return;
+      const saldo = fmtBRL(data.balanceCents || 0);
+      ['walletMainBalance', 'depositCurrentBalance', 'withdrawAvailableBalance'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = saldo;
+      });
+      const panel = document.querySelector('[data-tab-panel="trans"]');
+      if (panel && data.entries && data.entries.length) {
+        panel.innerHTML = data.entries.map((e) => {
+          const credit = e.amountCents > 0;
+          const when = new Date(e.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+          return `
+          <div class="flex items-center gap-4 p-4">
+            <div class="w-9 h-9 rounded-full ${credit ? 'bg-purple-100 text-purple-600' : 'bg-slate-100 text-slate-500'} flex items-center justify-center font-bold text-sm">${credit ? '+' : '−'}</div>
+            <div class="flex-1"><div class="font-semibold text-sm">${TYPE_LABEL[e.type] || e.type}</div><div class="text-xs text-slate-400">${when}</div></div>
+            <div class="font-bold ${credit ? 'text-green-600' : 'text-slate-700'}">${credit ? '+ ' : ''}${fmtBRL(e.amountCents)}</div>
+          </div>`;
+        }).join('');
+      }
+    }).catch(() => {});
+
+    // Retorno do checkout do Mercado Pago
+    const st = new URLSearchParams(window.location.search).get('deposito');
+    if (st === 'ok') showToast('Pagamento aprovado! Seu saldo será creditado em instantes.');
+    else if (st === 'pendente') showToast('Pagamento em processamento — o saldo entra assim que for aprovado.');
+    else if (st === 'erro') showToast('O pagamento não foi concluído. Nenhum valor foi cobrado.');
   })();
 </script>
 </body>
