@@ -83,7 +83,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
       <div>
         <div class="text-sm text-slate-500">Saldo atual</div>
-        <div id="walletMainBalance" class="text-4xl font-extrabold grad-text mt-1">R$ 214,00</div>
+        <div id="walletMainBalance" class="text-4xl font-extrabold grad-text mt-1">R$ 0,00</div>
       </div>
       <div class="flex gap-3">
         <button data-open-modal="withdrawModal" class="btn-secondary rounded-xl px-5 py-2.5 text-sm inline-flex items-center gap-2">
@@ -156,7 +156,7 @@
     </div>
     <p class="text-sm text-slate-500 mt-1">Adicione créditos à sua conta para enviar presentes.</p>
     <div class="mt-4 flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm">
-      <span>Saldo atual</span><span id="depositCurrentBalance" class="font-bold">R$ 214,00</span>
+      <span>Saldo atual</span><span id="depositCurrentBalance" class="font-bold">R$ 0,00</span>
     </div>
     <label class="block text-sm font-semibold mt-4 mb-1">Valor a depositar (R$)</label>
     <input id="depositAmountInput" type="number" min="1" placeholder="0,00" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-400">
@@ -179,7 +179,7 @@
     </div>
     <p class="text-sm text-slate-500 mt-1">Solicite a transferência do seu saldo via Pix.</p>
     <div class="mt-4 flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm">
-      <span>Saldo disponível</span><span id="withdrawAvailableBalance" class="font-bold">R$ 214,00</span>
+      <span>Saldo disponível</span><span id="withdrawAvailableBalance" class="font-bold">R$ 0,00</span>
     </div>
     <label class="block text-sm font-semibold mt-4 mb-1">Valor a sacar (R$)</label>
     <input id="withdrawAmountInput" type="number" min="10" placeholder="0,00" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-400">
@@ -238,7 +238,7 @@
   // saque instantâneo) é tratado de forma centralizada em script.js, para evitar duas
   // mensagens de toast concorrendo entre si.
 
-  // Esta página mostra um saldo fixo de demonstração (R$ 214,00) pra qualquer conta —
+  // Esta página mostra um saldo fixo de demonstração (R$ 0,00) pra qualquer conta —
   // exceto para o admin, que precisa de saldo "ilimitado" pra testar qualquer fluxo
   // (saque, depósito, gastar na loja) sem ficar travado num valor de exemplo.
   (function () {

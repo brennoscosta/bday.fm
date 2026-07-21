@@ -51,6 +51,69 @@ function bdayRecordFromApi(u) {
   } catch (e) { /* sem rede (ex.: abrir o arquivo direto) — listas ficam vazias */ }
 })();
 
+// ---- Catálogo da Loja de Personalização (produto, não dado fictício) ----
+// Cosmetic frames purchasable in the "Loja de Personalização" using wallet balance (or won for free via gifts)
+const FRAMES = [
+  { id: "aurora", name: "Moldura Aurora", price: 40, frameClass: "frame-aurora", desc: "Um anel de gradiente colorido girando ao redor do seu avatar." },
+  { id: "estelar", name: "Moldura Estelar", price: 35, frameClass: "frame-estelar", desc: "Um brilho dourado pulsante, como uma constelação de estrelas." },
+  { id: "aurea", name: "Moldura Áurea", price: 60, frameClass: "frame-aurea", desc: "Status vip com uma luz dourada passando pela moldura." },
+  { id: "cristal", name: "Moldura Cristal", price: 30, frameClass: "frame-cristal", desc: "Um halo gelado, translúcido e moderno." },
+];
+
+// Emblemas conquistados ao receber presentes especiais (não são comprados, só ganhos)
+// "icon" referencia uma chave de ICONS (icons.js) — nunca emoji.
+const BADGES = [
+  { id: "querido", name: "Querido(a)", icon: "heart", desc: "Recebeu presentes de pelo menos 5 amigos diferentes." },
+  { id: "popular", name: "Popular", icon: "star", desc: "Recebeu mais de R$ 100 em presentes em um único mês." },
+  { id: "veterano", name: "Veterano(a)", icon: "medal", desc: "Já comemorou 2 aniversários no bday.fm." },
+];
+
+// Acessórios de festa que ficam sobre o avatar — ganhos em presentes (wonAccessories) OU
+// comprados na loja com o saldo da carteira (preço em "price", entre R$1 e R$5).
+// Ilustração colorida "cheia" (sem contorno de linha, sem bolha de fundo), encostando direto
+// no avatar — "style" é a posição/tamanho em % (relativos ao container do avatar) e "svg" é a
+// ilustração em si. Desenho próprio, não copiado de nenhuma marca.
+const ACCESSORIES = [
+  {
+    id: "confete", name: "Chuva de Confete", price: 1,
+    desc: "Confete comemorativo flutuando sobre o seu avatar.",
+    style: "top:-18%; left:50%; width:82%; height:60%; transform:translateX(-50%);",
+    svg: `<svg viewBox="0 0 100 90" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><rect x="6" y="22" width="13" height="7" rx="2" fill="#7C3AED" stroke="#fff" stroke-width="1.5" transform="rotate(25 12 25)"/><rect x="74" y="8" width="11" height="7" rx="2" fill="#EC4899" stroke="#fff" stroke-width="1.5" transform="rotate(-20 79 11)"/><circle cx="50" cy="12" r="5.5" fill="#F59E0B" stroke="#fff" stroke-width="1.5"/><rect x="30" y="46" width="11" height="7" rx="2" fill="#10B981" stroke="#fff" stroke-width="1.5" transform="rotate(15 35 49)"/><circle cx="82" cy="50" r="4.5" fill="#0EA5E9" stroke="#fff" stroke-width="1.5"/><rect x="55" y="66" width="11" height="7" rx="2" fill="#F43F5E" stroke="#fff" stroke-width="1.5" transform="rotate(-30 60 69)"/><circle cx="14" cy="60" r="4.5" fill="#A78BFA" stroke="#fff" stroke-width="1.5"/><circle cx="64" cy="30" r="4" fill="#10B981" stroke="#fff" stroke-width="1.5"/></svg>`
+  },
+  {
+    id: "laco", name: "Laço de Festa", price: 2,
+    desc: "Um laço colorido decorando o seu avatar.",
+    style: "bottom:-16%; left:50%; width:48%; height:34%; transform:translateX(-50%);",
+    svg: `<svg viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><path d="M48 30 L14 9 Q4 6 7 21 L21 30 L7 39 Q4 54 14 51 Z" fill="#EC4899" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M52 30 L86 9 Q96 6 93 21 L79 30 L93 39 Q96 54 86 51 Z" fill="#EC4899" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><circle cx="50" cy="30" r="10" fill="#F43F5E" stroke="#fff" stroke-width="2"/></svg>`
+  },
+  {
+    id: "balao", name: "Balão de Festa", price: 2,
+    desc: "Um balãozinho colorido do lado do seu avatar.",
+    style: "top:-46%; right:-16%; width:42%; height:60%; transform:rotate(8deg);",
+    svg: `<svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><ellipse cx="50" cy="46" rx="36" ry="42" fill="#0EA5E9" stroke="#fff" stroke-width="2"/><ellipse cx="37" cy="30" rx="10" ry="14" fill="#fff" opacity="0.3"/><path d="M40 86 Q50 93 60 86 L55 102 L45 102 Z" fill="#0EA5E9" stroke="#fff" stroke-width="2"/><path d="M50 102 Q39 116 50 126 Q61 136 50 140" stroke="#94A3B8" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`
+  },
+  {
+    id: "vela", name: "Velinha de Aniversário", price: 3,
+    desc: "Uma velinha de bolo em cima do seu avatar.",
+    style: "top:-30%; left:50%; width:26%; height:52%; transform:translateX(-50%) rotate(-4deg);",
+    svg: `<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><ellipse cx="30" cy="13" rx="9" ry="13" fill="#FDBA74"/><ellipse cx="30" cy="16" rx="5" ry="8" fill="#F59E0B"/><rect x="19" y="28" width="22" height="62" rx="5" fill="#EC4899" stroke="#fff" stroke-width="2"/><rect x="19" y="45" width="22" height="9" fill="#fff"/><rect x="19" y="66" width="22" height="9" fill="#fff"/></svg>`
+  },
+  {
+    id: "chapeu-festa", name: "Chapéu de Festa", price: 4,
+    desc: "Um chapeuzinho de festa em cima do seu avatar.",
+    style: "top:-24%; left:50%; width:56%; height:56%; transform:translateX(-50%) rotate(-6deg);",
+    svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><path d="M50 6 L80 84 L20 84 Z" fill="#7C3AED" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M50 6 L61 36 L39 36 Z" fill="#EC4899"/><path d="M43 52 L57 52 L63 68 L37 68 Z" fill="#F59E0B"/><circle cx="45" cy="44" r="3.5" fill="#fff"/><circle cx="58" cy="60" r="3.5" fill="#fff"/><circle cx="39" cy="76" r="3.5" fill="#fff"/><ellipse cx="50" cy="84" rx="32" ry="7" fill="#EC4899" stroke="#fff" stroke-width="2"/><circle cx="50" cy="7" r="8" fill="#FDE68A" stroke="#fff" stroke-width="2"/></svg>`
+  },
+  {
+    id: "coroa", name: "Coroa de Aniversariante", price: 5,
+    desc: "Uma coroinha dourada para o rei ou rainha do dia.",
+    style: "top:-22%; left:50%; width:60%; height:42%; transform:translateX(-50%);",
+    svg: `<svg viewBox="0 0 100 76" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><path d="M12 50 L22 16 L38 38 L50 12 L62 38 L78 16 L88 50 Z" fill="#FBBF24" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><rect x="12" y="50" width="76" height="18" rx="4" fill="#F59E0B" stroke="#fff" stroke-width="2"/><circle cx="22" cy="16" r="4.5" fill="#fff"/><circle cx="50" cy="12" r="4.5" fill="#fff"/><circle cx="78" cy="16" r="4.5" fill="#fff"/><circle cx="34" cy="59" r="4" fill="#EC4899"/><circle cx="50" cy="59" r="4" fill="#0EA5E9"/><circle cx="66" cy="59" r="4" fill="#10B981"/></svg>`
+  },
+];
+
+
+
 // ===== Contas criadas pelo formulário de Cadastro (sem backend real) =====
 // Como o protótipo não tem servidor/banco de dados, uma conta criada em "Criar conta
 // grátis" é guardada no armazenamento local deste navegador. Isso resolve o bug de

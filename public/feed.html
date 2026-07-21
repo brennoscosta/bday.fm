@@ -807,6 +807,17 @@
     renderFeedAttachPreview();
   });
 
+  // Veio do perfil com ?attach=bday (botão "Compartilhar no feed" da campanha):
+  // já seleciona o BDAY no composer e rola até ele.
+  (function () {
+    try {
+      if (new URLSearchParams(window.location.search).get('attach') !== 'bday') return;
+      if (feedAttachBdayBtn.dataset.disabled === 'true') return;
+      feedAttachBdayBtn.click();
+      feedAttachBdayBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (e) {}
+  })();
+
   document.getElementById('feedComposerImageInput').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
