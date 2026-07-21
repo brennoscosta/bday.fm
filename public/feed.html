@@ -278,12 +278,11 @@
     </a>`;
   }
 
-  // ----- Top givers (mocked separately from "received" since it's about who SENT gifts) -----
-  const giversMock = [
-    { slug: 'ana', total: 156 }, { slug: 'mauricio', total: 89 }, { slug: 'thaina', total: 41 }
-  ].map(g => ({ ...USERS[g.slug], slug: g.slug, total: g.total }));
-
-  document.getElementById('topGivers').innerHTML = giversMock.map((u, i) => rankItemHTML(u, i + 1)).join('');
+  // ----- Top givers — sem dados fictícios: preenche quando houver presentes reais -----
+  const givers = [];
+  document.getElementById('topGivers').innerHTML = givers.length
+    ? givers.map((u, i) => rankItemHTML(u, i + 1)).join('')
+    : '<div class="text-xs text-slate-400 py-2">Ainda não há presentes enviados.</div>';
 
   const receivers = all.filter(u => u.received > 0).sort((a, b) => b.received - a.received);
   document.getElementById('topReceivers').innerHTML = receivers.map((u, i) => rankItemHTML(u, i + 1)).join('');
@@ -403,17 +402,7 @@
     'Você merece o melhor, parabéns!',
   ];
   function getSeedComments(postId, authorSlug) {
-    const others = all.filter(u2 => u2.slug !== authorSlug);
-    if (others.length === 0) return [];
-    const h = Math.abs(hashCode(postId));
-    const count = 1 + (h % 4); // 1 a 4 comentários, sempre os mesmos para o mesmo post
-    const comments = [];
-    for (let i = 0; i < count; i++) {
-      const commenter = others[(h + i * 7) % others.length];
-      const text = SEED_COMMENT_TEXTS[(h + i * 3) % SEED_COMMENT_TEXTS.length];
-      comments.push({ author: commenter.name, initial: commenter.initial, grad: commenter.grad, text, when: 'há algumas horas' });
-    }
-    return comments;
+    return []; // sem comentários fictícios — só comentários reais
   }
 
   function buildPost(postId, u, mode, extra) {
@@ -421,7 +410,7 @@
     // Posts publicados pela própria pessoa começam sem nenhuma curtida "de brinde" —
     // só conta curtida de verdade. Só os posts de demonstração (Marina, Thainá etc.)
     // usam a base fictícia, pra simular um feed com histórico.
-    const baseLikes = extra.baseLikes != null ? extra.baseLikes : (12 + u.giftsCount * 6 + (u.isToday ? 26 : 0));
+    const baseLikes = extra.baseLikes != null ? extra.baseLikes : 0; // sem curtidas fictícias
     const liked = !!getFeedLikes()[postId];
     const likeCount = baseLikes + (liked ? 1 : 0);
     const seedCommentsCount = mode === 'custom' ? 0 : getSeedComments(postId, u.slug).length;
