@@ -73,6 +73,27 @@
       <source src="video-hero-bday.mp4" type="video/mp4">
     </video>
     <div class="hero-overlay" aria-hidden="true"></div>
+    <script>
+      // Autoplay no mobile: iOS/Android às vezes ignoram o "muted" do HTML e travam
+      // o vídeo com botão de play. Força via propriedade e tenta de novo no 1º toque.
+      (function () {
+        var v = document.querySelector('.hero-video');
+        if (!v) return;
+        v.muted = true; v.defaultMuted = true; v.setAttribute('muted', '');
+        var tocar = function () { var p = v.play(); if (p && p.catch) p.catch(function () {}); };
+        if (v.readyState >= 2) tocar(); else v.addEventListener('canplay', tocar, { once: true });
+        tocar();
+        document.addEventListener('touchstart', tocar, { once: true, passive: true });
+        document.addEventListener('click', tocar, { once: true });
+        // se o navegador pausar (economia de bateria), volta a rodar quando visível
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) tocar(); });
+      })();
+    </script>
+    <style>
+      .hero-video::-webkit-media-controls,
+      .hero-video::-webkit-media-controls-start-playback-button,
+      .hero-video::-webkit-media-controls-overlay-play-button { display:none !important; -webkit-appearance:none; opacity:0 !important; }
+    </style>
 
     <div class="relative z-10 max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 pt-12 pb-12 sm:pt-20 sm:pb-20 lg:py-28 grid lg:grid-cols-2 gap-14 items-center">
       <div class="reveal min-w-0 text-center sm:text-left">
