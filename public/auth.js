@@ -19,8 +19,8 @@ function authSaveSession(session) {
   try { sessionStorage.setItem(AUTH_SESSION_KEY, raw); } catch (e) {}
 }
 
-function authLogin(slug) {
-  authSaveSession({ slug, avatarDataUrl: null });
+function authLogin(slug, role) {
+  authSaveSession({ slug, role: role || null, avatarDataUrl: null });
   // login explícito volta a permitir a restauração de sessão pela URL
   try { sessionStorage.removeItem('bdayfm_ignora_sessao_url'); } catch (e) {}
 }

@@ -77,7 +77,7 @@
         btn.disabled = false;
         return;
       }
-      authLogin(data.slug); // mantém o comportamento visual do header/menus
+      authLogin(data.slug, data.role); // guarda também o papel (ADMIN abre o painel)
       showToast('Login realizado!');
       const next = new URLSearchParams(window.location.search).get('next');
       let dest = next && /^[a-zA-Z0-9_\-]+\.html(\?.*)?$/.test(next) ? next : `perfil.html?user=${data.slug}`;

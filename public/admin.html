@@ -16,7 +16,7 @@
   // Guard: só a conta administrativa entra aqui. Roda o quanto antes.
   (function(){
     var s = authGetSession();
-    if (!s || s.slug !== 'admin') { window.location.replace('login.html?next=admin.html'); }
+    if (!s || (s.slug !== 'admin' && s.role !== 'ADMIN')) { window.location.replace('login.html?next=admin.html'); }
   })();
 </script>
 <script src="icons.js"></script>
