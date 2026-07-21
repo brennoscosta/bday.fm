@@ -219,7 +219,7 @@ const EMOJI_TO_ICON = { '🦆':'patinho','🎂':'bolo','🩴':'chinelo','⏰':'r
 
 const ROLES = [['user','Usuário'],['parceiro','Parceiro'],['gerente','Gerente'],['admin','Administrador']];
 const ROLE_BADGE = { admin: 'badge-red', gerente: 'badge-blue', parceiro: 'badge-amber' };
-function getRoles(){ return admGet('roles', { creativeideia4: 'parceiro' }); }
+function getRoles(){ return admGet('roles_v3', {}); } // papéis atribuídos de verdade neste painel
 function setRole(handle, role){
   const r = getRoles(); r[handle] = role; admSet('roles', r);
   const label = (ROLES.find(x => x[0] === role) || ['','Usuário'])[1];
