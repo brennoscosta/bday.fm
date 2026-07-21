@@ -221,7 +221,7 @@ const ROLES = [['user','Usuário'],['parceiro','Parceiro'],['gerente','Gerente']
 const ROLE_BADGE = { admin: 'badge-red', gerente: 'badge-blue', parceiro: 'badge-amber' };
 function getRoles(){ return admGet('roles_v3', {}); } // papéis atribuídos de verdade neste painel
 function setRole(handle, role){
-  const r = getRoles(); r[handle] = role; admSet('roles', r);
+  const r = getRoles(); r[handle] = role; admSet('roles_v3', r);
   const label = (ROLES.find(x => x[0] === role) || ['','Usuário'])[1];
   audit('Alterou cargo', '@' + handle, 'Novo cargo: ' + label);
   showToast('@' + handle + ' agora é ' + label + '.');
