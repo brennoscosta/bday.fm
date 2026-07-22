@@ -12,24 +12,63 @@ const USERS = {};
 const USERS_ORDER = [];
 
 // Converte o perfil público retornado pela API no formato que as páginas esperam.
+// Funciona tanto para a listagem (/api/users) quanto para o perfil completo
+// (/api/users/<slug>) — os agregados que faltarem chegam zerados.
+function bdayGradFor(slug) {
+  const grads = ['bg-blue-500', 'bg-pink-500', 'bg-amber-500', 'bg-emerald-500', 'bg-indigo-500', 'bg-rose-500', 'bg-cyan-500', 'bg-violet-500'];
+  return grads[Math.abs(hashCode(slug || '?')) % grads.length];
+}
 function bdayRecordFromApi(u) {
   const slug = u.slug;
   const name = (u.name || slug).trim();
   const initial = (name[0] || '?').toUpperCase();
-  const grads = ['bg-blue-500', 'bg-pink-500', 'bg-amber-500', 'bg-emerald-500', 'bg-indigo-500', 'bg-rose-500', 'bg-cyan-500', 'bg-violet-500'];
-  const grad = grads[Math.abs(hashCode(slug)) % grads.length];
+  const grad = bdayGradFor(slug);
+  const friendsList = Array.isArray(u.friendsList) ? u.friendsList.map(function (f) {
+    return {
+      slug: f.slug, name: f.name,
+      initial: ((f.name || '?')[0] || '?').toUpperCase(),
+      grad: bdayGradFor(f.slug || f.name),
+      avatar: f.avatarUrl || null,
+    };
+  }) : [];
+  const gifts = Array.isArray(u.gifts) ? u.gifts.map(function (g) {
+    return { who: g.who, whoSlug: g.whoSlug || null, item: g.item, value: g.value || 0, msg: g.msg || '', when: g.when || '' };
+  }) : [];
+  const gg = u.groupGoal || null;
+  const groupGoal = gg ? {
+    id: gg.id || null, title: gg.title, target: gg.target, current: gg.current || 0,
+    description: gg.description || '', category: gg.category || '', date: gg.date || '',
+    image: gg.image || null,
+    contributors: (gg.contributors || []).map(function (c) {
+      return {
+        name: c.name, slug: c.slug || null, amount: c.amount,
+        initial: ((c.name || '?')[0] || '?').toUpperCase(),
+        grad: bdayGradFor(c.slug || c.name),
+      };
+    }),
+  } : null;
   return {
     name, handle: slug, initial, grad, email: null, avatar: u.avatarUrl || null,
+    cover: u.coverUrl || null,
     status: u.bio || 'Bem-vindo(a) ao bday.fm',
     daysLabel: u.birthdayDayMonth || null,
     isToday: !!u.isToday,
-    received: 0, friends: 0, friendsList: [], giftsCount: 0, goal: null,
+    received: u.received || 0,
+    friends: (typeof u.friends === 'number') ? u.friends : friendsList.length,
+    friendsList: friendsList,
+    giftsCount: u.giftsCount || 0,
+    goal: groupGoal ? groupGoal.target : null,
     frame: u.frame || null, inBirthdayMonth: !!u.inBirthdayMonth,
-    wonFrames: [], wonBadges: Array.isArray(u.badges) ? u.badges : [],
-    accessory: u.accessory || null, wonAccessories: [],
+    badge: u.badge || null,
+    verified: !!u.verified,
+    points: (typeof u.points === 'number') ? u.points : null,
+    wonFrames: Array.isArray(u.wonFrames) ? u.wonFrames : [],
+    wonBadges: Array.isArray(u.badges) ? u.badges : [],
+    accessory: u.accessory || null,
+    wonAccessories: Array.isArray(u.wonAccessories) ? u.wonAccessories : [],
     socials: u.socials || { instagram: null, tiktok: null, youtube: null, linkedin: null },
-    gifts: [], groupGoal: null,
-    recap: { year: 2025, totalReceived: 0, giftsReceived: 0, friendsParticipated: 0, topGifter: null, topGifterAmount: 0, topMessage: null, rankPercent: null },
+    gifts: gifts, groupGoal: groupGoal,
+    recap: u.recap || { year: new Date().getFullYear(), totalReceived: 0, giftsReceived: 0, friendsParticipated: 0, topGifter: null, topGifterAmount: 0, topMessage: null, rankPercent: null },
     slug,
   };
 }
@@ -124,18 +163,21 @@ const ACCESSORIES = [
 
 
 // ---- Selo de verificação (premium) — concedido/revogado no painel admin ----
-// Estado em localStorage (bdayfm_verified: { slug: true/false }); alguns perfis
-// de demonstração já nascem verificados por padrão.
+// Fonte da verdade: banco de dados (campo verified do usuário, via API).
 const VERIFIED_DEFAULTS = [];
 function getVerifiedMap() {
   try { return JSON.parse(localStorage.getItem('bdayfm_verified') || 'null') || {}; } catch (e) { return {}; }
 }
 function setUserVerified(slug, on) {
+  // Persistência real acontece via PATCH /api/admin/users/<slug>; aqui só o cache local.
+  if (USERS[slug]) USERS[slug].verified = !!on;
   const m = getVerifiedMap();
   m[slug] = !!on;
   try { localStorage.setItem('bdayfm_verified', JSON.stringify(m)); } catch (e) {}
 }
 function isUserVerified(slug) {
+  const u = USERS[slug];
+  if (u && typeof u.verified === 'boolean') return u.verified;
   const m = getVerifiedMap();
   if (slug in m) return !!m[slug];
   return VERIFIED_DEFAULTS.includes(slug);
@@ -178,9 +220,22 @@ function pontosGanhos(slug) {
   const semana = envios.filter(e => Date.now() - e.ts < 7 * 86400000).length;
   return envios.length * PONTOS_POR_ENVIO + (semana >= 3 ? PONTOS_BONUS_MISSAO : 0);
 }
-function pontosSaldo(slug) { return Math.max(0, pontosGanhos(slug) - pontosGastos(slug)); }
+function pontosSaldo(slug) {
+  // Fonte da verdade: servidor (ledger PointEntry). Cai no cálculo local só
+  // quando o servidor não retornou pontos (ex.: sem rede).
+  const u = (typeof USERS === 'object' && USERS[slug]) ? USERS[slug] : null;
+  if (u && typeof u.points === 'number') return Math.max(0, u.points);
+  const fetched = (typeof fetchRealUser === 'function') ? fetchRealUser(slug) : null;
+  if (fetched && typeof fetched.points === 'number') return Math.max(0, fetched.points);
+  return Math.max(0, pontosGanhos(slug) - pontosGastos(slug));
+}
 function pontosGastar(slug, valor) {
+  // Gasto real acontece via POST /api/store/purchase (payWith: "points").
   if (pontosSaldo(slug) < valor) return false;
+  if (USERS[slug] && typeof USERS[slug].points === 'number') {
+    USERS[slug].points = Math.max(0, USERS[slug].points - valor);
+    return true;
+  }
   try { localStorage.setItem('bdayfm_pontos_gastos_' + slug, JSON.stringify(pontosGastos(slug) + valor)); } catch (e) { return false; }
   return true;
 }
@@ -272,7 +327,10 @@ const ADMIN_PROFILE = {
 // grava uma cópia local no formato que as páginas do site esperam. Usa XHR síncrono
 // de propósito: o fluxo de renderização das páginas é todo síncrono, e esta consulta
 // acontece no máximo uma vez por slug (depois fica em cache via saveCustomUser).
+// Cache em memória dos perfis completos buscados um a um (evita repetir o XHR).
+const BDAY_FETCHED = {};
 function fetchRealUser(slug) {
+  if (BDAY_FETCHED[slug]) return BDAY_FETCHED[slug];
   try { if (sessionStorage.getItem('bdayfm_miss_' + slug)) return null; } catch (e) {}
   try {
     const xhr = new XMLHttpRequest();
@@ -285,49 +343,32 @@ function fetchRealUser(slug) {
     const data = JSON.parse(xhr.responseText || '{}');
     const u = data && data.user;
     if (!u) return null;
-    const name = (u.name || slug).trim();
-    const initial = (name[0] || '?').toUpperCase();
-    const grads = ['bg-blue-500', 'bg-pink-500', 'bg-amber-500', 'bg-emerald-500', 'bg-indigo-500', 'bg-rose-500', 'bg-cyan-500', 'bg-violet-500'];
-    const grad = grads[Math.abs(hashCode(slug)) % grads.length];
-    const record = {
-      name, handle: u.slug || slug, initial, grad, email: null, avatar: u.avatarUrl || null,
-      status: u.bio || 'Bem-vindo(a) ao bday.fm', daysLabel: null, isToday: false,
-      received: 0, friends: 0, friendsList: [], giftsCount: 0, goal: null,
-      frame: u.frame || null, inBirthdayMonth: false, wonFrames: [], wonBadges: Array.isArray(u.badges) ? u.badges : [],
-      accessory: u.accessory || null, wonAccessories: [],
-      socials: u.socials || { instagram: null, tiktok: null, youtube: null, linkedin: null },
-      gifts: [], groupGoal: null,
-      recap: { year: 2025, totalReceived: 0, giftsReceived: 0, friendsParticipated: 0, topGifter: null, topGifterAmount: 0, topMessage: null, rankPercent: null },
-      slug: u.slug || slug,
-    };
-    saveCustomUser(record);
+    const record = bdayRecordFromApi(u);
+    BDAY_FETCHED[slug] = record;
+    // Atualiza também o cache global usado pelas páginas.
+    if (USERS[slug]) Object.assign(USERS[slug], record);
     return record;
   } catch (e) { return null; }
 }
 
 function findAnyUser(slug) {
   if (!slug) return null;
-  // Contas fixas de demonstração (ana, rafael... e a admin) começam só como objeto
-  // em memória — mas qualquer edição feita nelas (perfil, moldura, acessório, emblema,
-  // compras na loja) é gravada em getCustomUsers() do mesmo jeito que uma conta criada
-  // pelo cadastro (ver persistIfCustomUser em /perfil e persistirConquistas em
-  // /loja). Por isso o registro customizado tem PRIORIDADE aqui: se existir, ele é
-  // mesclado por cima do perfil fixo (que serve de base — amigos, presentes, recap etc.
-  // continuam vindo do fixo, só o que foi de fato alterado é sobrescrito).
-  const base = slug === 'admin' ? ADMIN_PROFILE : (USERS[slug] || null);
+  // Fonte da verdade: o SERVIDOR (banco de dados). O perfil completo (amigos,
+  // presentes, meta, recap, pontos) vem de /api/users/<slug>; a listagem
+  // (/api/users) serve de base rápida. O localStorage é só um resquício de
+  // compatibilidade para contas antigas puramente locais — nunca sobrescreve
+  // dados reais do servidor.
+  if (slug === 'admin') return { ...ADMIN_PROFILE, slug };
+  const fetched = fetchRealUser(slug);
+  if (fetched) return { ...fetched, slug };
+  if (USERS[slug]) return { ...USERS[slug], slug };
   const custom = getCustomUsers();
   if (custom[slug]) {
-    const cu = { ...(base || {}), ...custom[slug], slug };
-    // Contas criadas antes da mensagem de boas-vindas existir ficaram com o texto
-    // antigo "Conta criada recentemente" salvo no navegador — normaliza aqui na
-    // leitura, sem precisar que a pessoa edite o perfil pra corrigir.
+    const cu = { ...custom[slug], slug };
     if (cu.status === 'Conta criada recentemente') cu.status = 'Bem-vindo(a) ao bday.fm';
     return cu;
   }
-  if (base) return { ...base, slug };
-  // Não está nos perfis de demonstração nem nos criados neste navegador:
-  // procura a conta REAL no servidor antes de desistir.
-  return fetchRealUser(slug);
+  return null;
 }
 
 function getUserFromQuery() {

@@ -85,7 +85,7 @@ export async function enrichUser(user: {
   const year = new Date().getUTCFullYear();
   const startOfYear = new Date(Date.UTC(year, 0, 1));
 
-  const [receivedAgg, gifts, friends, goal, points, yearGifts] = await Promise.all([
+  const [receivedAgg, gifts, friends, goal, points, yearGifts, items] = await Promise.all([
     prisma.walletEntry.aggregate({
       where: { userId: user.id, type: "GIFT_RECEIVED" },
       _sum: { amountCents: true },
@@ -114,6 +114,10 @@ export async function enrichUser(user: {
     prisma.giftSent.findMany({
       where: { receiverId: user.id, createdAt: { gte: startOfYear } },
       include: { sender: { select: { slug: true, name: true } } },
+    }),
+    prisma.userItem.findMany({
+      where: { userId: user.id },
+      select: { kind: true, itemId: true },
     }),
   ]);
 
@@ -158,6 +162,8 @@ export async function enrichUser(user: {
     receivedCents,
     giftsCount: gifts.length,
     points,
+    wonFrames: items.filter((i) => i.kind === "frame").map((i) => i.itemId),
+    wonAccessories: items.filter((i) => i.kind === "accessory").map((i) => i.itemId),
     gifts: gifts.map((g) => ({
       who: g.sender.name,
       whoSlug: g.sender.slug,

@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   });
   const ids = users.map((u) => u.id);
 
-  const [receivedAgg, giftCounts, goals, recentGifts] = await Promise.all([
+  const [receivedAgg, giftCounts, goals, recentGifts, pointsAgg, userItems] = await Promise.all([
     prisma.walletEntry.groupBy({
       by: ["userId"],
       where: { userId: { in: ids }, type: "GIFT_RECEIVED" },
@@ -55,10 +55,27 @@ export async function GET(req: NextRequest) {
         giftItem: { select: { name: true, emoji: true } },
       },
     }),
+    prisma.pointEntry.groupBy({
+      by: ["userId"],
+      where: { userId: { in: ids } },
+      _sum: { delta: true },
+    }),
+    prisma.userItem.findMany({
+      where: { userId: { in: ids } },
+      select: { userId: true, kind: true, itemId: true },
+    }),
   ]);
 
   const receivedMap = new Map(receivedAgg.map((r) => [r.userId, r._sum.amountCents || 0]));
   const giftCountMap = new Map(giftCounts.map((r) => [r.receiverId, r._count._all]));
+  const pointsMap = new Map(pointsAgg.map((r) => [r.userId, r._sum.delta || 0]));
+  const itemsMap = new Map<string, { frames: string[]; accessories: string[] }>();
+  for (const it of userItems) {
+    const cur = itemsMap.get(it.userId) || { frames: [], accessories: [] };
+    if (it.kind === "frame") cur.frames.push(it.itemId);
+    else if (it.kind === "accessory") cur.accessories.push(it.itemId);
+    itemsMap.set(it.userId, cur);
+  }
   const goalMap = new Map(
     goals.map((g) => {
       const current = g.contributions.reduce((s, c) => s + c.amountCents, 0);
@@ -122,6 +139,9 @@ export async function GET(req: NextRequest) {
       giftsCount: giftCountMap.get(u.id) || 0,
       groupGoal: goalMap.get(u.id) || null,
       gifts: giftsMap.get(u.id) || [],
+      points: pointsMap.get(u.id) || 0,
+      wonFrames: itemsMap.get(u.id)?.frames || [],
+      wonAccessories: itemsMap.get(u.id)?.accessories || [],
     };
   });
 

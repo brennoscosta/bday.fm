@@ -155,18 +155,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
-  const confirmGiftBtn = document.getElementById('confirmGiftBtn');
-  if (confirmGiftBtn) {
-    confirmGiftBtn.addEventListener('click', () => {
-      const modal = document.getElementById('giftModal');
-      const name = modal.querySelector('[data-gift-summary-name]').textContent;
-      modal.classList.remove('open');
-      showToast(`"${name}" enviado — demonstração, nenhum pagamento real foi feito.`);
-    });
-  }
+  // O envio real do presente (POST /api/gifts/send) é feito pelo script da
+  // própria página /presentes — aqui não há mais handler de demonstração.
 
-  // Wallet demo actions — valida o valor antes de simular sucesso, para nenhuma ação ficar sem resposta.
-  const WALLET_DEMO_BALANCE = 214; // mesmo saldo estático mostrado na tela, usado só para validar o formulário aqui.
   const confirmDeposit = document.getElementById('confirmDeposit');
   if (confirmDeposit) confirmDeposit.addEventListener('click', () => {
     const input = document.getElementById('depositAmountInput');
@@ -193,17 +184,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('withdrawAmountInput');
     const value = input ? parseFloat(input.value) : NaN;
     if (!value || value < 10) { showToast('O valor mínimo para saque é R$ 10,00.'); return; }
-    if (value > WALLET_DEMO_BALANCE) { showToast('Saldo insuficiente para esse saque (demo).'); return; }
-    document.getElementById('withdrawModal').classList.remove('open');
-    // A velocidade escolhida (padrão/instantâneo) é lida direto do botão marcado como ativo,
-    // em vez de depender de uma variável separada no script da própria página — evita que duas
-    // mensagens de toast concorram entre si e uma acabe sobrescrevendo a outra.
+    // Chave Pix: campos adicionados no modal da carteira.
+    const pixInput = document.getElementById('withdrawPixKeyInput');
+    const pixTypeSel = document.getElementById('withdrawPixKeyTypeSelect');
+    const pixKey = pixInput ? pixInput.value.trim() : '';
+    const pixKeyType = pixTypeSel ? pixTypeSel.value : 'cpf';
+    if (!pixKey || pixKey.length < 3) { showToast('Informe a chave Pix que vai receber o dinheiro.'); return; }
+    // A velocidade escolhida (padrão/instantâneo) é lida direto do botão marcado como ativo.
     const activeSpeedBtn = document.querySelector('.speed-btn.border-purple-500');
     const isInstant = activeSpeedBtn && activeSpeedBtn.getAttribute('data-speed') === 'instant';
-    showToast(isInstant
-      ? 'Saque instantâneo simulado — caiu na hora, com taxa de 6% (demo).'
-      : 'Solicitação de saque simulada (demo).');
-    if (input) input.value = '';
+    confirmWithdraw.disabled = true;
+    fetch('/api/wallet/withdraw', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: value, speed: isInstant ? 'instant' : 'standard', pixKey, pixKeyType })
+    }).then(async (res) => {
+      const data = await res.json().catch(() => ({}));
+      confirmWithdraw.disabled = false;
+      if (!res.ok || !data.ok) {
+        showToast(data.error || 'Não foi possível solicitar o saque.');
+        return;
+      }
+      document.getElementById('withdrawModal').classList.remove('open');
+      showToast(isInstant
+        ? `Saque instantâneo solicitado! R$ ${data.withdrawal.net.toFixed(2).replace('.', ',')} a caminho da sua chave Pix.`
+        : 'Saque solicitado! O valor chega em até 48h úteis na sua chave Pix.');
+      if (input) input.value = '';
+      // Atualiza a página da carteira (saldo + extrato + aba de saques).
+      if (typeof window.bdayReloadWallet === 'function') window.bdayReloadWallet();
+    }).catch(() => { showToast('Falha de conexão. Tente novamente.'); confirmWithdraw.disabled = false; });
   });
 
   // Add friend / share buttons (profile page) — demo feedback
