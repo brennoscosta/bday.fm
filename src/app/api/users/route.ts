@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
   // birthdate vira apenas dia/mês (para "aniversário hoje/este mês") — nunca o ano.
   const today = new Date();
-  const result = users.map((u) => {
+  const result = users.map((u: any) => {
     let isToday = false;
     let inBirthdayMonth = false;
     let birthdayDayMonth: string | null = null;

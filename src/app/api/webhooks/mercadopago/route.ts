@@ -1,15 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { createHmac, timingSafeEqual } from "crypto";
+import { prisma, rateLimit } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-// Webhook do Mercado Pago — VALIDA o pagamento consultando a API oficial com o
-// nosso Access Token (nunca confiamos no corpo da notificação) e só então
-// credita o valor no ledger da carteira. Idempotente: o mesmo pagamento nunca
-// é creditado duas vezes (reference = "mp:<payment_id>").
+// Valida a ASSINATURA da notificação conforme a documentação oficial do MP:
+// header x-signature ("ts=...,v1=...") + x-request-id. O manifest assinado é
+// `id:<data.id>;request-id:<x-request-id>;ts:<ts>;` com HMAC-SHA256 usando a
+// chave secreta do webhook (MP_WEBHOOK_SECRET). Só é exigida quando a chave está
+// configurada — assim ambientes sem a chave ainda funcionam (com aviso).
+function assinaturaValida(req: NextRequest, dataId: string | null): boolean {
+  const secret = process.env.MP_WEBHOOK_SECRET;
+  if (!secret) {
+    console.warn("MP webhook: MP_WEBHOOK_SECRET não definido — assinatura não verificada.");
+    return true;
+  }
+  const sig = req.headers.get("x-signature") || "";
+  const requestId = req.headers.get("x-request-id") || "";
+  const parts = Object.fromEntries(
+    sig.split(",").map((kv) => kv.split("=").map((s) => s.trim())).filter((a) => a.length === 2),
+  );
+  const ts = parts["ts"];
+  const v1 = parts["v1"];
+  if (!ts || !v1 || !dataId) return false;
+  const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
+  const expected = createHmac("sha256", secret).update(manifest).digest("hex");
+  try {
+    const a = Buffer.from(expected, "hex");
+    const b = Buffer.from(v1, "hex");
+    return a.length === b.length && timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
+// Webhook do Mercado Pago — VALIDA a assinatura, depois confirma o pagamento
+// consultando a API oficial com o nosso Access Token (nunca confiamos no corpo da
+// notificação) e só então credita o valor no ledger da carteira. Idempotente: o
+// mesmo pagamento nunca é creditado duas vezes (reference = "mp:<payment_id>").
 export async function POST(req: NextRequest) {
   const token = process.env.MP_ACCESS_TOKEN;
   if (!token) return NextResponse.json({ ok: true }); // nada configurado, nada a fazer
+
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  if (!rateLimit(`mpwebhook:${ip}`, 120, 60 * 1000)) {
+    return NextResponse.json({ ok: true }, { status: 429 });
+  }
 
   // O MP notifica de formas diferentes: query (?topic=payment&id=...) ou corpo
   // JSON ({ type: "payment", data: { id } }). Aceitamos as duas.
@@ -21,6 +57,11 @@ export async function POST(req: NextRequest) {
 
   if (!paymentId || (topic && !String(topic).includes("payment"))) {
     return NextResponse.json({ ok: true }); // notificação que não nos interessa
+  }
+
+  if (!assinaturaValida(req, url.searchParams.get("data.id") || url.searchParams.get("id") || (body?.data?.id ? String(body.data.id) : null))) {
+    console.error("MP webhook: assinatura inválida — notificação recusada.");
+    return NextResponse.json({ error: "invalid signature" }, { status: 401 });
   }
 
   // Consulta oficial — fonte da verdade sobre o status do pagamento

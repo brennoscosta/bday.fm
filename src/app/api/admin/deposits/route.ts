@@ -17,7 +17,7 @@ export async function GET() {
   });
 
   return NextResponse.json({
-    deposits: entries.map((e) => ({
+    deposits: entries.map((e: any) => ({
       id: e.id,
       slug: e.user.slug,
       name: e.user.name,

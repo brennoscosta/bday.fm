@@ -21,10 +21,10 @@ export async function GET() {
     prisma.walletEntry.groupBy({ by: ["userId"], _sum: { amountCents: true } }),
   ]);
 
-  const balanceMap = new Map(balances.map((b) => [b.userId, b._sum.amountCents || 0]));
+  const balanceMap = new Map(balances.map((b: any) => [b.userId, b._sum.amountCents || 0]));
 
   return NextResponse.json({
-    users: users.map((u) => ({
+    users: users.map((u: any) => ({
       slug: u.slug,
       name: u.name,
       email: u.email,

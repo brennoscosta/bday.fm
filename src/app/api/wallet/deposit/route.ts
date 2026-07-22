@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionUser } from "@/lib/auth";
+import { rateLimit } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,11 @@ const bodySchema = z.object({
 export async function POST(req: NextRequest) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  // Limite por usuário: evita abuso de criação de preferências de pagamento.
+  if (!rateLimit(`deposit:${user.id}`, 20, 10 * 60 * 1000)) {
+    return NextResponse.json({ error: "Muitas tentativas. Aguarde alguns minutos." }, { status: 429 });
+  }
 
   const token = process.env.MP_ACCESS_TOKEN;
   if (!token) {
