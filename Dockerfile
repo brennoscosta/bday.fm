@@ -19,10 +19,12 @@ RUN addgroup -S app && adduser -S app -G app
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-# node_modules completo do builder (Prisma CLI precisa de @prisma/config etc.
-# que o node_modules enxuto do standalone não inclui)
-COPY --from=builder /app/node_modules ./node_modules
+# Prisma CLI para rodar migrations no start
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/prisma ./prisma
+# Templates das páginas (HTML original servido pelos route handlers do App Router)
+COPY --from=builder /app/page-templates ./page-templates
 COPY docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh && chown -R app:app /app
 USER app
