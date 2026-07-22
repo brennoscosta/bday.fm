@@ -139,10 +139,7 @@
     </div>
 
     <div data-tab-panel="saques" data-tab-of="wallet" class="mt-5 card divide-y divide-gray-100 hidden">
-      <div class="flex items-center gap-4 p-4">
-        <div class="flex-1"><div class="font-semibold text-sm">Saque solicitado</div><div class="text-xs text-slate-400">05 jul 2026, 14:32</div></div>
-        <span class="pill bg-green-50 text-green-700">Concluído</span>
-      </div>
+      <div class="p-6 text-sm text-slate-400 text-center">Nenhum saque ainda.</div>
     </div>
   </div>
 </main>
@@ -197,6 +194,18 @@
       </button>
     </div>
 
+    <label class="block text-sm font-semibold mt-4 mb-1">Chave Pix</label>
+    <div class="flex gap-2">
+      <select id="withdrawPixKeyTypeSelect" class="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-400 bg-white">
+        <option value="cpf">CPF</option>
+        <option value="cnpj">CNPJ</option>
+        <option value="email">E-mail</option>
+        <option value="phone">Celular</option>
+        <option value="random">Chave aleatória</option>
+      </select>
+      <input id="withdrawPixKeyInput" type="text" placeholder="Sua chave Pix" class="flex-1 min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-400">
+    </div>
+
     <div id="withdrawInfoBox" class="mt-4 rounded-xl bg-purple-50 border border-purple-100 px-4 py-3 text-xs text-purple-800 space-y-1.5">
       <div class="flex items-center gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <span id="withdrawTimeText">Processado em até 48h úteis via Pix, sem nenhuma taxa</span></div>
       <div class="flex items-center gap-2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 shrink-0"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 21 8 3 8"/></svg> Transferido para a chave Pix cadastrada na sua conta</div>
@@ -238,19 +247,27 @@
   // saque instantâneo) é tratado de forma centralizada em script.js, para evitar duas
   // mensagens de toast concorrendo entre si.
 
-  // Carteira REAL: saldo e transações vêm do servidor (ledger no banco de dados).
+  // Carteira REAL: saldo, transações e saques vêm do servidor (ledger no banco de dados).
   (function () {
     const fmtBRL = (cents) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const fmtReais = (v) => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const TYPE_LABEL = {
       DEPOSIT_MP: 'Depósito via Mercado Pago',
       GIFT_RECEIVED: 'Presente recebido',
+      GIFT_SENT: 'Presente enviado',
+      STORE_PURCHASE: 'Compra na loja',
       WITHDRAWAL_PIX: 'Saque via Pix',
       ADJUSTMENT: 'Ajuste',
     };
-    fetch('/api/wallet').then(async (res) => {
-      if (res.status === 401) { window.location.href = '/login?next=/carteira'; return; }
-      const data = await res.json().catch(() => null);
-      if (!data) return;
+    const WITHDRAW_STATUS = {
+      REQUESTED: { label: 'Solicitado', cls: 'bg-amber-50 text-amber-700' },
+      PROCESSING: { label: 'Processando', cls: 'bg-amber-50 text-amber-700' },
+      DONE: { label: 'Concluído', cls: 'bg-green-50 text-green-700' },
+      FAILED: { label: 'Falhou', cls: 'bg-slate-100 text-slate-600' },
+      REJECTED: { label: 'Recusado', cls: 'bg-slate-100 text-slate-600' },
+    };
+
+    function renderCarteira(data) {
       const saldo = fmtBRL(data.balanceCents || 0);
       ['walletMainBalance', 'depositCurrentBalance', 'withdrawAvailableBalance'].forEach((id) => {
         const el = document.getElementById(id);
@@ -269,7 +286,52 @@
           </div>`;
         }).join('');
       }
-    }).catch(() => {});
+    }
+
+    function renderSaques(data) {
+      const panel = document.querySelector('[data-tab-panel="saques"]');
+      if (panel) {
+        const lista = data.withdrawals || [];
+        panel.innerHTML = lista.length ? lista.map((w) => {
+          const st = WITHDRAW_STATUS[w.status] || { label: w.status, cls: 'bg-slate-100 text-slate-600' };
+          const d = new Date(w.createdAt);
+          const when = d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+            + ', ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          return `
+          <div class="flex items-center gap-4 p-4">
+            <div class="flex-1"><div class="font-semibold text-sm">Saque solicitado</div><div class="text-xs text-slate-400">${when}</div></div>
+            <div class="font-bold text-slate-700">${fmtReais(w.amount)}</div>
+            <span class="pill ${st.cls}">${st.label}</span>
+          </div>`;
+        }).join('') : '<div class="p-6 text-sm text-slate-400 text-center">Nenhum saque ainda.</div>';
+      }
+      // Pré-preenche a chave Pix cadastrada, sem sobrescrever o que o usuário digitou.
+      const pixInput = document.getElementById('withdrawPixKeyInput');
+      const pixSel = document.getElementById('withdrawPixKeyTypeSelect');
+      if (pixInput && !pixInput.value && data.pixKey) {
+        pixInput.value = data.pixKey;
+        if (pixSel && data.pixKeyType) pixSel.value = data.pixKeyType;
+      }
+    }
+
+    function carregarCarteira() {
+      return fetch('/api/wallet').then(async (res) => {
+        if (res.status === 401) { window.location.href = '/login?next=/carteira'; return; }
+        const data = await res.json().catch(() => null);
+        if (data) renderCarteira(data);
+      }).catch(() => {});
+    }
+    function carregarSaques() {
+      return fetch('/api/wallet/withdrawals').then(async (res) => {
+        if (!res.ok) return;
+        const data = await res.json().catch(() => null);
+        if (data) renderSaques(data);
+      }).catch(() => {});
+    }
+
+    // Recarrega saldo, extrato e aba "Saques" — chamada também pelo handler de saque em script.js.
+    window.bdayReloadWallet = function () { carregarCarteira(); carregarSaques(); };
+    window.bdayReloadWallet();
 
     // Retorno do checkout do Mercado Pago
     const st = new URLSearchParams(window.location.search).get('deposito');

@@ -278,13 +278,31 @@
     </a>`;
   }
 
-  // ----- Top givers — sem dados fictícios: preenche quando houver presentes reais -----
-  const givers = [];
+  // ----- Rankings reais do mês (quem mais presenteou / recebeu), via API.
+  // Mesmo padrão síncrono do users.js; se a API falhar, cai no comportamento
+  // anterior (lista vazia / derivada dos usuários). -----
+  function rankUserFromApi(u) {
+    const name = (u.name || u.slug || '?').trim() || '?';
+    return { slug: u.slug, name, handle: u.slug, initial: (name[0] || '?').toUpperCase(), grad: bdayGradFor(u.slug || name), avatar: u.avatarUrl || null };
+  }
+  let rankGivers = [], rankReceivers = [];
+  try {
+    const rankXhr = new XMLHttpRequest();
+    rankXhr.open('GET', '/api/gifts/rankings', false);
+    rankXhr.send(null);
+    if (rankXhr.status === 200) {
+      const rankData = JSON.parse(rankXhr.responseText || '{}');
+      rankGivers = (rankData.givers || []).map(rankUserFromApi);
+      rankReceivers = (rankData.receivers || []).map(rankUserFromApi);
+    }
+  } catch (e) { /* sem rede — rankings ficam com o comportamento local */ }
+
+  const givers = rankGivers;
   document.getElementById('topGivers').innerHTML = givers.length
     ? givers.map((u, i) => rankItemHTML(u, i + 1)).join('')
     : '<div class="text-xs text-slate-400 py-2">Ainda não há presentes enviados.</div>';
 
-  const receivers = all.filter(u => u.received > 0).sort((a, b) => b.received - a.received);
+  const receivers = rankReceivers.length ? rankReceivers : all.filter(u => u.received > 0).sort((a, b) => b.received - a.received);
   document.getElementById('topReceivers').innerHTML = receivers.map((u, i) => rankItemHTML(u, i + 1)).join('');
 
   // Aniversariantes do mês — estilo "Homework" do mockup: ícone escuro + barra de progresso
@@ -344,6 +362,56 @@
   function saveFeedComments(v) { try { localStorage.setItem(FEED_COMMENTS_KEY, JSON.stringify(v)); } catch (e) {} }
   function getFeedCustomPosts() { try { return JSON.parse(localStorage.getItem(FEED_POSTS_KEY) || '[]'); } catch (e) { return []; } }
   function saveFeedCustomPosts(v) { try { localStorage.setItem(FEED_POSTS_KEY, JSON.stringify(v)); } catch (e) {} }
+
+  // Posts sintéticos (aniversário hoje, BDAY ativo, presente recebido, aniversário
+  // chegando) são derivados dos usuários e não existem no banco — curtidas/comentários
+  // deles seguem no navegador. Os demais posts são reais, vindos de /api/feed.
+  function isSyntheticFeedPostId(postId) {
+    return /^(today|bday|gift|upcoming)-/.test(String(postId || ''));
+  }
+  function feedWhenLabel(createdAt) {
+    try {
+      const d = new Date(createdAt);
+      if (isNaN(d.getTime())) return 'agora';
+      const now = new Date();
+      if (d.toDateString() === now.toDateString()) return 'hoje';
+      return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+    } catch (e) { return 'agora'; }
+  }
+  function bdayFeedPostFromApi(p) {
+    const a = p.author || {};
+    const name = (a.name || a.slug || '?').trim() || '?';
+    return {
+      id: p.id,
+      authorSlug: a.slug || '',
+      authorName: name,
+      authorInitial: (name[0] || '?').toUpperCase(),
+      authorGrad: bdayGradFor(a.slug || name),
+      authorAvatar: a.avatarUrl || null,
+      caption: p.caption || '',
+      image: p.image || null,
+      attachType: p.attachType || null,
+      attachData: p.attachData || null,
+      likeCount: p.likeCount || 0,
+      commentCount: p.commentCount || 0,
+      likedByMe: !!p.likedByMe,
+      createdAt: p.createdAt || null,
+    };
+  }
+  // Publicações reais do feed — carregadas do servidor (mesmo padrão síncrono do
+  // users.js: o render lê a lista logo em seguida, no mesmo tick).
+  let API_FEED_POSTS = [];
+  function loadApiFeedPosts() {
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', '/api/feed', false);
+      xhr.send(null);
+      if (xhr.status !== 200) return;
+      const data = JSON.parse(xhr.responseText || '{}');
+      API_FEED_POSTS = (data.posts || []).filter(p => p && p.id != null).map(bdayFeedPostFromApi);
+    } catch (e) { /* sem rede — o feed segue só com os posts derivados dos usuários */ }
+  }
+  loadApiFeedPosts();
 
   function postImageHTML(u, gg) {
     if (gg.image) return `<div class="aspect-[16/9] bg-cover bg-center" style="background-image:url(${gg.image})"></div>`;
@@ -411,10 +479,13 @@
     // só conta curtida de verdade. Só os posts de demonstração (Marina, Thainá etc.)
     // usam a base fictícia, pra simular um feed com histórico.
     const baseLikes = extra.baseLikes != null ? extra.baseLikes : 0; // sem curtidas fictícias
-    const liked = !!getFeedLikes()[postId];
-    const likeCount = baseLikes + (liked ? 1 : 0);
+    const synthetic = isSyntheticFeedPostId(postId);
+    // Posts reais (da API) chegam com contadores e estado de curtida do servidor;
+    // os sintéticos seguem com o estado guardado no navegador.
+    const liked = synthetic ? !!getFeedLikes()[postId] : !!extra.likedByMe;
+    const likeCount = synthetic ? (baseLikes + (liked ? 1 : 0)) : (extra.likeCount || 0);
     const seedCommentsCount = mode === 'custom' ? 0 : getSeedComments(postId, u.slug).length;
-    const commentCount = seedCommentsCount + (getFeedComments()[postId] || []).length;
+    const commentCount = synthetic ? (seedCommentsCount + (getFeedComments()[postId] || []).length) : (extra.commentCount || 0);
     let caption, when, imageHTML = '';
     if (mode === 'custom') {
       caption = extra.caption;
@@ -482,7 +553,7 @@
 
   function renderFeed() {
     const posts = [];
-    getFeedCustomPosts().forEach(p => posts.push({ postId: p.id, u: { name: p.authorName, slug: p.authorSlug, handle: p.authorSlug, initial: p.authorInitial, grad: p.authorGrad, avatar: p.authorAvatar || null, giftsCount: 0, isToday: false }, mode: 'custom', extra: { caption: p.caption, image: p.image, when: 'agora mesmo', baseLikes: 0, attachType: p.attachType || null, attachData: p.attachData || null } }));
+    API_FEED_POSTS.forEach(p => posts.push({ postId: p.id, u: { name: p.authorName, slug: p.authorSlug, handle: p.authorSlug, initial: p.authorInitial, grad: p.authorGrad, avatar: p.authorAvatar || null, giftsCount: 0, isToday: false }, mode: 'custom', extra: { caption: p.caption, image: p.image, when: feedWhenLabel(p.createdAt), baseLikes: 0, attachType: p.attachType || null, attachData: p.attachData || null, likeCount: p.likeCount, commentCount: p.commentCount, likedByMe: p.likedByMe } }));
     all.filter(u => u.isToday).forEach(u => posts.push({ postId: `today-${u.slug}`, u, mode: 'today' }));
     all.filter(u => u.groupGoal).forEach(u => posts.push({ postId: `bday-${u.slug}`, u, mode: 'bday' }));
     all.filter(u => u.gifts && u.gifts.length).forEach(u => posts.push({ postId: `gift-${u.slug}`, u, mode: 'gift' }));
@@ -502,6 +573,26 @@
       const likes = getFeedLikes();
       const countEl = article.querySelector('[data-like-count]');
       const iconEl = article.querySelector('[data-like-icon]');
+      if (!isSyntheticFeedPostId(postId)) {
+        // Post real: a curtida vai para o servidor e a resposta define ícone/contador.
+        fetch(`/api/feed/posts/${encodeURIComponent(postId)}/like`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+          .then(res => {
+            if (res.status === 401) { goToLoginFromHereFeed(); return null; }
+            if (!res.ok) throw new Error('like_failed');
+            return res.json();
+          })
+          .then(data => {
+            if (!data) return;
+            countEl.textContent = data.likeCount;
+            iconEl.innerHTML = data.liked ? HEART_FILLED : iconSize(ICONS.heart, 'w-4 h-4');
+            likeBtn.classList.toggle('text-pink-600', data.liked);
+            likeBtn.classList.toggle('text-slate-600', !data.liked);
+            const p = API_FEED_POSTS.find(x => String(x.id) === String(postId));
+            if (p) { p.likedByMe = data.liked; p.likeCount = data.likeCount; }
+          })
+          .catch(() => showToast('Não foi possível curtir agora. Tente novamente.'));
+        return;
+      }
       const nowLiked = !likes[postId];
       if (nowLiked) { likes[postId] = true; } else { delete likes[postId]; }
       saveFeedLikes(likes);
@@ -549,19 +640,11 @@
 
   // ----- Comentar direto no post: sem modal, expande um painel dentro do próprio card
   // com a lista de comentários (semente + reais) e um campo pra escrever ali mesmo. -----
-  function renderInlineComments(article) {
-    const postId = article.getAttribute('data-post-id');
-    const authorSlug = article.getAttribute('data-post-slug');
-    const mode = article.getAttribute('data-post-mode');
-    const seedComments = mode === 'custom' ? [] : getSeedComments(postId, authorSlug);
-    const realComments = getFeedComments()[postId] || [];
-    const comments = [...seedComments, ...realComments];
-    const listEl = article.querySelector('[data-comments-list]');
-    listEl.innerHTML = comments.length ? comments.map(c => {
-      const commentAvatarHTML = c.avatar
-        ? `<div class="w-7 h-7 rounded-full bg-cover bg-center border border-black/5 shrink-0" style="background-image:url(${c.avatar})"></div>`
-        : `<div class="w-7 h-7 rounded-full ${c.grad} flex items-center justify-center text-white text-[10px] font-bold shrink-0">${c.initial}</div>`;
-      return `
+  function feedCommentItemHTML(c) {
+    const commentAvatarHTML = c.avatar
+      ? `<div class="w-7 h-7 rounded-full bg-cover bg-center border border-black/5 shrink-0" style="background-image:url(${c.avatar})"></div>`
+      : `<div class="w-7 h-7 rounded-full ${c.grad} flex items-center justify-center text-white text-[10px] font-bold shrink-0">${c.initial}</div>`;
+    return `
       <div class="flex items-start gap-2">
         ${commentAvatarHTML}
         <div class="min-w-0 bg-slate-50 rounded-xl px-3 py-1.5 flex-1">
@@ -569,7 +652,41 @@
           <div class="text-[10px] text-slate-400 mt-0.5">${c.when}</div>
         </div>
       </div>`;
-    }).join('') : `<p class="text-xs text-slate-400 text-center py-2">Nenhum comentário ainda — seja o primeiro!</p>`;
+  }
+  function feedCommentsListHTML(comments) {
+    return comments.length
+      ? comments.map(feedCommentItemHTML).join('')
+      : `<p class="text-xs text-slate-400 text-center py-2">Nenhum comentário ainda — seja o primeiro!</p>`;
+  }
+  function feedCommentFromApi(c) {
+    const author = c.author || 'Alguém';
+    return {
+      author,
+      initial: ((author || '?')[0] || '?').toUpperCase(),
+      grad: bdayGradFor(c.authorSlug || author),
+      avatar: c.avatar || null,
+      text: c.text,
+      when: feedWhenLabel(c.createdAt),
+    };
+  }
+  function renderInlineComments(article) {
+    const postId = article.getAttribute('data-post-id');
+    const authorSlug = article.getAttribute('data-post-slug');
+    const mode = article.getAttribute('data-post-mode');
+    const listEl = article.querySelector('[data-comments-list]');
+    if (!isSyntheticFeedPostId(postId)) {
+      // Post real: comentários vêm do servidor.
+      listEl.innerHTML = `<p class="text-xs text-slate-400 text-center py-2">Carregando comentários...</p>`;
+      fetch(`/api/feed/posts/${encodeURIComponent(postId)}/comments`)
+        .then(res => { if (!res.ok) throw new Error('comments_failed'); return res.json(); })
+        .then(data => { listEl.innerHTML = feedCommentsListHTML((data.comments || []).map(feedCommentFromApi)); })
+        .catch(() => { listEl.innerHTML = `<p class="text-xs text-slate-400 text-center py-2">Não foi possível carregar os comentários.</p>`; });
+      return;
+    }
+    const seedComments = mode === 'custom' ? [] : getSeedComments(postId, authorSlug);
+    const realComments = getFeedComments()[postId] || [];
+    const comments = [...seedComments, ...realComments];
+    listEl.innerHTML = feedCommentsListHTML(comments);
   }
   function toggleFeedCommentsPanel(article) {
     const panel = article.querySelector('[data-comments-panel]');
@@ -589,6 +706,31 @@
     const text = bdaySanitize(input.value);
     if (!text) return;
     const postId = article.getAttribute('data-post-id');
+    if (!isSyntheticFeedPostId(postId)) {
+      // Post real: comentário vai para o servidor e a resposta alimenta a lista.
+      fetch(`/api/feed/posts/${encodeURIComponent(postId)}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) })
+        .then(res => {
+          if (res.status === 401) { goToLoginFromHereFeed(); return null; }
+          return res.json().catch(() => ({})).then(data => ({ ok: res.ok, data }));
+        })
+        .then(r => {
+          if (!r) return;
+          if (!r.ok || !r.data.comment) { showToast((r.data && r.data.error) || 'Não foi possível comentar agora.'); return; }
+          input.value = '';
+          const listEl = article.querySelector('[data-comments-list]');
+          const placeholder = listEl.querySelector('p');
+          if (placeholder) placeholder.remove();
+          listEl.insertAdjacentHTML('beforeend', feedCommentItemHTML({ ...feedCommentFromApi(r.data.comment), when: 'agora mesmo' }));
+          const countEl = article.querySelector('[data-comment-count]');
+          const newCount = (typeof r.data.commentCount === 'number') ? r.data.commentCount : ((parseInt(countEl.textContent, 10) || 0) + 1);
+          countEl.textContent = newCount;
+          const p = API_FEED_POSTS.find(x => String(x.id) === String(postId));
+          if (p) p.commentCount = newCount;
+          showToast('Comentário publicado!');
+        })
+        .catch(() => showToast('Não foi possível comentar agora. Tente novamente.'));
+      return;
+    }
     const session = authGetSession();
     const meUser = session && typeof findAnyUser === 'function' ? findAnyUser(session.slug) : null;
     const author = meUser ? meUser.name : 'Você';
@@ -699,23 +841,25 @@
     if (!pendingFeedGift || !activeGiftSlug) return;
     const target = typeof findAnyUser === 'function' ? findAnyUser(activeGiftSlug) : null;
     const targetFirstName = target ? target.name.split(' ')[0] : 'essa pessoa';
-    if (target && target.groupGoal) {
-      const gg = target.groupGoal;
-      const session = authGetSession();
-      const meUser = session && typeof findAnyUser === 'function' ? findAnyUser(session.slug) : null;
-      gg.current = (gg.current || 0) + pendingFeedGift.price;
-      gg.contributors = gg.contributors || [];
-      gg.contributors.push({ initial: meUser ? meUser.initial : 'V', grad: meUser ? meUser.grad : 'bg-purple-500', amount: pendingFeedGift.price });
-      if (typeof getCustomUsers === 'function' && getCustomUsers()[target.slug] && typeof saveCustomUser === 'function') {
-        saveCustomUser({ ...target });
-      }
-      showToast(`Você enviou ${pendingFeedGift.name} para o BDAY de ${targetFirstName}! (demo)`);
-      renderFeed();
-    } else {
-      showToast(`Presente enviado para ${targetFirstName}! (demo — sem BDAY ativo no momento para contribuir.)`);
-    }
-    document.getElementById('feedGiftModal').classList.remove('open');
-    resetFeedGiftSelection();
+    const giftName = pendingFeedGift.name;
+    const hadGoal = !!(target && target.groupGoal);
+    // Presente real: o servidor debita o saldo, credita o alvo (ou o BDAY dele) e
+    // registra o envio — aqui só refletimos o resultado.
+    fetch('/api/gifts/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientSlug: activeGiftSlug, giftName }) })
+      .then(res => {
+        if (res.status === 401) { goToLoginFromHereFeed(); return null; }
+        return res.json().catch(() => ({})).then(data => ({ ok: res.ok, data }));
+      })
+      .then(r => {
+        if (!r) return;
+        if (!r.ok) { showToast((r.data && r.data.error) || 'Não foi possível enviar o presente agora.'); return; }
+        showToast(hadGoal
+          ? `Você enviou ${giftName} para o BDAY de ${targetFirstName}!`
+          : `Você enviou ${giftName} para ${targetFirstName}!`);
+        document.getElementById('feedGiftModal').classList.remove('open');
+        resetFeedGiftSelection();
+      })
+      .catch(() => showToast('Não foi possível enviar o presente agora. Tente novamente.'));
   });
 
   // ----- Compositor: publicar um novo momento no topo do feed -----
@@ -849,23 +993,31 @@
         ? `Compartilhando meu BDAY: ${pendingAttachData.title}!`
         : `Compartilhando meu Recap ${pendingAttachData.year}!`;
     }
-    const authorAvatar = meUser.avatar || (session && session.avatarDataUrl) || null;
-    const customPosts = getFeedCustomPosts();
-    customPosts.unshift({
-      id: `custom-${Date.now()}`,
-      authorSlug: meUser.slug, authorName: meUser.name, authorInitial: meUser.initial, authorGrad: meUser.grad, authorAvatar,
-      caption, image: pendingComposerImage, attachType: pendingAttachType, attachData: pendingAttachData,
-    });
-    saveFeedCustomPosts(customPosts);
-    feedComposerText.value = '';
-    feedComposerCount.textContent = '0';
-    pendingComposerImage = null;
-    document.getElementById('feedComposerImagePreview').classList.add('hidden');
-    document.getElementById('feedComposerRemoveImageBtn').classList.add('hidden');
-    clearFeedAttachSelection();
-    document.getElementById('feedComposerModal').classList.remove('open');
-    renderFeed();
-    showToast('Momento publicado! (demo)');
+    // Publicação real: o post vai para o servidor e o feed é recarregado com os
+    // dados oficiais (id, contadores, data).
+    const body = { caption };
+    if (pendingComposerImage) body.image = pendingComposerImage;
+    if (pendingAttachType) { body.attachType = pendingAttachType; body.attachData = pendingAttachData; }
+    fetch('/api/feed/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(res => {
+        if (res.status === 401) { goToLoginFromHereFeed(); return null; }
+        return res.json().catch(() => ({})).then(data => ({ ok: res.ok, data }));
+      })
+      .then(r => {
+        if (!r) return;
+        if (!r.ok) { showToast((r.data && r.data.error) || 'Não foi possível publicar agora.'); return; }
+        feedComposerText.value = '';
+        feedComposerCount.textContent = '0';
+        pendingComposerImage = null;
+        document.getElementById('feedComposerImagePreview').classList.add('hidden');
+        document.getElementById('feedComposerRemoveImageBtn').classList.add('hidden');
+        clearFeedAttachSelection();
+        document.getElementById('feedComposerModal').classList.remove('open');
+        loadApiFeedPosts();
+        renderFeed();
+        showToast('Momento publicado!');
+      })
+      .catch(() => showToast('Não foi possível publicar agora. Tente novamente.'));
   });
 
   // Atualiza os botões de anexo toda vez que o compositor é aberto pelo campo de

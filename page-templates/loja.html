@@ -128,15 +128,45 @@
   const u = getUserFromQuery();
   let currentFrame = u.frame || null;
   let currentAccessory = u.accessory || null;
-  let balance = u.received;
+  let balance = 0;
+  let pontosServidor = null;
+
+  // Loja REAL: catálogo, saldo, pontos, itens possuídos e equipados vêm do servidor.
+  // Se a chamada falhar (ex.: sessão expirada), a página mantém o visual atual com saldo 0.
+  (function carregarCatalogo() {
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', '/api/store/catalog', false);
+      xhr.setRequestHeader('Accept', 'application/json');
+      xhr.send(null);
+      if (xhr.status !== 200) return;
+      const data = JSON.parse(xhr.responseText || 'null');
+      if (!data) return;
+      if (typeof data.balanceCents === 'number') balance = data.balanceCents / 100;
+      if (typeof data.points === 'number') pontosServidor = data.points;
+      if (Array.isArray(data.owned)) {
+        u.wonFrames = data.owned.filter(o => o.kind === 'frame').map(o => o.itemId);
+        u.wonAccessories = data.owned.filter(o => o.kind === 'accessory').map(o => o.itemId);
+      }
+      if (data.equipped) {
+        currentFrame = data.equipped.frame || null;
+        currentAccessory = data.equipped.accessory || null;
+      }
+    } catch (e) {}
+  })();
 
   // Pontos de recompensa: só na loja do PRÓPRIO usuário logado (ganhos na Loja de Presentes)
   const lojaSessao = authGetSession();
   const lojaEuMesmo = !!(lojaSessao && lojaSessao.slug === u.slug && typeof pontosSaldo === 'function');
+  function pontosAtuais() {
+    if (pontosServidor !== null) return pontosServidor;
+    return lojaEuMesmo ? pontosSaldo(u.slug) : 0;
+  }
+  function mostrarBotoesPontos() { return lojaEuMesmo || pontosServidor !== null; }
   function atualizarPontos() {
-    if (!lojaEuMesmo) return;
+    if (!mostrarBotoesPontos()) return;
     document.getElementById('pontosWrap').classList.remove('hidden');
-    document.getElementById('pontosBalance').textContent = pontosSaldo(u.slug).toLocaleString('pt-BR');
+    document.getElementById('pontosBalance').textContent = pontosAtuais().toLocaleString('pt-BR');
   }
   function persistirConquistas() {
     // Grava molduras/acessórios comprados/equipados para QUALQUER conta — inclusive
@@ -147,6 +177,27 @@
       saveCustomUser({ ...(getCustomUsers()[u.slug] || {}), slug: u.slug, frame: currentFrame, accessory: currentAccessory,
         wonFrames: u.wonFrames || [], wonAccessories: u.wonAccessories || [] });
     }
+  }
+
+  // Compra/equip REAL: a cobrança acontece no servidor. Quando o item já é possuído,
+  // a API não cobra de novo (alreadyOwned) — a mesma chamada serve para "só equipar".
+  function comprarNoServidor(kind, itemId, payWith, aoSucesso) {
+    fetch('/api/store/purchase', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind, itemId, payWith })
+    }).then(async (res) => {
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) { window.location.href = '/login?next=/loja'; return; }
+      if (!res.ok || !data.ok) { showToast(data.error || 'Não foi possível concluir a compra.'); return; }
+      if (typeof data.balanceCents === 'number') balance = data.balanceCents / 100;
+      if (typeof data.points === 'number') pontosServidor = data.points;
+      if (Array.isArray(data.owned)) {
+        u.wonFrames = data.owned.filter(o => o.kind === 'frame').map(o => o.itemId);
+        u.wonAccessories = data.owned.filter(o => o.kind === 'accessory').map(o => o.itemId);
+      }
+      aoSucesso(data);
+    }).catch(() => showToast('Falha de conexão. Tente novamente.'));
   }
 
   document.getElementById('previewName').textContent = u.name;
@@ -185,7 +236,7 @@
   function renderPreview() {
     previewAvatar.textContent = u.initial;
     previewAvatar.className = baseAvatarClass();
-    walletBalanceEl.textContent = `R$ ${balance}`;
+    walletBalanceEl.textContent = `R$ ${Number(balance).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}`;
     if (currentFrame) {
       const f = FRAMES.find(x => x.id === currentFrame);
       previewAvatar.className += ' ' + f.frameClass;
@@ -220,7 +271,7 @@
         <button data-frame-id="${f.id}" class="frame-btn w-full rounded-lg py-2 text-sm mt-3 ${owned ? 'btn-secondary' : 'btn-primary'}" ${owned ? 'disabled' : ''}>
           ${owned ? 'Equipada ✓' : 'Usar saldo e equipar'}
         </button>
-        ${!owned && lojaEuMesmo ? (pontosSaldo(u.slug) >= (RESGATE_PONTOS.frames[f.id] || 999)
+        ${!owned && mostrarBotoesPontos() ? (pontosAtuais() >= (RESGATE_PONTOS.frames[f.id] || 999)
           ? `<button data-frame-pts="${f.id}" class="frame-pts-btn w-full rounded-lg py-1.5 text-xs font-bold mt-1.5 border-2 border-purple-200 text-purple-600 hover:border-purple-400 transition">✦ Resgatar com ${RESGATE_PONTOS.frames[f.id]} pts</button>`
           : `<div class="text-[11px] text-slate-400 mt-1.5">ou ${RESGATE_PONTOS.frames[f.id]} pontos de recompensa</div>`) : ''}
       </div>`;
@@ -231,11 +282,11 @@
         const id = btn.getAttribute('data-frame-pts');
         const f = FRAMES.find(x => x.id === id);
         const custo = RESGATE_PONTOS.frames[id];
-        if (!pontosGastar(u.slug, custo)) { showToast('Pontos insuficientes.'); return; }
-        u.wonFrames = u.wonFrames || []; if (!u.wonFrames.includes(id)) u.wonFrames.push(id);
-        currentFrame = id;
-        persistirConquistas(); atualizarPontos(); renderPreview(); renderGrid();
-        showToast(`Moldura "${f.name}" resgatada com ${custo} pontos e equipada!`);
+        comprarNoServidor('frame', id, 'points', () => {
+          currentFrame = id;
+          persistirConquistas(); atualizarPontos(); renderPreview(); renderGrid();
+          showToast(`Moldura "${f.name}" resgatada com ${custo} pontos e equipada!`);
+        });
       });
     });
 
@@ -243,17 +294,17 @@
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-frame-id');
         const f = FRAMES.find(x => x.id === id);
-        if (balance < f.price) {
-          showToast(`Saldo insuficiente — faltam R$ ${f.price - balance} (demo).`);
-          return;
-        }
-        balance -= f.price;
-        currentFrame = id;
-        u.wonFrames = u.wonFrames || []; if (!u.wonFrames.includes(id)) u.wonFrames.push(id);
-        persistirConquistas();
-        renderPreview();
-        renderGrid();
-        showToast(`Moldura "${f.name}" equipada! (demo, sem gasto real)`);
+        const jaPossuia = (u.wonFrames || []).includes(id);
+        comprarNoServidor('frame', id, 'balance', (data) => {
+          currentFrame = id;
+          persistirConquistas();
+          atualizarPontos();
+          renderPreview();
+          renderGrid();
+          showToast((data.alreadyOwned || jaPossuia)
+            ? `Moldura "${f.name}" equipada!`
+            : `Moldura "${f.name}" desbloqueada e equipada!`);
+        });
       });
     });
   }
@@ -274,7 +325,7 @@
         <button data-accessory-id="${a.id}" class="accessory-btn w-full rounded-lg py-2 text-sm mt-3 ${owned ? 'btn-secondary' : 'btn-primary'}" ${owned ? 'disabled' : ''}>
           ${owned ? 'Equipada ✓' : 'Usar saldo e equipar'}
         </button>
-        ${!owned && lojaEuMesmo ? (pontosSaldo(u.slug) >= (RESGATE_PONTOS.accessories[a.id] || 999)
+        ${!owned && mostrarBotoesPontos() ? (pontosAtuais() >= (RESGATE_PONTOS.accessories[a.id] || 999)
           ? `<button data-accessory-pts="${a.id}" class="accessory-pts-btn w-full rounded-lg py-1.5 text-xs font-bold mt-1.5 border-2 border-pink-200 text-pink-600 hover:border-pink-400 transition">✦ Resgatar com ${RESGATE_PONTOS.accessories[a.id]} pts</button>`
           : `<div class="text-[11px] text-slate-400 mt-1.5">ou ${RESGATE_PONTOS.accessories[a.id]} pontos de recompensa</div>`) : ''}
       </div>`;
@@ -285,11 +336,11 @@
         const id = btn.getAttribute('data-accessory-pts');
         const a = ACCESSORIES.find(x => x.id === id);
         const custo = RESGATE_PONTOS.accessories[id];
-        if (!pontosGastar(u.slug, custo)) { showToast('Pontos insuficientes.'); return; }
-        u.wonAccessories = u.wonAccessories || []; if (!u.wonAccessories.includes(id)) u.wonAccessories.push(id);
-        currentAccessory = id;
-        persistirConquistas(); atualizarPontos(); renderPreview(); renderAccessoriesGrid();
-        showToast(`Decoração "${a.name}" resgatada com ${custo} pontos e equipada!`);
+        comprarNoServidor('accessory', id, 'points', () => {
+          currentAccessory = id;
+          persistirConquistas(); atualizarPontos(); renderPreview(); renderAccessoriesGrid();
+          showToast(`Decoração "${a.name}" resgatada com ${custo} pontos e equipada!`);
+        });
       });
     });
 
@@ -297,17 +348,17 @@
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-accessory-id');
         const a = ACCESSORIES.find(x => x.id === id);
-        if (balance < a.price) {
-          showToast(`Saldo insuficiente — falta R$ ${a.price - balance} (demo).`);
-          return;
-        }
-        balance -= a.price;
-        currentAccessory = id;
-        u.wonAccessories = u.wonAccessories || []; if (!u.wonAccessories.includes(id)) u.wonAccessories.push(id);
-        persistirConquistas();
-        renderPreview();
-        renderAccessoriesGrid();
-        showToast(`Decoração "${a.name}" equipada! (demo, sem gasto real)`);
+        const jaPossuia = (u.wonAccessories || []).includes(id);
+        comprarNoServidor('accessory', id, 'balance', (data) => {
+          currentAccessory = id;
+          persistirConquistas();
+          atualizarPontos();
+          renderPreview();
+          renderAccessoriesGrid();
+          showToast((data.alreadyOwned || jaPossuia)
+            ? `Decoração "${a.name}" equipada!`
+            : `Decoração "${a.name}" desbloqueada e equipada!`);
+        });
       });
     });
   }

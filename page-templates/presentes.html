@@ -627,11 +627,38 @@
       modal.querySelector('[data-physical-summary-partner]').textContent = btn.getAttribute('data-physical-partner');
     });
   });
-  document.getElementById('confirmPhysicalBtn').addEventListener('click', () => {
-    const partner = document.querySelector('[data-physical-summary-partner]').textContent;
-    document.getElementById('physicalModal').classList.remove('open');
-    showToast(`Código de resgate enviado por WhatsApp para trocar em ${partner}! (demo)`);
-    openContributionRecap();
+  document.getElementById('confirmPhysicalBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('confirmPhysicalBtn');
+    if (btn.disabled) return;
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/gifts/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipientSlug: pgUser.slug, giftName: lastGiftName })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        window.location.href = '/login?next=' + encodeURIComponent(location.pathname + location.search);
+        return;
+      }
+      if (!res.ok) {
+        // 402 (saldo insuficiente) e demais erros: modal permanece aberto para tentar de novo.
+        showToast(data.error || 'Não foi possível enviar o presente.');
+        return;
+      }
+      if (typeof data.points === 'number' && lojaEu && USERS[lojaEu.slug]) {
+        USERS[lojaEu.slug].points = data.points;
+      }
+      document.getElementById('physicalModal').classList.remove('open');
+      renderGamificacao();
+      showToast('Código de resgate enviado! O parceiro prepara a entrega.');
+      openContributionRecap();
+    } catch (e) {
+      showToast('Não foi possível enviar o presente.');
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   // ----- Card de contribuição no formato de Stories (9:16), no mesmo estilo do recap -----
@@ -947,9 +974,39 @@
     const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
     Promise.all([fontsReady, loadPendingGiftImage()]).then(renderContribStory);
   }
-  document.getElementById('confirmGiftBtn').addEventListener('click', () => {
-    registrarEnvioLoja(lastGiftName);
-    openContributionRecap();
+  document.getElementById('confirmGiftBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('confirmGiftBtn');
+    if (btn.disabled) return;
+    const msg = bdaySanitize(document.getElementById('giftMsgInput').value.trim());
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/gifts/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipientSlug: pgUser.slug, giftName: lastGiftName, message: msg || undefined })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        window.location.href = '/login?next=' + encodeURIComponent(location.pathname + location.search);
+        return;
+      }
+      if (!res.ok) {
+        // 402 (saldo insuficiente) e demais erros: modal permanece aberto para tentar de novo.
+        showToast(data.error || 'Não foi possível enviar o presente.');
+        return;
+      }
+      // Sucesso: pontos reais vêm na resposta — sincroniza antes de re-renderizar a gamificação.
+      if (typeof data.points === 'number' && lojaEu && USERS[lojaEu.slug]) {
+        USERS[lojaEu.slug].points = data.points;
+      }
+      document.getElementById('giftModal').classList.remove('open');
+      registrarEnvioLoja(lastGiftName); // mantém a trilha local e re-renderiza a gamificação
+      openContributionRecap();
+    } catch (e) {
+      showToast('Não foi possível enviar o presente.');
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   // ---- Gamificação ligada a AÇÕES REAIS: envios contam por usuário logado ----

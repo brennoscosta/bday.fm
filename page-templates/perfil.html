@@ -199,7 +199,7 @@
       <div class="mt-3 flex flex-wrap items-center gap-3 reveal">
         <div id="pFriendsAvatars" class="flex -space-x-2"></div>
         <span id="pFriendsText" class="text-sm text-slate-500">8 amigos já confirmados</span>
-        <button id="pAddFriendBtn" data-demo-action="Pedido de amizade enviado (demo)" class="btn-secondary rounded-xl px-4 py-2 text-xs inline-flex items-center gap-1.5 sm:ml-auto">
+        <button id="pAddFriendBtn" class="btn-secondary rounded-xl px-4 py-2 text-xs inline-flex items-center gap-1.5 sm:ml-auto">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
           Adicionar amigo
         </button>
@@ -789,6 +789,12 @@
   const authSession = (typeof authGetSession === 'function') ? authGetSession() : null;
   const isOwner = !!(authSession && authSession.slug === u.slug);
 
+  // Ações reais via API: quando o servidor responde 401 (sessão ausente/expirada),
+  // levamos a pessoa ao login e voltamos para este perfil depois.
+  function bdayGoLogin() {
+    window.location.href = '/login?next=' + encodeURIComponent(location.pathname + location.search || '/perfil');
+  }
+
   // Só o dono do perfil pode criar/editar um bday para si — visitantes não veem o botão flutuante.
   document.getElementById('floatingGoalWrap').style.display = isOwner ? '' : 'none';
   document.getElementById('floatingGoalLabel').textContent = u.groupGoal ? 'Editar meu BDAY' : 'Criar meu BDAY';
@@ -868,6 +874,26 @@
     const session = (typeof authGetSession === 'function') ? authGetSession() : null;
     const btn = document.getElementById('pAddFriendBtn');
     if (btn && session && session.slug === u.slug) btn.classList.add('hidden');
+    // Pedido de amizade real via API (POST /api/friends)
+    if (btn) btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/friends', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug: u.slug })
+        });
+        if (res.status === 401) { bdayGoLogin(); return; }
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { showToast(data.error || 'Não foi possível enviar o pedido de amizade.'); return; }
+        showToast(data.message || 'Pedido de amizade enviado!');
+      } catch (e) {
+        showToast('Falha de conexão. Tente novamente.');
+      } finally {
+        btn.disabled = false;
+      }
+    });
   })();
   document.getElementById('pBreadcrumbName').textContent = u.name;
   document.getElementById('pMainTitle').textContent = u.status;
@@ -982,13 +1008,29 @@
         <button data-remove-friend="${list.indexOf(f)}" class="text-xs font-semibold text-slate-400 hover:text-red-500 shrink-0">Remover</button>
       </div>`).join('');
     fullListEl.querySelectorAll('[data-remove-friend]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const idx = parseInt(btn.getAttribute('data-remove-friend'), 10);
         const removed = list[idx];
-        list.splice(idx, 1);
-        u.friends = list.length;
-        renderFriends();
-        showToast(`${removed.name} removido da lista de amigos. (demo)`);
+        if (!removed || btn.disabled) return;
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/friends', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug: removed.slug })
+          });
+          if (res.status === 401) { bdayGoLogin(); return; }
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) { showToast(data.error || 'Não foi possível remover o amigo.'); return; }
+          list.splice(idx, 1);
+          u.friends = list.length;
+          renderFriends();
+          showToast(`${removed.name} removido da lista de amigos.`);
+        } catch (e) {
+          showToast('Falha de conexão. Tente novamente.');
+        } finally {
+          btn.disabled = false;
+        }
       });
     });
 
@@ -1171,11 +1213,29 @@
   const torpedoText = document.getElementById('torpedoText');
   const torpedoCount = document.getElementById('torpedoCount');
   torpedoText.addEventListener('input', () => { torpedoCount.textContent = torpedoText.value.length; });
-  document.getElementById('confirmTorpedoBtn').addEventListener('click', () => {
-    document.getElementById('torpedoModal').classList.remove('open');
-    showToast(`Torpedo enviado para ${firstName}! (demo)`);
-    torpedoText.value = '';
-    torpedoCount.textContent = '0';
+  document.getElementById('confirmTorpedoBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('confirmTorpedoBtn');
+    if (btn.disabled) return;
+    const message = bdaySanitize(torpedoText.value);
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/gifts/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipientSlug: u.slug, torpedo: true, message })
+      });
+      if (res.status === 401) { bdayGoLogin(); return; }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { showToast(data.error || 'Não foi possível enviar o Torpedo.'); return; }
+      document.getElementById('torpedoModal').classList.remove('open');
+      showToast('Torpedo enviado! 💌');
+      torpedoText.value = '';
+      torpedoCount.textContent = '0';
+    } catch (e) {
+      showToast('Falha de conexão. Tente novamente.');
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   // Presentômetro — só aparece com uma meta ativa (contas novas nascem sem meta;
@@ -1605,7 +1665,9 @@
     setGoalImagePreview(null);
   });
 
-  document.getElementById('saveGroupGoalBtn').addEventListener('click', () => {
+  document.getElementById('saveGroupGoalBtn').addEventListener('click', async () => {
+    const saveGoalBtn = document.getElementById('saveGroupGoalBtn');
+    if (saveGoalBtn.disabled) return;
     const title = bdaySanitize(document.getElementById('groupGoalTitleInput').value);
     const target = parseInt(document.getElementById('groupGoalTargetInput').value, 10);
     const description = bdaySanitize(document.getElementById('groupGoalDescInput').value);
@@ -1615,26 +1677,40 @@
     if (!target || target < 10) { showToast('Defina uma meta desejada válida (mínimo R$ 10).'); return; }
 
     const wasEdit = !!u.groupGoal;
-    if (wasEdit) {
-      u.groupGoal.title = title;
-      u.groupGoal.target = target;
-      u.groupGoal.description = description || null;
-      u.groupGoal.category = pendingGoalCategory;
-      u.groupGoal.date = date;
-    } else {
-      u.groupGoal = { title, target, description: description || null, category: pendingGoalCategory, date, image: null, current: 0, contributors: [] };
-    }
-    if (pendingGoalImage.type === 'image') {
-      u.groupGoal.image = pendingGoalImage.value;
-    } else if (pendingGoalImage.type === 'remove') {
-      u.groupGoal.image = null;
+    // Imagem: mantém a atual se nada mudou, troca pela nova ou remove.
+    const image = pendingGoalImage.type === 'image' ? pendingGoalImage.value
+      : (pendingGoalImage.type === 'remove' ? null : (u.groupGoal ? u.groupGoal.image : null));
+
+    saveGoalBtn.disabled = true;
+    try {
+      const res = await fetch('/api/users/me/goal', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, target, description: description || null, category: pendingGoalCategory, date, image })
+      });
+      if (res.status === 401) { bdayGoLogin(); return; }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { showToast(data.error || 'Não foi possível salvar o BDAY.'); return; }
+      const g = data.goal || {};
+      const prev = u.groupGoal || {};
+      u.groupGoal = {
+        ...prev,
+        ...g,
+        current: (typeof g.current === 'number') ? g.current : (prev.current || 0),
+        contributors: Array.isArray(g.contributors) ? g.contributors : (prev.contributors || []),
+      };
+    } catch (e) {
+      showToast('Falha de conexão. Tente novamente.');
+      return;
+    } finally {
+      saveGoalBtn.disabled = false;
     }
     renderGroupGoal();
-    if (!u.goal) { u.goal = target; }
+    if (!u.goal) { u.goal = u.groupGoal.target; }
     renderMeter();
     persistIfCustomUser();
     document.getElementById('groupGoalFormModal').classList.remove('open');
-    showToast(wasEdit ? 'BDAY atualizado! (demo)' : 'BDAY criado! Compartilhe o link para começar a receber presentes. (demo)');
+    showToast(wasEdit ? 'BDAY atualizado!' : 'BDAY criado! Compartilhe o link para começar a receber presentes.');
 
     // O BDAY agora fica em destaque, sempre visível na página (fora de qualquer aba) —
     // só rolamos a tela até o card para o usuário ver a celebração recém-criada/editada.
@@ -1667,28 +1743,62 @@
       confirmContributeBtn.textContent = `Enviar ${pendingContributeGift.name} — R$ ${pendingContributeGift.price}`;
     });
   });
-  confirmContributeBtn.addEventListener('click', () => {
-    if (!pendingContributeGift || !u.groupGoal) return;
+  confirmContributeBtn.addEventListener('click', async () => {
+    if (!pendingContributeGift || !u.groupGoal || confirmContributeBtn.disabled) return;
     const gg = u.groupGoal;
-    gg.current = (gg.current || 0) + pendingContributeGift.price;
-    gg.contributors = gg.contributors || [];
-    gg.contributors.push({ initial: 'V', grad: 'bg-purple-500', amount: pendingContributeGift.price });
-    renderGroupGoal();
-    persistIfCustomUser();
-    document.getElementById('contributeModal').classList.remove('open');
-    showToast(`Você enviou ${pendingContributeGift.name} para o BDAY de ${firstName}! (demo)`);
-    document.querySelectorAll('.contribute-gift-btn').forEach(b => {
-      b.classList.remove('border-pink-500', 'bg-pink-50');
-      b.classList.add('border-gray-200');
-    });
-    pendingContributeGift = null;
+    const gift = pendingContributeGift;
     confirmContributeBtn.disabled = true;
-    confirmContributeBtn.classList.add('opacity-50', 'cursor-not-allowed');
-    confirmContributeBtn.textContent = 'Escolha um presente';
+    let ok = false;
+    try {
+      const res = await fetch(`/api/users/${encodeURIComponent(u.slug)}/goal/contribute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: gift.price })
+      });
+      if (res.status === 401) { bdayGoLogin(); return; }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // 402 (saldo insuficiente, orienta depositar), 404 e demais erros: modal continua aberto.
+        showToast(data.error || 'Não foi possível enviar a contribuição.');
+        return;
+      }
+      ok = true;
+      gg.current = (data.goal && typeof data.goal.current === 'number') ? data.goal.current : (gg.current || 0) + gift.price;
+      gg.contributors = gg.contributors || [];
+      gg.contributors.push({ initial: 'V', grad: 'bg-purple-500', amount: gift.price });
+      renderGroupGoal();
+      persistIfCustomUser();
+      document.getElementById('contributeModal').classList.remove('open');
+      showToast(`Você enviou ${gift.name} para o BDAY de ${firstName}! Obrigado por celebrar junto. 🎉`);
+      document.querySelectorAll('.contribute-gift-btn').forEach(b => {
+        b.classList.remove('border-pink-500', 'bg-pink-50');
+        b.classList.add('border-gray-200');
+      });
+      pendingContributeGift = null;
+      confirmContributeBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      confirmContributeBtn.textContent = 'Escolha um presente';
+    } catch (e) {
+      showToast('Falha de conexão. Tente novamente.');
+    } finally {
+      // Sucesso: botão volta ao estado "Escolha um presente" (desativado);
+      // erro: reativa para tentar de novo com o mesmo presente selecionado.
+      confirmContributeBtn.disabled = ok;
+    }
   });
 
   // Editar perfil: foto, capa, nome e redes sociais
   const pCover = document.getElementById('pCover');
+  // Capa persistida no servidor (u.cover): pode ser uma imagem (URL/dataURL) ou
+  // um dos gradientes prontos (CSS) — aplica ao carregar a página.
+  if (u.cover) {
+    if (/^(https?:|data:|\/)/.test(u.cover)) {
+      pCover.style.background = '';
+      pCover.style.backgroundImage = `url(${u.cover})`;
+    } else {
+      pCover.style.backgroundImage = '';
+      pCover.style.background = u.cover;
+    }
+  }
   const editAvatarPreview = document.getElementById('editAvatarPreview');
   const editCoverPreview = document.getElementById('editCoverPreview');
   const DEFAULT_COVER_CSS = 'linear-gradient(135deg,#7C3AED,#EC4899)';
@@ -1926,7 +2036,9 @@
     reader.readAsDataURL(file);
   });
 
-  document.getElementById('saveProfileBtn').addEventListener('click', () => {
+  document.getElementById('saveProfileBtn').addEventListener('click', async () => {
+    const saveBtn = document.getElementById('saveProfileBtn');
+    if (saveBtn.disabled) return;
     // Valida o @ antes de aplicar qualquer alteração
     const rawHandle = document.getElementById('editHandleInput').value;
     const newHandle = sanitizeHandle(rawHandle);
@@ -1942,52 +2054,109 @@
       return;
     }
     handleError.classList.add('hidden');
-    u.handle = newHandle;
-    document.getElementById('pHandle').textContent = '@' + u.handle;
 
     const newName = bdaySanitize(document.getElementById('editNameInput').value);
-    if (newName) {
-      u.name = newName;
-      document.getElementById('pName').textContent = u.name;
+    const newSocials = {
+      instagram: bdaySanitize(document.getElementById('editSocialInstagram').value) || null,
+      tiktok: bdaySanitize(document.getElementById('editSocialTiktok').value) || null,
+      youtube: bdaySanitize(document.getElementById('editSocialYoutube').value) || null,
+      linkedin: bdaySanitize(document.getElementById('editSocialLinkedin').value) || null,
+    };
+    const newBio = bdaySanitize(document.getElementById('editBioInput').value) || null;
+
+    // Persistência real: PATCH /api/users/me com os campos editados. Foto/capa só
+    // entram no corpo quando mudaram (a capa passou a ser persistida também).
+    const payload = {
+      name: newName || u.name,
+      slug: newHandle,
+      bio: newBio,
+      socials: newSocials,
+      frame: pendingFrame || null,
+      badge: pendingBadge || null,
+      accessory: pendingAccessory || null,
+    };
+    if (pendingAvatar.type === 'image') payload.avatarUrl = pendingAvatar.value;
+    else if (pendingAvatar.type === 'reset') payload.avatarUrl = null;
+    if (pendingCover.type === 'image' || pendingCover.type === 'preset') payload.coverUrl = pendingCover.value;
+
+    saveBtn.disabled = true;
+    try {
+      const res = await fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.status === 401) { bdayGoLogin(); return; }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // 400/409 (ex.: @ já em uso, moldura/acessório não possuído): modal continua aberto.
+        showToast(data.error || 'Não foi possível salvar o perfil.');
+        return;
+      }
+
+      const savedSlug = (data.user && data.user.slug) || newHandle;
+      const slugChanged = savedSlug !== u.slug;
+
+      u.handle = savedSlug;
+      document.getElementById('pHandle').textContent = '@' + u.handle;
+      if (newName) {
+        u.name = newName;
+        document.getElementById('pName').textContent = u.name;
+      }
+      u.socials.instagram = newSocials.instagram;
+      u.socials.tiktok = newSocials.tiktok;
+      u.socials.youtube = newSocials.youtube;
+      u.socials.linkedin = newSocials.linkedin;
+      renderSocials();
+
+      u.bio = newBio;
+      renderBio();
+
+      u.frame = pendingFrame || null;
+      applyAvatarFrame();
+      u.badge = pendingBadge || null;
+      renderBadge();
+      u.accessory = pendingAccessory || null;
+      renderAccessory();
+
+      if (pendingAvatar.type === 'image') {
+        avatar.style.backgroundImage = `url(${pendingAvatar.value})`;
+        avatar.textContent = '';
+        u.avatar = pendingAvatar.value;
+        if (typeof authSyncAvatar === 'function') authSyncAvatar(u.slug, pendingAvatar.value);
+      } else if (pendingAvatar.type === 'reset') {
+        avatar.style.backgroundImage = '';
+        avatar.textContent = u.initial;
+        u.avatar = null;
+        if (typeof authSyncAvatar === 'function') authSyncAvatar(u.slug, null);
+      }
+      if (pendingCover.type === 'image') {
+        pCover.style.background = '';
+        pCover.style.backgroundImage = `url(${pendingCover.value})`;
+      } else if (pendingCover.type === 'preset') {
+        pCover.style.backgroundImage = '';
+        pCover.style.background = pendingCover.value;
+      }
+
+      if (slugChanged) {
+        // O @ é também o endereço do perfil: atualiza a sessão local e recarrega
+        // a página já no novo endereço para tudo refletir a mudança.
+        if (typeof authSaveSession === 'function' && typeof authGetSession === 'function') {
+          const freshSession = authGetSession();
+          if (freshSession) authSaveSession({ ...freshSession, slug: savedSlug });
+        }
+        window.location.href = '/perfil?user=' + encodeURIComponent(savedSlug);
+        return;
+      }
+
+      document.getElementById('editProfileModal').classList.remove('open');
+      persistIfCustomUser();
+      showToast('Perfil atualizado!');
+    } catch (e) {
+      showToast('Falha de conexão. Tente novamente.');
+    } finally {
+      saveBtn.disabled = false;
     }
-    u.socials.instagram = bdaySanitize(document.getElementById('editSocialInstagram').value) || null;
-    u.socials.tiktok = bdaySanitize(document.getElementById('editSocialTiktok').value) || null;
-    u.socials.youtube = bdaySanitize(document.getElementById('editSocialYoutube').value) || null;
-    u.socials.linkedin = bdaySanitize(document.getElementById('editSocialLinkedin').value) || null;
-    renderSocials();
-
-    u.bio = bdaySanitize(document.getElementById('editBioInput').value) || null;
-    renderBio();
-
-    u.frame = pendingFrame || null;
-    applyAvatarFrame();
-    u.badge = pendingBadge || null;
-    renderBadge();
-    u.accessory = pendingAccessory || null;
-    renderAccessory();
-
-    if (pendingAvatar.type === 'image') {
-      avatar.style.backgroundImage = `url(${pendingAvatar.value})`;
-      avatar.textContent = '';
-      u.avatar = pendingAvatar.value;
-      if (typeof authSyncAvatar === 'function') authSyncAvatar(u.slug, pendingAvatar.value);
-    } else if (pendingAvatar.type === 'reset') {
-      avatar.style.backgroundImage = '';
-      avatar.textContent = u.initial;
-      u.avatar = null;
-      if (typeof authSyncAvatar === 'function') authSyncAvatar(u.slug, null);
-    }
-    if (pendingCover.type === 'image') {
-      pCover.style.background = '';
-      pCover.style.backgroundImage = `url(${pendingCover.value})`;
-    } else if (pendingCover.type === 'preset') {
-      pCover.style.backgroundImage = '';
-      pCover.style.background = pendingCover.value;
-    }
-
-    document.getElementById('editProfileModal').classList.remove('open');
-    persistIfCustomUser();
-    showToast('Perfil atualizado! (demo)');
   });
 </script>
 </body>
