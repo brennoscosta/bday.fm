@@ -10,15 +10,18 @@
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.9.0",
     "@prisma/client": "^6.10.0",
     "bcryptjs": "^3.0.2",
     "next": "^15.3.4",
+    "pg": "^8.22.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "zod": "^3.25.67"
   },
   "devDependencies": {
     "@types/node": "^22",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "prisma": "^6.10.0",
     "tsx": "^4.20.0",

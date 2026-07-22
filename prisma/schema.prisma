@@ -3,7 +3,9 @@
 // Já modelados para as próximas fases: presentes, carteira (ledger), metas de grupo.
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  engineType      = "client"
+  previewFeatures = ["queryCompiler", "driverAdapters"]
 }
 
 datasource db {
@@ -25,12 +27,18 @@ model User {
   birthdate    DateTime? @db.Date
   bio          String?
   avatarUrl    String?
+  coverUrl     String?
   role         Role      @default(USER)
+  verified     Boolean   @default(false)
   // campos visuais que o front já usa (frame, accessory, badges)
   frame        String?
   accessory    String?
+  badge        String? // emblema equipado
   badges       String[]  @default([])
   socials      Json?     // { instagram, tiktok, youtube, linkedin }
+  // saque Pix
+  pixKey       String?
+  pixKeyType   String?   // cpf | cnpj | email | phone | random
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -40,6 +48,15 @@ model User {
   walletEntries     WalletEntry[]
   goals             Goal[]
   goalContributions GoalContribution[]
+  friendRequestsSent     Friendship[]  @relation("requester")
+  friendRequestsReceived Friendship[]  @relation("addressee")
+  feedPosts         FeedPost[]
+  feedLikes         FeedLike[]
+  feedComments      FeedComment[]
+  withdrawals       Withdrawal[]
+  items             UserItem[]
+  pointEntries      PointEntry[]
+  supportTickets    SupportTicket[]
 
   @@index([email])
 }
@@ -62,13 +79,20 @@ model Session {
 
 // Catálogo de presentes digitais (Biscoito da Sorte, Balão de Festa, etc.)
 model GiftItem {
-  id         String     @id @default(cuid())
-  name       String     @unique
-  emoji      String?
-  priceCents Int        // preço em centavos (nunca float para dinheiro)
-  active     Boolean    @default(true)
-  createdAt  DateTime   @default(now())
-  sent       GiftSent[]
+  id            String     @id @default(cuid())
+  name          String     @unique
+  emoji         String?
+  priceCents    Int        // preço em centavos (nunca float para dinheiro)
+  description   String?
+  category      String?    // popular | economico | valioso | especial | torpedo
+  rarity        String?    // comum | raro | epico | lendario
+  physical      Boolean    @default(false)
+  partner       String?    // parceiro (presentes físicos)
+  baseSentCount Int        @default(0) // prova social inicial exibida no site
+  sortOrder     Int        @default(0)
+  active        Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  sent          GiftSent[]
 }
 
 model GiftSent {
@@ -89,6 +113,8 @@ model GiftSent {
 enum WalletEntryType {
   DEPOSIT_MP
   GIFT_RECEIVED
+  GIFT_SENT
+  STORE_PURCHASE
   WITHDRAWAL_PIX
   ADJUSTMENT
 }
@@ -112,6 +138,10 @@ model Goal {
   user         User               @relation(fields: [userId], references: [id])
   title        String
   targetCents  Int
+  description  String?
+  category     String?
+  date         String?            // data do evento exibida no card (texto livre)
+  imageUrl     String?
   active       Boolean            @default(true)
   createdAt    DateTime           @default(now())
   contributions GoalContribution[]
@@ -127,4 +157,166 @@ model GoalContribution {
   createdAt   DateTime @default(now())
 
   @@index([goalId])
+}
+
+// ---------- Fase 3: social, comércio, saques, suporte ----------
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+}
+
+model Friendship {
+  id          String           @id @default(cuid())
+  requesterId String
+  requester   User             @relation("requester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addresseeId String
+  addressee   User             @relation("addressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status])
+}
+
+model FeedPost {
+  id         String        @id @default(cuid())
+  authorId   String
+  author     User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  caption    String
+  image      String?       // dataURL ou URL
+  attachType String?       // 'bday' | 'recap'
+  attachData Json?
+  createdAt  DateTime      @default(now())
+  likes      FeedLike[]
+  comments   FeedComment[]
+
+  @@index([createdAt])
+}
+
+model FeedLike {
+  id        String   @id @default(cuid())
+  postId    String
+  post      FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+}
+
+model FeedComment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([postId, createdAt])
+}
+
+enum WithdrawalStatus {
+  REQUESTED
+  PROCESSING
+  DONE
+  FAILED
+  REJECTED
+}
+
+model Withdrawal {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id])
+  amountCents Int              // valor bruto debitado do saldo
+  feeCents    Int              @default(0)
+  netCents    Int              // valor líquido a transferir
+  speed       String           @default("standard") // standard | instant
+  pixKey      String
+  pixKeyType  String
+  status      WithdrawalStatus @default(REQUESTED)
+  adminNote   String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+// Catálogo da loja de cosméticos (molduras, decorações)
+model StoreItem {
+  id          String  @id // ex.: "frame:aurora"
+  kind        String  // frame | accessory
+  itemId      String  // id usado pelo front (aurora, confete, ...)
+  name        String
+  priceCents  Int
+  pointsPrice Int?
+  rarity      String?
+  active      Boolean @default(true)
+  sortOrder   Int     @default(0)
+
+  @@unique([kind, itemId])
+}
+
+// Cosméticos possuídos pelo usuário
+model UserItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String   // frame | accessory
+  itemId    String
+  source    String   @default("purchase") // purchase | points | reward
+  createdAt DateTime @default(now())
+
+  @@unique([userId, kind, itemId])
+}
+
+// Ledger de pontos de recompensa (gamificação)
+model PointEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  delta     Int      // positivo = ganho, negativo = gasto
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+enum TicketStatus {
+  OPEN
+  PENDING
+  CLOSED
+}
+
+model SupportTicket {
+  id        String           @id @default(cuid())
+  userId    String?
+  user      User?            @relation(fields: [userId], references: [id])
+  name      String?
+  email     String?
+  subject   String
+  status    TicketStatus     @default(OPEN)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  messages  SupportMessage[]
+
+  @@index([status, updatedAt])
+}
+
+model SupportMessage {
+  id        String        @id @default(cuid())
+  ticketId  String
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fromAdmin Boolean       @default(false)
+  text      String
+  createdAt DateTime      @default(now())
+}
+
+// Parâmetros da plataforma editáveis no admin
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
 }
