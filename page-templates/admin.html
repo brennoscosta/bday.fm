@@ -129,6 +129,21 @@ const I = (svg, cls) => (typeof iconSize === 'function' ? iconSize(svg, cls || '
 function admGet(key, fallback){ try { const v = JSON.parse(localStorage.getItem('bdayfm_admin_' + key)); return v === null || v === undefined ? fallback : v; } catch(e){ return fallback; } }
 function admSet(key, value){ try { localStorage.setItem('bdayfm_admin_' + key, JSON.stringify(value)); } catch(e){} }
 
+// ---------- Chamadas às APIs reais do painel (mesmo padrão síncrono de /api/admin/users) ----------
+function apiAdmin(method, url, body){
+  try {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, url, false);
+    if (body !== undefined) xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send(body !== undefined ? JSON.stringify(body) : null);
+    let data = {};
+    try { data = JSON.parse(xhr.responseText || '{}'); } catch (e2) {}
+    return { ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, data };
+  } catch (e) { return { ok: false, status: 0, data: {} }; }
+}
+function apiErro(r, fallback){ return (r && r.data && r.data.error) ? String(r.data.error) : fallback; }
+function escHtml(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
 // ---------- Ícones do painel (linha, mesmos traços do site) ----------
 const AI = {
   dash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
@@ -215,15 +230,31 @@ function giftTile(key, sizeCls, iconCls){
   return '<div class="' + (sizeCls || 'w-12 h-12') + ' rounded-xl grad-bg text-white flex items-center justify-center shrink-0" style="box-shadow:0 6px 14px -6px rgba(124,58,237,.5)">' + giftIconSvg(key, iconCls || 'w-6 h-6') + '</div>';
 }
 // Migração: catálogos salvos antes desta versão ainda guardavam emoji
-const EMOJI_TO_ICON = { '🦆':'patinho','🎂':'bolo','🩴':'chinelo','⏰':'relogio','🩲':'cueca','📯':'buzina','🍰':'bolo-derretido','👔':'camisa','🥂':'copo','👻':'fantasma','🧁':'cupcake','🎺':'trombeta','📿':'pulseira','🧮':'calculadora','🧴':'shampoo','🎧':'fone','🥡':'pote','🎮':'controle','💎':'diamante','❤️':'coracao','💐':'buque','🛍️':'vale','🍺':'caneca','🎁':'presente' };
+const EMOJI_TO_ICON = { '🦆':'patinho','🎂':'bolo','🩴':'chinelo','⏰':'relogio','🩲':'cueca','📯':'buzina','🍰':'bolo-derretido','👔':'camisa','🥂':'copo','👻':'fantasma','🧁':'cupcake','🎺':'trombeta','📿':'pulseira','🧮':'calculadora','🧴':'shampoo','🎧':'fone','🥡':'pote','🎮':'controle','💎':'diamante','❤️':'coracao','💐':'buque','🛍️':'vale','🍺':'caneca','🎁':'presente','👑':'coroa-festa','🎊':'kit-confete','🥮':'bolo-andares','🛒':'vale-compras','🥠':'biscoito','☕':'cafe','🎩':'chapeu','🥖':'pao','🌸':'flor','🎈':'balao' };
+// O campo emoji do banco aceita até 8 caracteres: chaves de ícone curtas vão direto;
+// as longas viram um emoji equivalente (e voltam pelo EMOJI_TO_ICON acima).
+const ICONE_EMOJI_LONGO = { 'bolo-derretido':'🍰', 'calculadora':'🧮', 'coroa-festa':'👑', 'kit-confete':'🎊', 'bolo-andares':'🥮', 'vale-compras':'🛒' };
+function iconeParaEmoji(icone){ return ICONE_EMOJI_LONGO[icone] || icone || 'presente'; }
+function emojiParaIcone(emoji){
+  if (!emoji) return 'presente';
+  if (GIFT_SVG[emoji]) return emoji;
+  return EMOJI_TO_ICON[emoji] || 'presente';
+}
 
 const ROLES = [['user','Usuário'],['parceiro','Parceiro'],['gerente','Gerente'],['admin','Administrador']];
 const ROLE_BADGE = { admin: 'badge-red', gerente: 'badge-blue', parceiro: 'badge-amber' };
 function getRoles(){ return admGet('roles_v3', {}); } // papéis atribuídos de verdade neste painel
 function setRole(handle, role){
+  // O backend só conhece USER/ADMIN — Gerente/Parceiro são rótulos visuais locais.
+  const resp = apiAdmin('PATCH', '/api/admin/users/' + encodeURIComponent(handle), { role: role === 'admin' ? 'ADMIN' : 'USER' });
+  if (!resp.ok) {
+    showToast('Não foi possível alterar o cargo de @' + handle + ': ' + apiErro(resp, 'erro ' + resp.status));
+    if (currentSection === 'usuarios') renderUserRows();
+    return;
+  }
   const r = getRoles(); r[handle] = role; admSet('roles_v3', r);
   const label = (ROLES.find(x => x[0] === role) || ['','Usuário'])[1];
-  audit('Alterou cargo', '@' + handle, 'Novo cargo: ' + label);
+  audit('Alterou cargo', '@' + handle, 'Novo cargo: ' + label + ' (banco: ' + (role === 'admin' ? 'ADMIN' : 'USER') + ')');
   showToast('@' + handle + ' agora é ' + label + '.');
   if (currentSection === 'usuarios') renderUserRows();
 }
@@ -282,7 +313,30 @@ const PRESENTE_INFO = {
   'Bolo Surpresa 3 Andares': { icone: 'bolo-andares', valor: 32.00 },
   'Vale Café': { icone: 'cafe', valor: 6.00 },
 };
-const ADMIN_ENVIOS = []; // envios reais (presentes/torpedos) virão do backend
+const ADMIN_ENVIOS = (() => {
+  // Envios REAIS de presentes (via /api/admin/gifts-sent). Nada fictício.
+  try {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/admin/gifts-sent', false);
+    xhr.send(null);
+    if (xhr.status === 200) {
+      const data = JSON.parse(xhr.responseText || '{}');
+      return (data.sent || []).map(s => {
+        const d = new Date(s.createdAt);
+        return {
+          id: s.id, tipo: 'Presente',
+          data: d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          de: '@' + s.fromSlug, para: '@' + s.toSlug,
+          conteudo: s.gift, valor: s.value || 0,
+          icone: emojiParaIcone(s.emoji), status: 'Entregue',
+          origem: s.partner ? 'parceiro ' + s.partner : 'site',
+          bday: null, msg: s.message || '', fisico: !!s.physical,
+        };
+      });
+    }
+  } catch (e) {}
+  return [];
+})();
 
 const ADMIN_DEPOSITOS = (() => {
   // Depósitos REAIS validados pelo webhook do Mercado Pago
@@ -302,7 +356,18 @@ const ADMIN_DEPOSITOS = (() => {
   return [];
 })();
 
-const ADMIN_SUPORTE = []; // mensagens reais de suporte virão do backend
+const ADMIN_SUPORTE = []; // (legado) — os chamados reais vêm de /api/admin/support, ver seção Suporte
+
+const ADMIN_METRICS = (() => {
+  // Agregados REAIS do painel via /api/admin/metrics
+  try {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/admin/metrics', false);
+    xhr.send(null);
+    if (xhr.status === 200) return JSON.parse(xhr.responseText || '{}');
+  } catch (e) {}
+  return null;
+})();
 
 const ADMIN_KB = [
   ['O que é o bday.fm?', 'O bday.fm é uma plataforma social onde você cria sua conta gratuita, compartilha seu perfil e recebe presentes virtuais que se convertem em dinheiro real via PIX.', ['o que é','como funciona','plataforma','site','app']],
@@ -350,7 +415,28 @@ const ADMIN_BDAYS = []; // campanhas reais virão do backend de BDAYs
 // Gerada de forma determinística (PRNG com semente fixa), com datas relativas a agora,
 // para o extrato ficar sempre "vivo" sem backend.
 function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-const LEDGER = []; // extrato real virá do ledger do banco (WalletEntry)
+const LEDGER_TIPO_ROTULO = { DEPOSIT_MP: 'Depósito', GIFT_RECEIVED: 'Presente', GIFT_SENT: 'Presente enviado', STORE_PURCHASE: 'Compra na loja', WITHDRAWAL_PIX: 'Saque', ADJUSTMENT: 'Ajuste' };
+const LEDGER = (() => {
+  // Extrato REAL do ledger do banco (WalletEntry) via /api/admin/ledger
+  try {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/admin/ledger', false);
+    xhr.send(null);
+    if (xhr.status === 200) {
+      const data = JSON.parse(xhr.responseText || '{}');
+      return (data.entries || []).map(e => ({
+        id: e.id, ms: new Date(e.createdAt).getTime(),
+        tipo: LEDGER_TIPO_ROTULO[e.type] || e.type,
+        dir: (e.amountCents || 0) >= 0 ? 'in' : 'out',
+        valor: Math.abs(e.amount || 0),
+        origem: e.reference || (LEDGER_TIPO_ROTULO[e.type] || e.type || '—'),
+        usuario: '@' + e.slug, bday: '—', presente: '—', presenteIcone: null,
+        taxa: 0, saldoApos: null, status: 'Concluída',
+      }));
+    }
+  } catch (e) {}
+  return [];
+})();
 const fmtData = ms => { const d = new Date(ms); return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); };
 
 // ---- Dados bancários/pessoais dos solicitantes de saque (demo) ----
@@ -360,7 +446,9 @@ function origemDoSaldo(s){
   const rnd = mulberry32(4000 + s.uid);
   const catalogo = [['vale-compras', 'Vale Compras R$5', 5], ['balao', 'Balão de Festa', 8], ['biscoito', 'Biscoito da Sorte', 12], ['cafe', 'Vale Café', 6], ['bolo-andares', 'Bolo Surpresa 3 Andares', 32], ['coroa-festa', 'Coroa de Aniversariante', 25], ['kit-confete', 'Kit Confete', 10], ['flor', 'Buquê Pequeno', 45]];
   const enviadores = ['Maria', 'Lucas', 'Pedro', 'Rafael', 'Marina', 'João', 'Thainá', 'Carolina', 'Camila', 'Diego'];
-  const bruto = +(s.valor / (1 - admGet('taxa', 20) / 100)).toFixed(2); // valor solicitado é líquido
+  // bruto real vem da API de saques (amount); fallback derivado da taxa
+  const bruto = s.bruto || +(s.valor / (1 - admGet('taxa', 20) / 100)).toFixed(2);
+  if (!ADMIN_BDAYS.length) return { bruto, bdays: [] };
   const nBdays = s.valor > 300 ? 2 : 1;
   const bdays = [];
   let restante = bruto;
@@ -488,7 +576,11 @@ function donutChart(data, size){
 const R = {};
 
 R.dashboard = () => {
-  const totalUsers = ADMIN_USERS.length;
+  const M = ADMIN_METRICS || {};
+  const totalUsers = (M.users && typeof M.users.total === 'number') ? M.users.total : ADMIN_USERS.length;
+  const totalPresentes = (M.gifts && typeof M.gifts.count === 'number') ? M.gifts.count : ADMIN_ENVIOS.length;
+  const saldoCarteiras = (M.wallet && typeof M.wallet.balanceCents === 'number') ? M.wallet.balanceCents / 100 : ADMIN_USERS.reduce((t, u) => t + (u.saldo || 0), 0);
+  const novos30d = (M.users && typeof M.users.new30d === 'number') ? M.users.new30d : ADMIN_USERS.filter(u => u._createdAt && (Date.now() - new Date(u._createdAt).getTime()) < 30*24*3600*1000).length;
   const aniversariantes = ADMIN_USERS.filter(u => u.bday === ADMIN_USERS.HOJE_STR);
   const saques = getSaques();
   const pendentes = saques.filter(x => x.status === 'Pendente');
@@ -498,7 +590,7 @@ R.dashboard = () => {
   return `
   <h1 class="text-xl font-extrabold mb-5">Dashboard</h1>
   <div class="grid sm:grid-cols-3 gap-4">
-    ${[['Total de usuários', totalUsers.toLocaleString('pt-BR'), AI.users], ['Presentes enviados', '0', AI.gift], ['Valor total em carteiras', fmtBRL(ADMIN_USERS.reduce((t, u) => t + (u.saldo || 0), 0)), AI.money]].map(c => `
+    ${[['Total de usuários', totalUsers.toLocaleString('pt-BR'), AI.users], ['Presentes enviados', totalPresentes.toLocaleString('pt-BR'), AI.gift], ['Valor total em carteiras', fmtBRL(saldoCarteiras), AI.money]].map(c => `
     <div class="adm-card p-5 flex items-start justify-between">
       <div><div class="text-xs adm-muted font-semibold">${c[0]}</div><div class="text-2xl font-extrabold mt-1">${c[1]}</div></div>
       <div class="w-10 h-10 rounded-xl adm-soft text-purple-500 flex items-center justify-center">${c[2]}</div>
@@ -506,7 +598,7 @@ R.dashboard = () => {
   </div>
   <div class="grid sm:grid-cols-3 gap-4 mt-4">
     <div class="adm-card p-5 flex items-start justify-between">
-      <div><div class="text-xs adm-muted font-semibold">Novos usuários no mês</div><div class="text-2xl font-extrabold mt-1">${ADMIN_USERS.filter(u => u._createdAt && (Date.now() - new Date(u._createdAt).getTime()) < 30*24*3600*1000).length}</div><div class="text-[11px] adm-muted mt-1">últimos 30 dias</div></div>
+      <div><div class="text-xs adm-muted font-semibold">Novos usuários no mês</div><div class="text-2xl font-extrabold mt-1">${novos30d}</div><div class="text-[11px] adm-muted mt-1">últimos 30 dias</div></div>
       <div class="w-10 h-10 rounded-xl adm-soft text-purple-500 flex items-center justify-center">${AI.users}</div>
     </div>
     <div class="adm-card p-5 flex items-start justify-between">
@@ -559,7 +651,7 @@ R.dashboard = () => {
         <div class="adm-soft rounded-xl p-4">
           <div class="flex items-center justify-between">
             <div class="text-xs font-bold">📅 Aniversariantes do mês</div>
-            <span class="badge badge-purple">70</span>
+            <span class="badge badge-purple">${(M.birthdays && typeof M.birthdays.thisMonth === 'number') ? M.birthdays.thisMonth : ADMIN_USERS.filter(u => u.bday !== '—' && u.bday.split(' de ')[1] === ADMIN_USERS.HOJE_STR.split(' de ')[1]).length}</span>
           </div>
           <p class="text-[11px] adm-muted mt-1">E-mail no dia 1º lembrando o mês do aniversário, com dicas de divulgação do perfil.</p>
           <button class="adm-card rounded-xl px-3.5 py-2 text-xs font-bold mt-3" onclick="notifPreview('mes')">Preparar envio do mês</button>
@@ -585,8 +677,10 @@ R.dashboard = () => {
 function notifPreview(tipo){
   const box = document.getElementById('notifPreviewBox');
   const hoje = ADMIN_USERS.filter(u => u.bday === ADMIN_USERS.HOJE_STR);
-  const lista = tipo === 'dia' ? hoje : hoje.concat(ADMIN_USERS.filter(u => u.bday.includes('julho')).slice(0, 4));
-  const total = tipo === 'dia' ? lista.length : 70;
+  const mesAtual = ADMIN_USERS.HOJE_STR.split(' de ')[1];
+  const doMes = ADMIN_USERS.filter(u => u.bday !== '—' && u.bday.split(' de ')[1] === mesAtual);
+  const lista = tipo === 'dia' ? hoje : doMes;
+  const total = tipo === 'dia' ? lista.length : ((ADMIN_METRICS && ADMIN_METRICS.birthdays && typeof ADMIN_METRICS.birthdays.thisMonth === 'number') ? ADMIN_METRICS.birthdays.thisMonth : doMes.length);
   const assunto = tipo === 'dia' ? '🎂 Feliz aniversário, {nome}! Seu dia chegou' : '🎉 {nome}, seu mês de aniversário começou — prepare seu BDAY';
   box.classList.remove('hidden');
   box.innerHTML = `
@@ -635,7 +729,7 @@ function renderUserRows(){
     (!m || u.bday.toLowerCase().includes(m))
   );
   document.getElementById('userRows').innerHTML = rows.map(u => {
-    const role = roles[u.handle] || 'user';
+    const role = roles[u.handle] || (u._role === 'ADMIN' ? 'admin' : 'user');
     return `
     <tr>
       <td><div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full grad-bg text-white text-[10px] font-bold flex items-center justify-center shrink-0">${u.name[0]}</div><span class="font-semibold whitespace-nowrap">${u.name}</span>${isUserVerified(u.handle) ? SEAL_BLUE : ''}</div></td>
@@ -699,27 +793,39 @@ function renderVerifRows(){
 function toggleVerified(handle){
   const on = !isUserVerified(handle);
   setUserVerified(handle, on);
+  const resp = apiAdmin('PATCH', '/api/admin/users/' + encodeURIComponent(handle), { verified: on });
+  if (!resp.ok) {
+    setUserVerified(handle, !on); // reverte o cache local
+    showToast('Não foi possível atualizar o selo de @' + handle + ': ' + apiErro(resp, 'erro ' + resp.status));
+    renderVerifRows();
+    return;
+  }
   audit(on ? 'Concedeu selo de verificação' : 'Removeu selo de verificação', '@' + handle, 'Refletido no perfil público');
   showToast(on ? 'Selo de verificação concedido a @' + handle + ' — já aparece no perfil.' : 'Selo removido de @' + handle + '.');
   renderVerifRows();
 }
 R.verificacao.after = () => { renderVerifRows(); document.getElementById('verifSearch').addEventListener('input', renderVerifRows); };
 
-// ---- Presentes: catálogo persistido com ficha operacional completa ----
-function getGifts(){
-  const lista = admGet('gifts_v3', ADMIN_GIFTS.map((g, i) => {
-    const receita = +(g.vendidosBase * g.price).toFixed(2);
-    return { ...g,
-      imagem: null, publico: 'Todos', status: 'Ativo', ordem: i + 1,
-      vendidos: g.vendidosBase, receita, receberam: Math.floor(g.vendidosBase * 0.72), enviaram: Math.floor(g.vendidosBase * 0.63),
-      criado: '—', editado: '—', responsavel: '—',
-      historico: [],
-    };
+// ---- Presentes: catálogo REAL do banco via /api/admin/gifts ----
+let GIFTS_CACHE = null;
+function loadGifts(){
+  const r = apiAdmin('GET', '/api/admin/gifts');
+  const lista = (r.ok && r.data.gifts) ? r.data.gifts : [];
+  GIFTS_CACHE = lista.map((g, i) => ({
+    id: g.id, name: g.name, desc: g.description || '', price: g.price || 0,
+    categoria: g.category || (g.physical ? 'Presente Físico' : 'Popular'),
+    icone: emojiParaIcone(g.emoji),
+    imagem: null, publico: 'Todos',
+    status: g.active ? 'Ativo' : 'Arquivado',
+    ordem: (g.sortOrder !== null && g.sortOrder !== undefined) ? g.sortOrder : i + 1,
+    vendidos: (g.baseSentCount || 0) + (g.realSentCount || 0),
+    receita: g.realSentTotal || 0,
+    receberam: g.realSentCount || 0, enviaram: g.realSentCount || 0,
+    criado: '—', editado: '—', responsavel: '—', historico: [],
+    fisico: !!g.physical, parceiro: g.partner || null, vendidosBase: g.baseSentCount || 0,
   }));
-  lista.forEach(g => { if (!g.icone) g.icone = EMOJI_TO_ICON[g.emoji] || 'presente'; });
-  return lista;
 }
-function saveGifts(list){ admSet('gifts_v3', list); }
+function getGifts(){ if (GIFTS_CACHE === null) loadGifts(); return GIFTS_CACHE; }
 let giftFiltroStatus = 'Ativos';
 
 R.presentes = () => {
@@ -783,27 +889,41 @@ R.presentes.after = () => { renderGiftGrid(); document.getElementById('giftSearc
 
 function giftDuplicar(id){
   const list = getGifts(); const g = list.find(x => x.id === id); if (!g) return;
-  const novo = { ...g, id: Math.max(...list.map(x => x.id)) + 1, name: g.name + ' (cópia)', status: 'Rascunho', vendidos: 0, receita: 0, receberam: 0, enviaram: 0, ordem: list.length + 1,
-    criado: fmtData(Date.now()), editado: fmtData(Date.now()), responsavel: 'admin@bday.fm',
-    historico: [{ quando: fmtData(Date.now()), quem: 'admin@bday.fm', oque: 'Duplicado a partir de "' + g.name + '"' }] };
-  list.push(novo); saveGifts(list);
-  audit('Duplicou presente', g.name, 'Nova cópia em rascunho');
-  showToast('Presente duplicado como rascunho.'); goSection('presentes');
+  const r = apiAdmin('POST', '/api/admin/gifts', {
+    name: g.name + ' (cópia)', emoji: iconeParaEmoji(g.icone), price: g.price,
+    description: g.desc || null, category: g.categoria || null,
+    physical: g.categoria === 'Presente Físico', partner: g.parceiro,
+    sortOrder: list.length + 1, active: false,
+  });
+  if (!r.ok) {
+    showToast(r.status === 409 ? 'Já existe um presente com esse nome — renomeie a cópia anterior antes de duplicar de novo.' : 'Erro ao duplicar: ' + apiErro(r, 'erro ' + r.status));
+    return;
+  }
+  audit('Duplicou presente', g.name, 'Nova cópia criada inativa (em Arquivados)');
+  showToast('Presente duplicado — a cópia foi criada inativa (aba Arquivados).');
+  loadGifts(); goSection('presentes');
 }
 function giftArquivar(id){
   const list = getGifts(); const g = list.find(x => x.id === id); if (!g) return;
-  const novoStatus = g.status === 'Arquivado' ? 'Ativo' : 'Arquivado';
-  g.status = novoStatus; g.editado = fmtData(Date.now());
-  g.historico.unshift({ quando: fmtData(Date.now()), quem: 'admin@bday.fm', oque: novoStatus === 'Arquivado' ? 'Arquivado' : 'Reativado' });
-  saveGifts(list);
-  audit(novoStatus === 'Arquivado' ? 'Arquivou presente' : 'Reativou presente', g.name, '');
-  showToast(g.name + (novoStatus === 'Arquivado' ? ' arquivado.' : ' reativado.')); goSection('presentes');
+  const reativar = g.status === 'Arquivado';
+  const r = apiAdmin('PATCH', '/api/admin/gifts/' + encodeURIComponent(id), { active: reativar });
+  if (!r.ok) { showToast('Erro ao ' + (reativar ? 'reativar' : 'arquivar') + ': ' + apiErro(r, 'erro ' + r.status)); return; }
+  audit(reativar ? 'Reativou presente' : 'Arquivou presente', g.name, '');
+  showToast(g.name + (reativar ? ' reativado.' : ' arquivado.'));
+  loadGifts(); goSection('presentes');
 }
 function giftExcluir(id){
   const list = getGifts(); const g = list.find(x => x.id === id); if (!g) return;
-  saveGifts(list.filter(x => x.id !== id));
-  audit('Excluiu presente', g.name, 'Remoção definitiva do catálogo');
-  showToast(g.name + ' excluído.'); goSection('presentes');
+  const r = apiAdmin('DELETE', '/api/admin/gifts/' + encodeURIComponent(id));
+  if (!r.ok) { showToast('Erro ao excluir: ' + apiErro(r, 'erro ' + r.status)); return; }
+  if (r.data.archived) {
+    audit('Arquivou presente', g.name, 'Já teve envios — arquivado em vez de excluído');
+    showToast(g.name + ' já teve envios reais — foi arquivado em vez de excluído.');
+  } else {
+    audit('Excluiu presente', g.name, 'Remoção definitiva do catálogo');
+    showToast(g.name + ' excluído.');
+  }
+  loadGifts(); goSection('presentes');
 }
 
 // ---- Modal da ficha completa do presente ----
@@ -896,52 +1016,78 @@ function giftModalSave(id){
   const v = campo => document.getElementById(campo).value;
   const nome = (typeof bdaySanitize === 'function' ? bdaySanitize(v('gfNome')) : v('gfNome').trim());
   const preco = parseFloat(v('gfPreco'));
-  if (!nome) { showToast('Dê um nome ao presente.'); return; }
+  if (!nome || nome.length < 2) { showToast('Dê um nome ao presente (mínimo 2 caracteres).'); return; }
   if (isNaN(preco) || preco <= 0) { showToast('Informe um valor válido.'); return; }
-  const dados = { name: nome, icone: v('gfIcone') || 'presente', imagem: v('gfImg').trim() || null, categoria: v('gfCat'),
-    desc: (typeof bdaySanitize === 'function' ? bdaySanitize(v('gfDesc')) : v('gfDesc').trim()), price: preco,
-    publico: v('gfPublico'), status: v('gfStatus'), ordem: parseInt(v('gfOrdem'), 10) || 999 };
+  const categoria = v('gfCat');
+  const status = v('gfStatus');
+  const payload = {
+    name: nome,
+    emoji: iconeParaEmoji(v('gfIcone') || 'presente'),
+    price: preco,
+    description: ((typeof bdaySanitize === 'function' ? bdaySanitize(v('gfDesc')) : v('gfDesc').trim()) || null),
+    category: categoria || null,
+    physical: categoria === 'Presente Físico',
+    sortOrder: parseInt(v('gfOrdem'), 10) || 999,
+    active: status === 'Ativo', // o banco só tem ativo/inativo — Oculto/Rascunho/Arquivado ficam inativos
+  };
+  let r;
   if (id === null) {
-    const novo = { ...dados, id: list.length ? Math.max(...list.map(x => x.id)) + 1 : 1, vendidos: 0, receita: 0, receberam: 0, enviaram: 0,
-      criado: fmtData(Date.now()), editado: fmtData(Date.now()), responsavel: 'admin@bday.fm',
-      historico: [{ quando: fmtData(Date.now()), quem: 'admin@bday.fm', oque: 'Presente criado' }] };
-    list.push(novo);
-    audit('Criou presente', nome, fmtBRL(preco) + ' · ' + dados.status);
+    r = apiAdmin('POST', '/api/admin/gifts', payload);
   } else {
     const g = list.find(x => x.id === id);
-    const mudancas = [];
-    if (g.name !== dados.name) mudancas.push('nome: "' + g.name + '" → "' + dados.name + '"');
-    if (g.price !== dados.price) mudancas.push('valor: ' + fmtBRL(g.price) + ' → ' + fmtBRL(dados.price));
-    if (g.status !== dados.status) mudancas.push('status: ' + g.status + ' → ' + dados.status);
-    if (g.publico !== dados.publico) mudancas.push('público: ' + g.publico + ' → ' + dados.publico);
-    if (g.categoria !== dados.categoria) mudancas.push('categoria: ' + g.categoria + ' → ' + dados.categoria);
-    if (g.ordem !== dados.ordem) mudancas.push('ordem: #' + g.ordem + ' → #' + dados.ordem);
-    Object.assign(g, dados);
-    g.editado = fmtData(Date.now()); g.responsavel = 'admin@bday.fm';
-    const resumo = mudancas.length ? mudancas.join(' · ') : 'Ficha revisada sem mudanças de campo';
-    g.historico.unshift({ quando: fmtData(Date.now()), quem: 'admin@bday.fm', oque: resumo });
-    audit('Editou presente', nome, resumo);
+    if (!g) return;
+    r = apiAdmin('PATCH', '/api/admin/gifts/' + encodeURIComponent(id), payload);
   }
-  saveGifts(list);
+  if (!r.ok) {
+    showToast(r.status === 409 ? 'Já existe um presente com esse nome.' : 'Erro ao salvar o presente: ' + apiErro(r, 'erro ' + r.status));
+    return;
+  }
+  audit(id === null ? 'Criou presente' : 'Editou presente', nome, fmtBRL(preco) + ' · ' + status);
   const m = document.getElementById('giftModal'); if (m) m.remove();
-  showToast('Presente salvo.'); goSection('presentes');
+  showToast('Presente salvo.');
+  loadGifts(); goSection('presentes');
 }
 
-function getSaques(){
-  return admGet('saques_v3', ADMIN_SAQUES.map((x, i) => ({ ...x, uid: i })));
+// ---- Saques: solicitações REAIS via /api/admin/withdrawals ----
+const SAQUE_ST_API2PAINEL = { REQUESTED: 'Pendente', PROCESSING: 'Processando', DONE: 'Aprovado', FAILED: 'Falhou', REJECTED: 'Negado' };
+const SAQUE_ST_PAINEL2API = { 'Processando': 'PROCESSING', 'Aprovado': 'DONE', 'Falhou': 'FAILED', 'Negado': 'REJECTED' };
+let SAQUES_CACHE = null;
+function loadSaques(){
+  const r = apiAdmin('GET', '/api/admin/withdrawals');
+  const lista = (r.ok && r.data.withdrawals) ? r.data.withdrawals : [];
+  SAQUES_CACHE = lista.map((w, i) => {
+    SAQUE_USERS['@' + w.slug] = {
+      nome: w.name, email: w.email, cpf: 'não informado',
+      pix: (w.pixKey || '—') + (w.pixKeyType ? ' (' + w.pixKeyType + ')' : ''),
+      banco: w.speed === 'INSTANT' ? 'Pix instantâneo' : 'Pix padrão',
+    };
+    return {
+      uid: i, id: w.id, user: '@' + w.slug,
+      valor: w.net || 0, bruto: w.amount || 0, taxaReal: w.fee || 0,
+      data: fmtData(new Date(w.createdAt).getTime()),
+      status: SAQUE_ST_API2PAINEL[w.status] || w.status,
+      suspeita: 0, obs: w.adminNote || '',
+      dataAprovacao: (w.status === 'DONE' || w.status === 'PROCESSING') ? fmtData(new Date(w.updatedAt).getTime()) : undefined,
+      dataPagamento: w.status === 'DONE' ? fmtData(new Date(w.updatedAt).getTime()) : undefined,
+    };
+  });
 }
+function getSaques(){ if (SAQUES_CACHE === null) loadSaques(); return SAQUES_CACHE; }
 function setSaqueStatus(uid, status, voltar){
-  const list = getSaques();
-  const sq = list.find(x => x.uid === uid);
+  const sq = getSaques().find(x => x.uid === uid);
   if (!sq) return;
-  sq.status = status;
-  if (status === 'Aprovado') { sq.dataAprovacao = fmtData(Date.now()); sq.dataPagamento = fmtData(Date.now() + 3600 * 1000); }
-  if (status === 'Negado') { sq.dataAprovacao = '—'; sq.dataPagamento = '—'; }
-  admSet('saques_v3', list);
+  const apiStatus = SAQUE_ST_PAINEL2API[status];
+  if (!apiStatus) { showToast('O backend não permite reabrir um saque já processado.'); return; }
+  const r = apiAdmin('PATCH', '/api/admin/withdrawals/' + encodeURIComponent(sq.id), { status: apiStatus });
+  if (!r.ok) { showToast('Erro ao atualizar o saque: ' + apiErro(r, 'erro ' + r.status)); return; }
   const info = SAQUE_USERS[sq.user] || { nome: sq.user };
-  audit(status === 'Aprovado' ? 'Aprovou saque' : status === 'Negado' ? 'Negou saque' : 'Reabriu saque', 'ID ' + sq.id + ' · ' + info.nome, fmtBRL(sq.valor));
-  showToast(status === 'Aprovado' ? `Saque de ${fmtBRL(sq.valor)} de ${info.nome} APROVADO — Pix a caminho (demo).` : status === 'Negado' ? `Saque de ${fmtBRL(sq.valor)} negado (demo).` : 'Saque reaberto para análise.');
-  if (voltar === 'detalhe') { openSaqueDetail(uid); } else { goSection('saques'); }
+  audit(status === 'Aprovado' ? 'Aprovou saque' : status === 'Negado' ? 'Negou saque' : 'Atualizou saque', 'ID ' + sq.id + ' · ' + info.nome, fmtBRL(sq.valor) + ' → ' + status);
+  showToast(status === 'Aprovado' ? `Saque de ${fmtBRL(sq.valor)} de ${info.nome} concluído — Pix pago.` : status === 'Negado' ? `Saque de ${fmtBRL(sq.valor)} recusado — valor estornado ao usuário.` : status === 'Falhou' ? `Saque marcado como falho — valor estornado ao usuário.` : 'Saque em processamento.');
+  loadSaques();
+  if (voltar === 'detalhe') {
+    const novo = getSaques().find(x => x.id === sq.id);
+    if (novo) { openSaqueDetail(novo.uid); } else { goSection('saques'); }
+  } else { goSection('saques'); }
 }
 let saquesFiltro = 'Pendente';
 function setSaquesFiltro(f){ saquesFiltro = f; goSection('saques'); }
@@ -970,7 +1116,7 @@ R.saques = () => {
       <tbody>
         ${rows.map(x => {
           const info = SAQUE_USERS[x.user] || { nome: x.user, pix: '—' };
-          const bruto = x.valor / (1 - taxaPct / 100);
+          const bruto = x.bruto || x.valor / (1 - taxaPct / 100);
           return `
         <tr class="cursor-pointer" onclick="openSaqueDetail(${x.uid})">
           <td><div class="flex items-center gap-2.5"><div class="w-7 h-7 rounded-full adm-soft text-purple-500 text-[10px] font-bold flex items-center justify-center">${String(x.id).slice(-2)}</div><div><div class="font-semibold">${info.nome}</div><div class="text-[10px] text-purple-400">${x.user} · Pix: ${info.pix}</div></div></div></td>
@@ -1006,7 +1152,8 @@ function openSaqueDetail(uid){
   const taxaPct = admGet('taxa', 20);
   const origem = origemDoSaldo(sq);
   const taxaValor = origem.bruto - sq.valor;
-  const saldoRestante = +(origem.bruto * 0.12).toFixed(2);
+  const uReal = ADMIN_USERS.find(u => '@' + u.handle === sq.user);
+  const saldoRestante = uReal ? (uReal.saldo || 0) : 0;
   const main = document.getElementById('admMain');
   main.innerHTML = `
   <div class="flex items-center gap-2 mb-4 text-sm">
@@ -1098,8 +1245,8 @@ function openSaqueDetail(uid){
       <table class="adm-table">
         <thead><tr><th>Data</th><th>Tipo</th><th>Origem</th><th>Valor</th><th>Saldo após</th></tr></thead>
         <tbody>
-          ${LEDGER.filter(l => l.usuario === '@' + (sq.user.replace('user-', 'user') === sq.user ? sq.user : sq.user)).slice(0, 6).map(l => `
-          <tr><td class="adm-muted whitespace-nowrap">${fmtData(l.ms)}</td><td><span class="badge ${l.dir === 'in' ? 'badge-green' : 'badge-red'}">${l.tipo}</span></td><td class="adm-muted">${l.origem}</td><td class="font-bold ${l.dir === 'in' ? 'text-green-600' : 'text-red-500'}">${l.dir === 'in' ? '+' : '−'} ${fmtBRL(l.valor)}</td><td class="adm-muted">${fmtBRL(l.saldoApos)}</td></tr>`).join('') || `<tr><td colspan="5" class="text-center adm-muted py-4">Sem movimentações recentes deste usuário no extrato — veja a aba <a class="text-purple-500 font-semibold cursor-pointer" onclick="goSection('extrato')">Movimentação</a>.</td></tr>`}
+          ${LEDGER.filter(l => l.usuario === sq.user).slice(0, 6).map(l => `
+          <tr><td class="adm-muted whitespace-nowrap">${fmtData(l.ms)}</td><td><span class="badge ${l.dir === 'in' ? 'badge-green' : 'badge-red'}">${l.tipo}</span></td><td class="adm-muted">${l.origem}</td><td class="font-bold ${l.dir === 'in' ? 'text-green-600' : 'text-red-500'}">${l.dir === 'in' ? '+' : '−'} ${fmtBRL(l.valor)}</td><td class="adm-muted">${l.saldoApos == null ? '—' : fmtBRL(l.saldoApos)}</td></tr>`).join('') || `<tr><td colspan="5" class="text-center adm-muted py-4">Sem movimentações recentes deste usuário no extrato — veja a aba <a class="text-purple-500 font-semibold cursor-pointer" onclick="goSection('extrato')">Movimentação</a>.</td></tr>`}
         </tbody>
       </table>
     </div>
@@ -1413,8 +1560,8 @@ function saveMpToken(){
   const v = document.getElementById('mpTokenInput').value.trim();
   if (!v) { showToast('Informe o novo token.'); return; }
   const cfg = getMpCfg(); cfg.token = v; admSet('mp', cfg);
-  audit('Alterou token', 'API Mercado Pago', 'Token substituído (final ' + v.slice(-4) + ')');
-  showToast('Token do Mercado Pago atualizado.');
+  audit('Alterou token', 'API Mercado Pago', 'Token anotado no painel (final ' + v.slice(-4) + ')');
+  showToast('Anotado neste navegador — a configuração real do token é feita pela variável de ambiente MP_ACCESS_TOKEN no CapRover.');
   goSection('apimp');
 }
 function saveMpConfig(){
@@ -1423,7 +1570,7 @@ function saveMpConfig(){
   cfg.ambiente = document.getElementById('mpAmbienteSel').value;
   admSet('mp', cfg);
   audit('Editou configuração', 'API Mercado Pago', 'Webhook/ambiente: ' + cfg.ambiente);
-  showToast('Configuração da API salva.');
+  showToast('Anotado neste navegador — a configuração real é feita por variáveis de ambiente (MP_ACCESS_TOKEN / MP_WEBHOOK_SECRET) no CapRover.');
   goSection('apimp');
 }
 function apiFormOpen(i){
@@ -1454,24 +1601,33 @@ function apiDelete(i){ const l = getApis(); const nome = l[i].nome; l.splice(i, 
 
 R.apimp = () => {
   const pend = ADMIN_DEPOSITOS.filter(d => d.status === 'Pendente').length;
+  const completados = ADMIN_DEPOSITOS.filter(d => d.status === 'Completado').length;
+  const totalArrecadado = ADMIN_DEPOSITOS.reduce((t, d) => t + (d.valor || 0), 0);
+  const mpReal = getAdminIntegracoes().mercadoPago || {};
   const mp = getMpCfg();
-  const mascarado = mp.token.length > 8 ? '**********' + mp.token.slice(-4) : mp.token;
   const apis = getApis();
   return `
   <div class="flex items-center justify-between flex-wrap gap-3 mb-1">
     <h1 class="text-xl font-extrabold">API Mercado Pago</h1>
-    <button class="btn-primary rounded-xl px-4 py-2 text-xs font-bold" onclick="showToast('Status da integração atualizado (demo).')">Atualizar</button>
+    <button class="btn-primary rounded-xl px-4 py-2 text-xs font-bold" onclick="SETTINGS_CACHE = null; goSection('apimp'); showToast('Status da integração atualizado.')">Atualizar</button>
   </div>
   <p class="text-xs adm-muted mb-4">Informações detalhadas sobre a integração com o Mercado Pago</p>
+  ${mpReal.configured ? `
   <div class="adm-card p-4 mb-4 flex items-start gap-3" style="border-color:#BBF7D0">
     <span class="text-green-500 mt-0.5">${AI.check}</span>
     <div><div class="text-sm font-bold">Processamento de pagamentos funcionando</div>
-    <p class="text-xs adm-muted mt-0.5">O sistema de confirmação de pagamentos do Mercado Pago está operando normalmente. Os depósitos serão automaticamente atualizados para "completado" quando aprovados pela plataforma de pagamento.</p></div>
-  </div>
+    <p class="text-xs adm-muted mt-0.5">O token do Mercado Pago está configurado no servidor. Os depósitos são confirmados pelo webhook e aparecem automaticamente como "Completado" na lista abaixo.</p></div>
+  </div>` : `
+  <div class="adm-card p-4 mb-4 flex items-start gap-3" style="border-color:#FDE68A">
+    <span class="text-amber-500 mt-0.5">${AI.x}</span>
+    <div><div class="text-sm font-bold">Integração não configurada</div>
+    <p class="text-xs adm-muted mt-0.5">O servidor está sem o token do Mercado Pago — defina a variável de ambiente <b class="font-mono">MP_ACCESS_TOKEN</b> no CapRover para ativar os depósitos via Pix.</p></div>
+  </div>`}
   <div class="grid lg:grid-cols-3 gap-4 mb-4">
     <div class="adm-card p-5">
       <div class="font-bold text-sm">Status do Token</div><p class="text-xs adm-muted">Chave de API do Mercado Pago</p>
-      <div class="flex items-center gap-2 mt-3"><span class="text-sm font-mono">${mascarado}</span><span class="badge badge-green">Válido</span></div>
+      <div class="flex items-center gap-2 mt-3"><span class="text-sm font-mono">MP_ACCESS_TOKEN</span>${mpReal.configured ? '<span class="badge badge-green">Configurado</span>' : '<span class="badge badge-red">Não configurado</span>'}</div>
+      <p class="text-[11px] adm-muted mt-1">${mpReal.configured ? 'Configurado via variável de ambiente no CapRover.' : 'Não configurado — defina MP_ACCESS_TOKEN no CapRover.'}${mpReal.webhookSecretConfigured === false ? ' Webhook secret (MP_WEBHOOK_SECRET) também não configurado.' : ''}</p>
       <div class="mt-3">
         <label class="text-[11px] font-bold adm-muted">Alterar token do Mercado Pago</label>
         <div class="flex gap-2 mt-1">
@@ -1482,17 +1638,18 @@ R.apimp = () => {
       <div class="text-[11px] text-green-600 font-semibold mt-3 flex items-center gap-1">${I(AI.check, 'w-3 h-3')} Ambiente de ${mp.ambiente.toLowerCase()}</div>
     </div>
     <div class="adm-card p-5">
-      <div class="font-bold text-sm">Estatísticas</div><p class="text-xs adm-muted">Resumo de operações</p>
+      <div class="font-bold text-sm">Estatísticas</div><p class="text-xs adm-muted">Resumo de operações (dados reais)</p>
       <div class="mt-3 space-y-1.5 text-sm">
-        <div class="flex justify-between"><span class="adm-muted">Total de depósitos:</span><b>179</b></div>
-        <div class="flex justify-between"><span class="adm-muted">Completados:</span><b class="text-green-600">26</b></div>
-        <div class="flex justify-between"><span class="adm-muted">Pendentes:</span><span><b class="text-amber-500">153</b> <span class="badge badge-amber">Requer atenção</span></span></div>
+        <div class="flex justify-between"><span class="adm-muted">Total de depósitos:</span><b>${ADMIN_DEPOSITOS.length}</b></div>
+        <div class="flex justify-between"><span class="adm-muted">Completados:</span><b class="text-green-600">${completados}</b></div>
+        <div class="flex justify-between"><span class="adm-muted">Pendentes:</span><span><b class="${pend ? 'text-amber-500' : ''}">${pend}</b>${pend ? ' <span class="badge badge-amber">Requer atenção</span>' : ''}</span></div>
         <div class="flex justify-between"><span class="adm-muted">Falhas:</span><b class="text-red-500">0</b></div>
       </div>
+      ${pend > 0 ? `
       <div class="rounded-xl p-3 mt-3 text-[11px]" style="background:#FEFCE8;color:#854D0E">
-        <b>⚠ Depósitos pendentes detectados</b><br>Existem 153 depósitos com status "pendente" que podem já ter sido processados mas não tiveram o status atualizado. Use o botão "Verificar pendências" para corrigir inconsistências.
-      </div>
-      <div class="flex justify-between text-sm mt-3 pt-3 border-t adm-line"><span class="adm-muted">Total arrecadado:</span><b>${fmtBRL(125057.23)}</b></div>
+        <b>⚠ Depósitos pendentes detectados</b><br>Existem ${pend} depósitos com status "pendente" que podem já ter sido processados mas não tiveram o status atualizado.
+      </div>` : ''}
+      <div class="flex justify-between text-sm mt-3 pt-3 border-t adm-line"><span class="adm-muted">Total arrecadado:</span><b>${fmtBRL(totalArrecadado)}</b></div>
     </div>
     <div class="adm-card p-5">
       <div class="font-bold text-sm">Configuração</div><p class="text-xs adm-muted mb-3">Detalhes da configuração da API</p>
@@ -1559,9 +1716,7 @@ R.apimp = () => {
           <td><span class="badge ${d.status === 'Completado' ? 'badge-green' : 'badge-amber'}">${d.status}</span></td>
         </tr>`).join('')}</tbody>
     </table>
-    <div class="text-center py-3 text-xs adm-muted">Lista de depósitos via Mercado Pago.
-      <div class="mt-2"><button class="adm-card px-4 py-2 text-xs font-semibold" onclick="showToast('Sem mais registros neste protótipo.')">+ Carregar mais (169 restantes)</button></div>
-    </div>
+    <div class="text-center py-3 text-xs adm-muted">${ADMIN_DEPOSITOS.length ? 'Mostrando os ' + ADMIN_DEPOSITOS.length + ' depósitos reais registrados via Mercado Pago.' : 'Nenhum depósito registrado ainda — aparecem aqui quando o webhook do Mercado Pago confirmar pagamentos.'}</div>
   </div>`;
 };
 
@@ -1619,8 +1774,37 @@ R.rastreamento = () => {
   </div>`;
 };
 
+// ---- Parâmetros REAIS da plataforma via /api/admin/settings ----
+let SETTINGS_CACHE = null;
+function loadAdminSettings(){
+  const r = apiAdmin('GET', '/api/admin/settings');
+  SETTINGS_CACHE = r.ok ? (r.data || {}) : {};
+  const st = SETTINGS_CACHE.settings || {};
+  // mantém o resto do painel (cálculos de taxa) em sincronia com o valor real
+  if (typeof st.fee_percent === 'number') admSet('taxa', st.fee_percent);
+}
+function getAdminSettings(){ if (SETTINGS_CACHE === null) loadAdminSettings(); return (SETTINGS_CACHE && SETTINGS_CACHE.settings) || {}; }
+function getAdminIntegracoes(){ if (SETTINGS_CACHE === null) loadAdminSettings(); return (SETTINGS_CACHE && SETTINGS_CACHE.integrations) || {}; }
+function salvarParametros(){
+  const num = idc => { const elx = document.getElementById(idc); const n = elx ? parseFloat(elx.value) : NaN; return n; };
+  const taxa = num('taxaInput');
+  if (isNaN(taxa) || taxa < 0 || taxa > 100) { showToast('Informe uma taxa entre 0 e 100.'); return; }
+  const body = { fee_percent: taxa };
+  const minSaque = num('paramMinSaque'); if (!isNaN(minSaque) && minSaque >= 0) body.min_withdraw_reais = minSaque;
+  const taxaInst = num('paramTaxaInstant'); if (!isNaN(taxaInst) && taxaInst >= 0) body.instant_fee_percent = taxaInst;
+  const ptsGift = num('paramPtsGift'); if (!isNaN(ptsGift) && ptsGift >= 0) body.points_per_gift = Math.round(ptsGift);
+  const ptsMissao = num('paramPtsMissao'); if (!isNaN(ptsMissao) && ptsMissao >= 0) body.points_mission_bonus = Math.round(ptsMissao);
+  const r = apiAdmin('PUT', '/api/admin/settings', body);
+  if (!r.ok) { showToast('Erro ao salvar parâmetros: ' + apiErro(r, 'erro ' + r.status)); return; }
+  SETTINGS_CACHE = null; admSet('taxa', taxa);
+  audit('Alterou parâmetros', 'Parâmetros do sistema', 'Taxa ' + taxa + '%' + (body.min_withdraw_reais !== undefined ? ' · saque mín. R$ ' + body.min_withdraw_reais : ''));
+  showToast('Parâmetros salvos na plataforma.');
+  goSection('parametros');
+}
+
 R.parametros = () => {
-  const taxa = admGet('taxa', 20);
+  const st = getAdminSettings();
+  const taxa = typeof st.fee_percent === 'number' ? st.fee_percent : admGet('taxa', 20);
   return `
   <h1 class="text-xl font-extrabold mb-4 text-center">Parâmetros do Sistema</h1>
   <div class="flex gap-1.5 mb-4 justify-center">${['Taxa de Comissão','Configurações de Mídia','Rastreamento'].map((t, i) => `<span class="adm-tab ${i === 0 ? 'active' : ''}" onclick="${i === 2 ? "goSection('rastreamento')" : `showToast('Aba \\'${t}\\' (demo).')`}">${t}</span>`).join('')}</div>
@@ -1636,8 +1820,18 @@ R.parametros = () => {
         <div id="taxaExemplos" class="text-xs space-y-1.5 adm-muted"></div>
       </div>
     </div>
-    <div class="text-right mt-4"><button class="btn-primary rounded-xl px-5 py-2 text-xs font-bold" onclick="const v = parseFloat(document.getElementById('taxaInput').value); if (isNaN(v) || v < 0 || v > 100) { showToast('Informe uma taxa entre 0 e 100.'); } else { admSet('taxa', v); audit('Alterou parâmetro', 'Taxa de comissão', v + '%'); showToast('Taxa de comissão salva: ' + v + '%.'); }">💾 Salvar</button></div>
-    <p class="text-[11px] adm-muted mt-3">O site público está configurado com taxa de 20% (saldo exibido já líquido, saque mínimo R$ 10, processamento em até 48h úteis via Pix).</p>
+    <div class="grid sm:grid-cols-2 gap-4 mt-5 pt-5 border-t adm-line">
+      <label class="block"><span class="text-xs font-bold">Saque mínimo (R$)</span>
+        <input id="paramMinSaque" type="number" min="0" step="0.01" class="adm-input mt-1" value="${typeof st.min_withdraw_reais === 'number' ? st.min_withdraw_reais : 10}"></label>
+      <label class="block"><span class="text-xs font-bold">Taxa do saque instantâneo (%)</span>
+        <input id="paramTaxaInstant" type="number" min="0" step="0.1" class="adm-input mt-1" value="${typeof st.instant_fee_percent === 'number' ? st.instant_fee_percent : 6}"></label>
+      <label class="block"><span class="text-xs font-bold">Pontos por presente enviado</span>
+        <input id="paramPtsGift" type="number" min="0" step="1" class="adm-input mt-1" value="${typeof st.points_per_gift === 'number' ? st.points_per_gift : 40}"></label>
+      <label class="block"><span class="text-xs font-bold">Bônus de pontos da missão semanal</span>
+        <input id="paramPtsMissao" type="number" min="0" step="1" class="adm-input mt-1" value="${typeof st.points_mission_bonus === 'number' ? st.points_mission_bonus : 80}"></label>
+    </div>
+    <div class="text-right mt-4"><button class="btn-primary rounded-xl px-5 py-2 text-xs font-bold" onclick="salvarParametros()">💾 Salvar</button></div>
+    <p class="text-[11px] adm-muted mt-3">Estes cinco parâmetros são salvos direto na plataforma (banco de dados) e valem imediatamente para o site público.</p>
   </div>`;
 };
 R.parametros.after = () => {
@@ -1653,15 +1847,85 @@ R.parametros.after = () => {
   input.addEventListener('input', upd); upd();
 };
 
+// ---- Suporte: chamados REAIS via /api/admin/support ----
+let TICKETS_CACHE = null;
+function loadTickets(){
+  const r = apiAdmin('GET', '/api/admin/support');
+  TICKETS_CACHE = (r.ok && r.data.tickets) ? r.data.tickets : [];
+}
+function getTickets(){ if (TICKETS_CACHE === null) loadTickets(); return TICKETS_CACHE; }
+const TICKET_ST_ROTULO = { OPEN: 'Aberto', PENDING: 'Aguardando usuário', CLOSED: 'Resolvido' };
+function ticketSetStatus(id, status){
+  const r = apiAdmin('PATCH', '/api/admin/support/' + encodeURIComponent(id), { status });
+  if (!r.ok) { showToast('Erro ao atualizar o chamado: ' + apiErro(r, 'erro ' + r.status)); return; }
+  const t = getTickets().find(x => x.id === id) || { subject: id };
+  audit('Alterou status de chamado', t.subject, TICKET_ST_ROTULO[status] || status);
+  showToast('Chamado atualizado: ' + (TICKET_ST_ROTULO[status] || status) + '.');
+  loadTickets();
+  const m = document.getElementById('ticketModal'); if (m) m.remove();
+  if (currentSection === 'suporte') goSection('suporte');
+}
+function ticketReply(id){
+  const campo = document.getElementById('ticketReply');
+  const txt = (campo ? campo.value : '').trim();
+  if (!txt) { showToast('Escreva a resposta antes de enviar.'); return; }
+  const r = apiAdmin('POST', '/api/support/tickets/' + encodeURIComponent(id) + '/messages', { text: txt });
+  if (!r.ok) { showToast('Erro ao enviar a resposta: ' + apiErro(r, 'erro ' + r.status)); return; }
+  const t = getTickets().find(x => x.id === id) || { subject: id };
+  audit('Respondeu chamado de suporte', t.subject, txt.slice(0, 80));
+  showToast('Resposta enviada ao usuário.');
+  loadTickets();
+  const m = document.getElementById('ticketModal'); if (m) m.remove();
+  ticketOpen(id);
+}
+function ticketOpen(id){
+  const t = getTickets().find(x => x.id === id);
+  if (!t) { showToast('Chamado não encontrado.'); return; }
+  const overlay = document.createElement('div');
+  overlay.id = 'ticketModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto;';
+  overlay.innerHTML = `
+  <div class="adm-card w-full max-w-xl p-6 my-4" style="box-shadow:0 30px 60px -20px rgba(0,0,0,.4)">
+    <div class="flex items-start justify-between mb-3">
+      <div>
+        <div class="text-lg font-extrabold flex items-center gap-2">${escHtml(t.subject)} <span class="badge ${t.status === 'OPEN' ? 'badge-red' : t.status === 'CLOSED' ? 'badge-green' : 'badge-amber'}">${TICKET_ST_ROTULO[t.status] || t.status}</span></div>
+        <div class="text-[11px] adm-muted mt-0.5">De <b>${escHtml(t.name || '—')}</b>${t.email ? ' · ' + escHtml(t.email) : ''}${t.slug ? ' · <span class="text-purple-500 font-semibold">@' + escHtml(t.slug) + '</span>' : ''} · aberto em ${fmtData(new Date(t.createdAt).getTime())}</div>
+      </div>
+      <button class="act-btn" onclick="document.getElementById('ticketModal').remove()">${AI.x}</button>
+    </div>
+    <div class="adm-soft rounded-xl p-3 max-h-72 overflow-y-auto space-y-2 mb-3">
+      ${t.messages.length ? t.messages.map(m => `
+      <div class="flex ${m.fromAdmin ? 'justify-end' : 'justify-start'}">
+        <div class="max-w-[85%] rounded-xl px-3 py-2 text-xs ${m.fromAdmin ? 'text-white' : 'adm-card'}" ${m.fromAdmin ? 'style="background:linear-gradient(90deg,#7C3AED,#EC4899)"' : ''}>
+          <div class="text-[10px] font-bold ${m.fromAdmin ? 'opacity-80' : 'adm-muted'}">${m.fromAdmin ? 'Suporte bday.fm' : escHtml(t.name || 'Usuário')} · ${fmtData(new Date(m.createdAt).getTime())}</div>
+          <div class="mt-0.5 whitespace-pre-wrap">${escHtml(m.text)}</div>
+        </div>
+      </div>`).join('') : '<div class="text-xs adm-muted text-center py-4">Sem mensagens neste chamado ainda.</div>'}
+    </div>
+    <textarea id="ticketReply" class="adm-input" rows="3" placeholder="Escreva a resposta para o usuário..."></textarea>
+    <div class="flex items-center justify-between flex-wrap gap-2 mt-3 pt-3 border-t adm-line">
+      <div class="flex gap-1.5">
+        ${[['OPEN', 'Aberto'], ['PENDING', 'Aguardando'], ['CLOSED', 'Resolvido']].map(s => `<button class="adm-card px-3 py-1.5 text-xs font-semibold ${t.status === s[0] ? 'text-purple-600' : ''}" onclick="ticketSetStatus('${t.id}', '${s[0]}')">${s[1]}</button>`).join('')}
+      </div>
+      <button class="btn-primary rounded-xl px-4 py-2 text-xs font-bold" onclick="ticketReply('${t.id}')">✉️ Enviar resposta</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  const box = overlay.querySelector('.adm-soft.rounded-xl');
+  if (box) box.scrollTop = box.scrollHeight;
+}
+
 R.suporte = () => {
   const frases = admGet('frases', [
     { txt: 'Vamos Conversar! =)', on: true }, { txt: 'Quero ajudá-lo!', on: true },
     { txt: 'Ja criou seu perfil?', on: true }, { txt: 'Divulgue seu perfil e ganhe Pix!', on: true },
   ]);
-  const novas = ADMIN_SUPORTE.filter(s => s.nova).length;
+  const tickets = getTickets();
+  const novas = tickets.filter(t => t.status === 'OPEN').length;
   return `
   <h1 class="text-xl font-extrabold mb-1">Suporte</h1>
-  <p class="text-xs adm-muted mb-4">Gerencie as mensagens enviadas pelos usuários através do formulário de contato.</p>
+  <p class="text-xs adm-muted mb-4">Gerencie os chamados reais abertos pelos usuários — responda e acompanhe o status.</p>
   <div class="flex gap-1.5 mb-4">
     <span class="adm-tab active" data-sup-tab="mensagens" onclick="supTab(this)">Mensagens <span class="badge badge-red ml-1">${novas}</span></span>
     <span class="adm-tab" data-sup-tab="conversas" onclick="supTab(this)">Conversas de Chat</span>
@@ -1669,42 +1933,47 @@ R.suporte = () => {
   </div>
   <div data-sup-panel="mensagens">
     <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-      ${ADMIN_SUPORTE.map(s => `
-      <div class="adm-card p-4 ${s.nova ? 'border-pink-200' : ''}">
+      ${tickets.map(t => {
+        const doUsuario = t.messages.filter(m => !m.fromAdmin);
+        const ultima = doUsuario.length ? doUsuario[doUsuario.length - 1] : (t.messages[t.messages.length - 1] || { text: '' });
+        const nova = t.status === 'OPEN';
+        return `
+      <div class="adm-card p-4 ${nova ? 'border-pink-200' : ''}">
         <div class="flex items-start justify-between gap-2">
-          <div class="font-bold text-sm">${s.titulo}</div>${s.nova ? '<span class="badge badge-red">Nova</span>' : ''}
+          <div class="font-bold text-sm">${escHtml(t.subject)}</div>${nova ? '<span class="badge badge-red">Nova</span>' : `<span class="badge ${t.status === 'CLOSED' ? 'badge-green' : 'badge-amber'}">${TICKET_ST_ROTULO[t.status] || t.status}</span>`}
         </div>
-        <div class="text-[11px] adm-muted mt-1">De ${s.de}${s.fone ? '<br>📞 ' + s.fone : ''}</div>
-        <p class="text-xs mt-2">${s.msg}</p>
+        <div class="text-[11px] adm-muted mt-1">De ${escHtml(t.name || '—')}${t.email ? ' · ' + escHtml(t.email) : ''}${t.slug ? '<br><span class="text-purple-500 font-semibold">@' + escHtml(t.slug) + '</span>' : ''}</div>
+        <p class="text-xs mt-2">${escHtml(String(ultima.text || '').slice(0, 180))}</p>
         <div class="flex items-center justify-between mt-3 pt-2 border-t adm-line">
-          <span class="text-[11px] adm-muted">${s.data}</span>
+          <span class="text-[11px] adm-muted">${fmtData(new Date(t.updatedAt).getTime())} · ${t.messages.length} msg${t.messages.length === 1 ? '' : 's'}</span>
           <div>
-            <span class="act-btn" title="Ver completa" onclick="showToast('Mensagem completa (demo).')">${AI.eye}</span>
-            <span class="act-btn" title="Marcar como lida" onclick="showToast('Marcada como lida (demo).')">${AI.check}</span>
-            <span class="act-btn danger" title="Excluir" onclick="showToast('Mensagem excluída (demo).')">${AI.trash}</span>
+            <span class="act-btn" title="Abrir conversa e responder" onclick="ticketOpen('${t.id}')">${AI.eye}</span>
+            <span class="act-btn" title="Marcar como resolvido" onclick="ticketSetStatus('${t.id}', 'CLOSED')">${AI.check}</span>
+            <span class="act-btn danger" title="Excluir" onclick="showToast('Chamados não podem ser excluídos — marque como resolvido.')">${AI.trash}</span>
           </div>
         </div>
-      </div>`).join('')}
+      </div>`;
+      }).join('') || '<p class="text-xs adm-muted md:col-span-2 xl:col-span-3 text-center py-6">Nenhum chamado de suporte ainda.</p>'}
     </div>
   </div>
   <div data-sup-panel="conversas" class="hidden">
     <div class="grid lg:grid-cols-5 gap-4">
       <div class="adm-card p-4 lg:col-span-2">
-        <div class="font-bold text-sm mb-2">💬 Sessões (69)</div>
+        <div class="font-bold text-sm mb-2">💬 Sessões (${tickets.length})</div>
         <input class="adm-input mb-3" placeholder="Buscar sessão ou usuário...">
         <div class="space-y-2 max-h-[420px] overflow-y-auto">
-          ${ADMIN_CHATS.map(c => `
-          <div class="adm-soft rounded-xl p-3 cursor-pointer hover:ring-1 hover:ring-purple-300 transition" onclick="showToast('Histórico da sessão de ${c.nome} (demo).')">
-            <div class="flex items-center justify-between"><span class="text-xs font-bold ${c.user ? '' : 'badge badge-purple'}">${c.nome}</span><span class="text-[11px] adm-muted">${c.msgs} msgs</span></div>
-            ${c.user ? `<div class="text-[11px] text-purple-500">${c.user}</div>` : ''}
-            <div class="text-[11px] adm-muted mt-0.5">🗓 ${c.data}</div>
-          </div>`).join('')}
+          ${tickets.map(t => `
+          <div class="adm-soft rounded-xl p-3 cursor-pointer hover:ring-1 hover:ring-purple-300 transition" onclick="ticketOpen('${t.id}')">
+            <div class="flex items-center justify-between"><span class="text-xs font-bold">${escHtml(t.subject)}</span><span class="text-[11px] adm-muted">${t.messages.length} msgs</span></div>
+            ${t.slug ? `<div class="text-[11px] text-purple-500">@${escHtml(t.slug)}</div>` : `<div class="text-[11px] adm-muted">${escHtml(t.email || '')}</div>`}
+            <div class="text-[11px] adm-muted mt-0.5">🗓 ${fmtData(new Date(t.updatedAt).getTime())}</div>
+          </div>`).join('') || '<div class="text-xs adm-muted text-center py-4">Nenhuma conversa ainda.</div>'}
         </div>
       </div>
       <div class="adm-card p-4 lg:col-span-3 flex flex-col items-center justify-center min-h-[300px] text-center">
         <div class="text-2xl mb-2">💬</div>
         <div class="font-bold text-sm">Selecione uma sessão</div>
-        <p class="text-xs adm-muted mt-1">Selecione uma sessão para ver o histórico completo</p>
+        <p class="text-xs adm-muted mt-1">Clique em um chamado ao lado para abrir a conversa completa e responder</p>
       </div>
     </div>
   </div>
@@ -1904,10 +2173,10 @@ R.extrato = () => {
   const rows = filtrarLedger();
   const entradas = rows.filter(l => l.dir === 'in').reduce((t, l) => t + l.valor, 0);
   const saidas = rows.filter(l => l.dir === 'out').reduce((t, l) => t + l.valor, 0);
-  const tipos = ['Presente', 'Taxa', 'Saque', 'Reembolso', 'Estorno', 'Bonificação', 'Crédito', 'Débito'];
+  const tipos = ['Depósito', 'Presente', 'Presente enviado', 'Compra na loja', 'Saque', 'Ajuste']; // tipos reais do ledger (WalletEntry)
   const totalPorTipo = tipos.map(t => [t, LEDGER.filter(l => l.tipo === t).reduce((s2, l) => s2 + l.valor, 0), LEDGER.filter(l => l.tipo === t).length]);
   exportarAtual = f => exportRows(f, 'Movimentação da Conta', ['ID', 'Data', 'Tipo', 'Entrada/Saída', 'Origem', 'Usuário', 'BDAY', 'Presente', 'Valor', 'Taxa', 'Saldo após', 'Status'],
-    rows.map(l => [l.id, fmtData(l.ms), l.tipo, l.dir === 'in' ? 'Entrada' : 'Saída', l.origem, l.usuario, l.bday, l.presente, fmtBRL(l.valor), fmtBRL(l.taxa), fmtBRL(l.saldoApos), l.status]));
+    rows.map(l => [l.id, fmtData(l.ms), l.tipo, l.dir === 'in' ? 'Entrada' : 'Saída', l.origem, l.usuario, l.bday, l.presente, fmtBRL(l.valor), l.taxa ? fmtBRL(l.taxa) : '—', l.saldoApos == null ? '—' : fmtBRL(l.saldoApos), l.status]));
   return `
   <div class="flex items-center justify-between flex-wrap gap-3 mb-1">
     <h1 class="text-xl font-extrabold">Movimentação da Conta</h1>
@@ -1959,7 +2228,7 @@ R.extrato = () => {
           <td class="adm-muted whitespace-nowrap">${l.presenteIcone ? `<span class="inline-flex items-center gap-1.5">${giftIconSvg(l.presenteIcone, 'w-3.5 h-3.5 text-purple-500 shrink-0')} ${l.presente}</span>` : l.presente}</td>
           <td class="font-bold whitespace-nowrap ${l.dir === 'in' ? 'text-green-600' : 'text-red-500'}">${l.dir === 'in' ? '+' : '−'} ${fmtBRL(l.valor)}</td>
           <td class="adm-muted whitespace-nowrap">${l.taxa ? fmtBRL(l.taxa) : '—'}</td>
-          <td class="whitespace-nowrap font-semibold">${fmtBRL(l.saldoApos)}</td>
+          <td class="whitespace-nowrap font-semibold">${l.saldoApos == null ? '—' : fmtBRL(l.saldoApos)}</td>
           <td><span class="badge ${l.status === 'Concluída' ? 'badge-green' : 'badge-amber'}">${l.status}</span></td>
         </tr>`).join('') || '<tr><td colspan="11" class="text-center adm-muted py-6">Nenhuma movimentação neste filtro.</td></tr>'}
       </tbody>
