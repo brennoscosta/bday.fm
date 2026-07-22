@@ -19,10 +19,10 @@
 
 <header class="sticky top-0 z-50 bg-white/85 backdrop-blur border-b border-gray-100">
   <div class="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
-    <a href="index.html" class="flex items-center gap-2 font-extrabold text-lg">
+    <a href="/" class="flex items-center gap-2 font-extrabold text-lg">
       <img src="logo-full.png" alt="bday.fm" class="h-8 w-auto object-contain">
     </a>
-    <a href="login.html" class="text-sm font-semibold text-slate-500 hover:text-purple-700">Já tenho conta →</a>
+    <a href="/login" class="text-sm font-semibold text-slate-500 hover:text-purple-700">Já tenho conta →</a>
   </div>
 </header>
 
@@ -68,7 +68,7 @@
     </div>
     <label class="flex items-start gap-2 text-xs text-slate-500 pt-1">
       <input required type="checkbox" class="mt-0.5">
-      Eu li e concordo com os <a href="termos.html" target="_blank" class="text-purple-700 underline">Termos de Uso</a> e a <a href="privacidade.html" target="_blank" class="text-purple-700 underline">Política de Privacidade</a>.
+      Eu li e concordo com os <a href="/termos" target="_blank" class="text-purple-700 underline">Termos de Uso</a> e a <a href="/privacidade" target="_blank" class="text-purple-700 underline">Política de Privacidade</a>.
     </label>
     <button type="submit" class="btn-primary w-full rounded-xl px-6 py-3 mt-2">Criar minha conta</button>
     <p class="text-center text-xs text-slate-400">Ao continuar, você concorda em receber e-mails sobre seu perfil e presentes recebidos.</p>
@@ -127,7 +127,7 @@
       }
       authLogin(data.slug); // mantém o comportamento visual do header/menus
       showToast(`Conta bday.fm/${data.slug} criada com sucesso!`);
-      setTimeout(() => { window.location.href = `perfil.html?user=${data.slug}`; }, 900);
+      setTimeout(() => { window.location.href = `/perfil?user=${data.slug}`; }, 900);
     }).catch(() => {
       showToast('Falha de conexão. Tente novamente.');
       btn.disabled = false;

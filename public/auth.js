@@ -34,7 +34,7 @@ function authLogout() {
   try { sessionStorage.setItem('bdayfm_ignora_sessao_url', '1'); } catch (e) {}
 }
 
-// Atualiza a foto do usuário logado na sessão (chamado ao salvar o perfil em perfil.html),
+// Atualiza a foto do usuário logado na sessão (chamado ao salvar o perfil em /perfil),
 // para que o header em outras páginas reflita a foto escolhida.
 function authSyncAvatar(slug, avatarDataUrl) {
   const session = authGetSession();
@@ -67,7 +67,7 @@ authBootstrapFromUrl();
 // idealmente num <script> no <head>, para redirecionar antes que o conteúdo apareça.
 function authRequireLogin(nextPage) {
   if (!authGetSession()) {
-    window.location.replace(`login.html?next=${encodeURIComponent(nextPage)}`);
+    window.location.replace(`/login?next=${encodeURIComponent(nextPage)}`);
     return false;
   }
   return true;
@@ -136,8 +136,8 @@ function authRenderHeader() {
   const avatarClass = hasPhoto ? 'bg-cover bg-center' : u.grad;
   const avatarStyle = hasPhoto ? ` style="background-image:url('${photo}')"` : '';
   const avatarInner = hasPhoto ? '' : u.initial;
-  const profileHref = `perfil.html?user=${session.slug}&session=${session.slug}`;
-  const walletHref = `carteira.html?session=${session.slug}`;
+  const profileHref = `/perfil?user=${session.slug}&session=${session.slug}`;
+  const walletHref = `/carteira?session=${session.slug}`;
 
   const notifItems = (typeof USERS !== 'undefined') ? buildNotifications(u) : [];
   const notifCount = notifItems.length;
@@ -164,7 +164,7 @@ function authRenderHeader() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-slate-400"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="userMenuDropdown" class="hidden absolute right-0 mt-2 w-52 bg-white border border-gray-100 rounded-xl shadow-lg py-2 z-50">
-          ${session.slug === 'admin' ? '<a href="admin.html" class="block px-4 py-2 text-sm font-bold text-purple-700 hover:bg-purple-50">Painel do administrador</a>' : ''}
+          ${session.slug === 'admin' ? '<a href="/admin" class="block px-4 py-2 text-sm font-bold text-purple-700 hover:bg-purple-50">Painel do administrador</a>' : ''}
           <a href="${profileHref}" class="block px-4 py-2 text-sm hover:bg-slate-50">Meu perfil</a>
           <a href="${walletHref}" class="block px-4 py-2 text-sm hover:bg-slate-50">Minha carteira</a>
           <button id="logoutBtn" type="button" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Sair</button>
@@ -176,7 +176,7 @@ function authRenderHeader() {
     document.addEventListener('click', () => dropdown.classList.add('hidden'));
     document.getElementById('logoutBtn').addEventListener('click', () => {
       authLogout();
-      window.location.href = 'index.html';
+      window.location.href = '/';
     });
 
     const notifBtn = document.getElementById('notifBtn');
@@ -200,13 +200,13 @@ function authRenderHeader() {
         <span id="notifBadgeMobile" class="${notifCount > 0 ? '' : 'hidden'} w-2 h-2 rounded-full bg-pink-500"></span>
       </button>
       <div id="notifListMobile" class="hidden rounded-xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">${notifListHTML(notifItems)}</div>
-      ${session.slug === 'admin' ? '<a href="admin.html" class="btn-primary px-4 py-2 rounded-xl text-sm text-center font-bold">Painel do administrador</a>' : ''}
+      ${session.slug === 'admin' ? '<a href="/admin" class="btn-primary px-4 py-2 rounded-xl text-sm text-center font-bold">Painel do administrador</a>' : ''}
       <a href="${profileHref}" class="btn-secondary px-4 py-2 rounded-xl text-sm text-center">Meu perfil</a>
       <a href="${walletHref}" class="btn-secondary px-4 py-2 rounded-xl text-sm text-center">Minha carteira</a>
       <button id="logoutBtnMobile" type="button" class="text-sm font-semibold text-red-600 text-left">Sair</button>`;
     document.getElementById('logoutBtnMobile').addEventListener('click', () => {
       authLogout();
-      window.location.href = 'index.html';
+      window.location.href = '/';
     });
     document.getElementById('notifBtnMobile').addEventListener('click', () => {
       document.getElementById('notifListMobile').classList.toggle('hidden');
@@ -252,7 +252,7 @@ function authCarrySessionInLinks() {
   if (!session) return;
   document.querySelectorAll('a[href]').forEach(a => {
     const href = a.getAttribute('href');
-    if (!href || !/^[a-zA-Z0-9_\-]+\.html/.test(href)) return;
+    if (!href || !/^\/[a-zA-Z0-9_\-]/.test(href)) return;
     const hashIdx = href.indexOf('#');
     const hash = hashIdx >= 0 ? href.slice(hashIdx) : '';
     const pathAndQuery = hashIdx >= 0 ? href.slice(0, hashIdx) : href;

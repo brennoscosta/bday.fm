@@ -16,7 +16,7 @@
   // Guard: só a conta administrativa entra aqui. Roda o quanto antes.
   (function(){
     var s = authGetSession();
-    if (!s || (s.slug !== 'admin' && s.role !== 'ADMIN')) { window.location.replace('login.html?next=admin.html'); }
+    if (!s || (s.slug !== 'admin' && s.role !== 'ADMIN')) { window.location.replace('/login?next=/admin'); }
   })();
 </script>
 <script src="icons.js"></script>
@@ -85,7 +85,7 @@
 <header class="sticky top-0 z-50 border-b adm-line" style="background:var(--adm-card)">
   <div class="h-14 flex items-center gap-3 px-4 sm:px-6">
     <button id="admMenuBtn" class="act-btn md:hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
-    <a href="index.html" class="flex items-center gap-2">
+    <a href="/" class="flex items-center gap-2">
       <img src="logo-full.png" alt="bday.fm" class="h-6 w-auto object-contain">
     </a>
     <span class="badge badge-purple">Painel Admin</span>
@@ -95,7 +95,7 @@
       <div id="globalSearchResults" class="hidden absolute top-full left-0 right-0 mt-1 adm-card shadow-xl z-[80] max-h-96 overflow-y-auto p-1.5"></div>
     </div>
     <div class="ml-auto flex items-center gap-2 text-sm">
-      <a href="feed.html?enter=admin" title="Ver o site logado como admin (saldo ilimitado para testes; fica logado ao clicar nas outras páginas)" class="adm-muted hover:text-purple-600 text-[13px] font-semibold hidden sm:block">Ver site</a>
+      <a href="/feed?enter=admin" title="Ver o site logado como admin (saldo ilimitado para testes; fica logado ao clicar nas outras páginas)" class="adm-muted hover:text-purple-600 text-[13px] font-semibold hidden sm:block">Ver site</a>
       <span class="adm-muted hidden sm:block">·</span>
       <span class="text-[13px] font-semibold adm-muted hidden sm:block">admin@bday.fm</span>
       <div class="w-8 h-8 rounded-full grad-bg text-white flex items-center justify-center text-xs font-bold">A</div>
@@ -322,10 +322,10 @@ const ADMIN_KB = [
 const ADMIN_CHATS = []; // conversas reais do chat virão do backend
 
 const ADMIN_PAGES = [
-  ['index.html','Página inicial'], ['explorar.html','Explorar perfis'], ['feed.html','Feed'],
-  ['presentes.html','Enviar presentes'], ['perfil.html','Perfil (conta logada)'], ['carteira.html','Carteira'],
-  ['loja.html','Loja'], ['recap.html','Recap'], ['cadastro.html','Cadastro'], ['login.html','Login'],
-  ['sobre.html','Sobre'], ['termos.html','Termos de uso'], ['privacidade.html','Privacidade'], ['404.html','Página 404'],
+  ['/','Página inicial'], ['/explorar','Explorar perfis'], ['/feed','Feed'],
+  ['/presentes','Enviar presentes'], ['/perfil','Perfil (conta logada)'], ['/carteira','Carteira'],
+  ['/loja','Loja'], ['/recap','Recap'], ['/cadastro','Cadastro'], ['/login','Login'],
+  ['/sobre','Sobre'], ['/termos','Termos de uso'], ['/privacidade','Privacidade'], ['404.html','Página 404'],
 ];
 
 const CHART_DAYS = (() => {
@@ -652,7 +652,7 @@ function renderUserRows(){
       </td>
       <td class="font-bold">${fmtBRL(u.saldo)}</td>
       <td class="whitespace-nowrap">
-        <span class="act-btn" title="Ver perfil" onclick="window.location.href='perfil.html?user=${u.handle}';">${AI.eye}</span>
+        <span class="act-btn" title="Ver perfil" onclick="window.location.href='/perfil?user=${u.handle}';">${AI.eye}</span>
         <span class="act-btn" title="Editar" onclick="showToast('Edição de usuário (demo).')">${AI.edit}</span>
         <span class="act-btn danger" title="Excluir" onclick="showToast('Usuário excluído (demo).')">${AI.trash}</span>
       </td>
@@ -2080,7 +2080,7 @@ applyDark(!!admGet('dark', false));
 // Sair
 const logoutLink = document.getElementById('logoutLink');
 logoutLink.innerHTML = AI.exit + '<span>Sair</span>';
-logoutLink.addEventListener('click', () => { authLogout(); window.location.href = 'index.html'; });
+logoutLink.addEventListener('click', () => { authLogout(); window.location.href = '/'; });
 
 // Menu mobile
 document.getElementById('admMenuBtn').addEventListener('click', () => document.getElementById('admSide').classList.toggle('open'));

@@ -20,19 +20,19 @@
 
 <header class="sticky top-0 z-50 bg-white/85 backdrop-blur border-b border-gray-100">
   <div class="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
-    <a href="index.html" class="flex items-center gap-2 font-extrabold text-lg">
+    <a href="/" class="flex items-center gap-2 font-extrabold text-lg">
       <img src="logo-full.png" alt="bday.fm" class="h-8 w-auto object-contain">
     </a>
     <nav class="hidden md:flex items-center gap-8">
-      <a href="index.html#como-funciona" class="nav-link">Como Funciona</a>
-      <a href="explorar.html" class="nav-link">Explorar Celebrações</a>
-      <a href="feed.html" class="nav-link active">Feed</a>
-      <a href="presentes.html" class="nav-link">Presentes</a>
-      <a href="carteira.html" id="navCarteiraD" class="nav-link hidden">Carteira</a>
+      <a href="/#como-funciona" class="nav-link">Como Funciona</a>
+      <a href="/explorar" class="nav-link">Explorar Celebrações</a>
+      <a href="/feed" class="nav-link active">Feed</a>
+      <a href="/presentes" class="nav-link">Presentes</a>
+      <a href="/carteira" id="navCarteiraD" class="nav-link hidden">Carteira</a>
     </nav>
     <div id="authArea" class="hidden md:flex items-center gap-3">
-      <a href="login.html" class="btn-secondary px-4 py-2 rounded-xl text-sm">Entrar</a>
-      <a href="cadastro.html" class="btn-primary px-4 py-2 rounded-xl text-sm">Criar conta grátis</a>
+      <a href="/login" class="btn-secondary px-4 py-2 rounded-xl text-sm">Entrar</a>
+      <a href="/cadastro" class="btn-primary px-4 py-2 rounded-xl text-sm">Criar conta grátis</a>
     </div>
     <button id="menuBtn" class="md:hidden p-2" aria-label="Abrir menu" aria-expanded="false">
       <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>
@@ -40,14 +40,14 @@
   </div>
   <div id="mobileMenu" class="md:hidden">
     <div class="px-5 pb-4 flex flex-col gap-3 border-t border-gray-100 pt-3">
-      <a href="index.html#como-funciona" class="nav-link">Como Funciona</a>
-      <a href="explorar.html" class="nav-link">Explorar Celebrações</a>
-      <a href="feed.html" class="nav-link">Feed</a>
-      <a href="presentes.html" class="nav-link">Presentes</a>
-      <a href="carteira.html" id="navCarteiraM" class="nav-link hidden">Carteira</a>
+      <a href="/#como-funciona" class="nav-link">Como Funciona</a>
+      <a href="/explorar" class="nav-link">Explorar Celebrações</a>
+      <a href="/feed" class="nav-link">Feed</a>
+      <a href="/presentes" class="nav-link">Presentes</a>
+      <a href="/carteira" id="navCarteiraM" class="nav-link hidden">Carteira</a>
       <div id="authAreaMobile" class="flex flex-col gap-3">
-        <a href="login.html" class="btn-secondary px-4 py-2 rounded-xl text-sm text-center">Entrar</a>
-        <a href="cadastro.html" class="btn-primary px-4 py-2 rounded-xl text-sm text-center">Criar conta grátis</a>
+        <a href="/login" class="btn-secondary px-4 py-2 rounded-xl text-sm text-center">Entrar</a>
+        <a href="/cadastro" class="btn-primary px-4 py-2 rounded-xl text-sm text-center">Criar conta grátis</a>
       </div>
     </div>
   </div>
@@ -236,7 +236,7 @@
         <div class="text-xs text-slate-400 mt-0.5">R$ 32</div>
       </button>
     </div>
-    <a href="presentes.html" class="text-xs text-purple-600 font-semibold hover:underline mt-3 inline-block">Ver catálogo completo de presentes</a>
+    <a href="/presentes" class="text-xs text-purple-600 font-semibold hover:underline mt-3 inline-block">Ver catálogo completo de presentes</a>
     <p class="text-xs text-slate-400 mt-3">Demonstração — nenhum pagamento real será processado.</p>
     <button id="confirmFeedGiftBtn" disabled class="btn-primary w-full rounded-xl px-6 py-3 mt-2 opacity-50 cursor-not-allowed" style="background:linear-gradient(90deg,#EC4899,#7C3AED)">Escolha um presente</button>
   </div>
@@ -266,7 +266,7 @@
   // avatar arredondado, nome + selo de posição. Os valores em R$ não são exibidos (privacidade).
   function rankItemHTML(u, rank) {
     return `
-    <a href="perfil.html?user=${u.slug}" class="flex items-center gap-3 py-2.5 -mx-2 px-2 rounded-2xl hover:bg-slate-50 transition">
+    <a href="/perfil?user=${u.slug}" class="flex items-center gap-3 py-2.5 -mx-2 px-2 rounded-2xl hover:bg-slate-50 transition">
       <div class="relative shrink-0">
         <div class="w-11 h-11 rounded-2xl ${u.grad} flex items-center justify-center text-white font-bold text-sm">${u.initial}</div>
         <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white border border-slate-100 shadow-sm flex items-center justify-center text-[9.5px] font-extrabold text-slate-500">${rank}</span>
@@ -294,7 +294,7 @@
     const daysNum = parseInt(u.daysLabel, 10) || 0;
     const pct = Math.max(6, Math.min(100, Math.round((30 - daysNum) / 30 * 100)));
     return `
-    <a href="perfil.html?user=${u.slug}" class="flex items-center gap-3 py-2.5 -mx-2 px-2 rounded-2xl hover:bg-slate-50 transition">
+    <a href="/perfil?user=${u.slug}" class="flex items-center gap-3 py-2.5 -mx-2 px-2 rounded-2xl hover:bg-slate-50 transition">
       <div class="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center text-white shrink-0">${iconSize(ICONS.cake, 'w-4 h-4')}</div>
       <div class="flex-1 min-w-0">
         <div class="text-sm font-semibold text-slate-800 truncate">${u.name}</div>
@@ -358,7 +358,7 @@
       ? `<div class="aspect-[4/3] sm:aspect-auto sm:h-full min-h-[110px] bg-cover bg-center" style="background-image:url(${d.image})"></div>`
       : `<div class="aspect-[4/3] sm:aspect-auto sm:h-full min-h-[110px] flex items-center justify-center" style="background:linear-gradient(135deg,#7C3AED,#EC4899)">${iconSize(ICONS.gift, 'w-8 h-8 text-white/70')}</div>`;
     return `
-    <a href="perfil.html?user=${d.slug}" class="block px-4 sm:px-5">
+    <a href="/perfil?user=${d.slug}" class="block px-4 sm:px-5">
       <div class="rounded-2xl border border-slate-100 overflow-hidden grid sm:grid-cols-[minmax(0,130px)_1fr]">
         ${imagePanel}
         <div class="p-3.5 min-w-0">
@@ -375,7 +375,7 @@
   }
   function recapAttachHTML(d) {
     return `
-    <a href="recap.html?user=${d.slug}" class="block px-4 sm:px-5">
+    <a href="/recap?user=${d.slug}" class="block px-4 sm:px-5">
       <div class="rounded-xl border border-purple-100 bg-purple-50/60 p-3">
         <div class="text-xs font-bold text-purple-700">Meu Recap ${d.year}</div>
         <div class="grid grid-cols-3 gap-2 mt-2 text-center">
@@ -445,11 +445,11 @@
     return `
     <article class="bg-white border border-slate-200 rounded-lg p-4 sm:p-5" data-post-id="${postId}" data-post-slug="${u.slug}" data-post-mode="${mode}">
       <div class="flex items-start gap-2.5">
-        <a href="perfil.html?user=${u.slug}" class="shrink-0">
+        <a href="/perfil?user=${u.slug}" class="shrink-0">
           ${avatarHTML}
         </a>
         <div class="min-w-0 flex-1">
-          <a href="perfil.html?user=${u.slug}" class="font-semibold text-sm text-slate-800 hover:underline">${u.name}</a>
+          <a href="/perfil?user=${u.slug}" class="font-semibold text-sm text-slate-800 hover:underline">${u.name}</a>
           <div class="text-xs text-slate-400 truncate">@${u.handle} · ${when}</div>
         </div>
         <button data-demo-action="Opções da publicação — em breve." class="text-slate-400 hover:bg-slate-100 rounded-full p-1.5 -mr-1.5 shrink-0">${ICONS.moreHorizontal}</button>
@@ -616,7 +616,7 @@
   document.querySelectorAll('[data-feed-share-network]').forEach(btn => {
     btn.addEventListener('click', () => {
       const network = btn.getAttribute('data-feed-share-network');
-      const url = encodeURIComponent(`https://bday.fm/perfil.html?user=${activeSharePostSlug}`);
+      const url = encodeURIComponent(`https://bday.fm//perfil?user=${activeSharePostSlug}`);
       if (network === 'facebook') {
         window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'noopener,noreferrer,width=600,height=600');
         return;
@@ -629,10 +629,10 @@
       // celular, tentamos abrir o menu nativo de compartilhar; sem suporte, copiamos o
       // link e avisamos para colar no app.
       if (navigator.share) {
-        navigator.share({ title: 'bday.fm', url: `https://bday.fm/perfil.html?user=${activeSharePostSlug}` }).catch(() => {});
+        navigator.share({ title: 'bday.fm', url: `https://bday.fm//perfil?user=${activeSharePostSlug}` }).catch(() => {});
         return;
       }
-      feedCopyToClipboard(`https://bday.fm/perfil.html?user=${activeSharePostSlug}`).then(() => {
+      feedCopyToClipboard(`https://bday.fm//perfil?user=${activeSharePostSlug}`).then(() => {
         showToast(`Link copiado! Cole no ${network === 'instagram' ? 'Instagram' : 'TikTok'} para compartilhar.`);
       });
     });
@@ -880,7 +880,7 @@
     const meUser = typeof findAnyUser === 'function' ? findAnyUser(session.slug) : null;
     if (!meUser || !meUser.groupGoal) {
       showToast('Crie seu BDAY no perfil antes de compartilhar (demo).');
-      window.location.href = `perfil.html?user=${session.slug}`;
+      window.location.href = `/perfil?user=${session.slug}`;
       return;
     }
     refreshFeedAttachButtons();
@@ -888,7 +888,7 @@
     feedAttachBdayBtn.click();
   });
   function goToLoginFromHereFeed() {
-    window.location.href = `login.html?next=${encodeURIComponent('feed.html')}`;
+    window.location.href = `/login?next=${encodeURIComponent('/feed')}`;
   }
 </script>
 </body>

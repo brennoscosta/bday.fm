@@ -30,7 +30,9 @@ const securityHeaders = [
 ];
 
 // URLs .html continuam funcionando exatamente como hoje (rewrite, sem redirect):
-// links compartilhados não quebram.
+// URLs limpas: os links do site agora são /explorar (sem .html). Os endereços
+// antigos com .html continuam válidos via REDIRECT 301 para a versão limpa, então
+// nenhum link já compartilhado quebra e o SEO é preservado.
 const pageNames = [
   "explorar", "feed", "presentes", "loja", "carteira", "login",
   "cadastro", "perfil", "recap", "sobre", "termos", "privacidade",
@@ -39,11 +41,11 @@ const pageNames = [
 const nextConfig = {
   output: "standalone",
   poweredByHeader: false,
-  async rewrites() {
+  async redirects() {
     return [
-      { source: "/index.html", destination: "/" },
-      { source: "/admin.html", destination: "/admin" },
-      ...pageNames.map((p) => ({ source: `/${p}.html`, destination: `/${p}` })),
+      { source: "/index.html", destination: "/", permanent: true },
+      { source: "/admin.html", destination: "/admin", permanent: true },
+      ...pageNames.map((p) => ({ source: `/${p}.html`, destination: `/${p}`, permanent: true })),
     ];
   },
   async headers() {

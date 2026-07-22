@@ -310,8 +310,8 @@ function findAnyUser(slug) {
   // Contas fixas de demonstração (ana, rafael... e a admin) começam só como objeto
   // em memória — mas qualquer edição feita nelas (perfil, moldura, acessório, emblema,
   // compras na loja) é gravada em getCustomUsers() do mesmo jeito que uma conta criada
-  // pelo cadastro (ver persistIfCustomUser em perfil.html e persistirConquistas em
-  // loja.html). Por isso o registro customizado tem PRIORIDADE aqui: se existir, ele é
+  // pelo cadastro (ver persistIfCustomUser em /perfil e persistirConquistas em
+  // /loja). Por isso o registro customizado tem PRIORIDADE aqui: se existir, ele é
   // mesclado por cima do perfil fixo (que serve de base — amigos, presentes, recap etc.
   // continuam vindo do fixo, só o que foi de fato alterado é sobrescrito).
   const base = slug === 'admin' ? ADMIN_PROFILE : (USERS[slug] || null);
@@ -341,7 +341,7 @@ function getUserFromQuery() {
   const ownProfile = session && findAnyUser(session.slug);
   if (ownProfile) return ownProfile;
   // Nenhuma conta válida: volta para o login (não existe mais perfil fictício padrão).
-  try { window.location.href = 'login.html'; } catch (e) {}
+  try { window.location.href = '/login'; } catch (e) {}
   return { name: '', handle: '', initial: '?', grad: 'bg-slate-400', avatar: null,
     status: '', daysLabel: null, isToday: false, received: 0, friends: 0, friendsList: [],
     giftsCount: 0, goal: null, frame: null, inBirthdayMonth: false, wonFrames: [], wonBadges: [],

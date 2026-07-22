@@ -74,9 +74,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function goToLoginFromHere() {
     // Preserva a página E os parâmetros atuais (ex: ?user=rafael) para que, depois do login,
     // a pessoa volte exatamente para quem ela queria presentear — não sempre para o perfil padrão.
-    const page = window.location.pathname.split('/').pop() || 'index.html';
+    const page = window.location.pathname || '/';
     const next = encodeURIComponent(page + window.location.search);
-    window.location.href = `login.html?next=${next}`;
+    window.location.href = `/login?next=${next}`;
   }
 
   // Generic modal open/close via data attributes
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       showToast(`Quase lá! Crie sua conta para ativar bday.fm/${val}...`);
-      setTimeout(() => { window.location.href = `cadastro.html?usuario=${encodeURIComponent(val)}`; }, 700);
+      setTimeout(() => { window.location.href = `/cadastro?usuario=${encodeURIComponent(val)}`; }, 700);
     });
   }
 

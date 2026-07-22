@@ -22,10 +22,10 @@
 
 <header class="sticky top-0 z-50 bg-white/85 backdrop-blur border-b border-gray-100">
   <div class="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
-    <a href="index.html" class="flex items-center gap-2 font-extrabold text-lg">
+    <a href="/" class="flex items-center gap-2 font-extrabold text-lg">
       <img src="logo-full.png" alt="bday.fm" class="h-8 w-auto object-contain">
     </a>
-    <a id="pBackLink" href="perfil.html" class="text-sm font-semibold text-slate-500 hover:text-purple-700">← Voltar ao perfil</a>
+    <a id="pBackLink" href="/perfil" class="text-sm font-semibold text-slate-500 hover:text-purple-700">← Voltar ao perfil</a>
   </div>
 </header>
 
@@ -120,7 +120,7 @@
   </div>
 
   <div class="mt-6 flex flex-col sm:flex-row gap-3 reveal">
-    <a id="rProfileLink" href="perfil.html" class="btn-secondary flex-1 rounded-xl px-6 py-3 text-center">Ver meu perfil</a>
+    <a id="rProfileLink" href="/perfil" class="btn-secondary flex-1 rounded-xl px-6 py-3 text-center">Ver meu perfil</a>
   </div>
 </main>
 
@@ -143,8 +143,8 @@
   const firstName = u.name.split(' ')[0];
 
   document.getElementById('pageTitle').textContent = `Recap ${r.year} de ${firstName} — bday.fm`;
-  document.getElementById('pBackLink').href = `perfil.html?user=${u.slug}`;
-  document.getElementById('rProfileLink').href = `perfil.html?user=${u.slug}`;
+  document.getElementById('pBackLink').href = `/perfil?user=${u.slug}`;
+  document.getElementById('rProfileLink').href = `/perfil?user=${u.slug}`;
 
   const avatar = document.getElementById('rAvatar');
   avatar.textContent = u.initial;
