@@ -24,11 +24,20 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ slug: strin
   // client-side (users.js) não reconhecia o slug e caía no perfil de quem
   // estivesse logado no navegador — corrige na origem, além do fix em users.js.
   if (decodedRaw !== slug) {
-    // req.nextUrl.origin honra X-Forwarded-Host (atrás do proxy do CapRover);
-    // new URL(req.url) usava o host interno do container e quebrava o redirect
-    // em produção (ex.: redirecionava para https://<container-id>/lionenzo).
-    return NextResponse.redirect(new URL(`/${slug}`, req.nextUrl.origin), 301);
+    return NextResponse.redirect(new URL(`/${slug}`, publicOrigin(req)), 301);
   }
 
   return htmlResponse("perfil.html");
+}
+
+// Nem req.nextUrl.origin nem req.url são confiáveis atrás do proxy do
+// CapRover: em produção ambos resolvem para o hostname interno do container
+// (ex.: https://23dd4819c338:80), não para o domínio público — um redirect
+// absoluto construído com eles quebra (o navegador tenta abrir o hostname
+// interno, que não resolve). Os cabeçalhos X-Forwarded-Host/Proto e Host,
+// esses sim, chegam corretos (confirmado via /api/debug/headers em produção).
+function publicOrigin(req: NextRequest): string {
+  const proto = req.headers.get("x-forwarded-proto") || "https";
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+  return host ? `${proto}://${host}` : req.nextUrl.origin;
 }
