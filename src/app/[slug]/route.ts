@@ -24,9 +24,10 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ slug: strin
   // client-side (users.js) não reconhecia o slug e caía no perfil de quem
   // estivesse logado no navegador — corrige na origem, além do fix em users.js.
   if (decodedRaw !== slug) {
-    const url = new URL(req.url);
-    url.pathname = `/${slug}`;
-    return NextResponse.redirect(url, 301);
+    // req.nextUrl.origin honra X-Forwarded-Host (atrás do proxy do CapRover);
+    // new URL(req.url) usava o host interno do container e quebrava o redirect
+    // em produção (ex.: redirecionava para https://<container-id>/lionenzo).
+    return NextResponse.redirect(new URL(`/${slug}`, req.nextUrl.origin), 301);
   }
 
   return htmlResponse("perfil.html");
