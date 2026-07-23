@@ -746,7 +746,7 @@ function renderUserRows(){
       </td>
       <td class="font-bold">${fmtBRL(u.saldo)}</td>
       <td class="whitespace-nowrap">
-        <span class="act-btn" title="Ver perfil" onclick="window.location.href='/perfil?user=${u.handle}';">${AI.eye}</span>
+        <span class="act-btn" title="Ver perfil" onclick="window.location.href='/${u.handle}';">${AI.eye}</span>
         <span class="act-btn" title="Editar" onclick="showToast('Edição de usuário (demo).')">${AI.edit}</span>
         <span class="act-btn danger" title="Excluir" onclick="showToast('Usuário excluído (demo).')">${AI.trash}</span>
       </td>

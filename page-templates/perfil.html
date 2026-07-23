@@ -1577,12 +1577,12 @@
   // baixada) — abrimos a janela de compartilhamento oficial de cada rede com o link do BDAY.
   const goalShareFacebookBtn = document.getElementById('goalShareFacebook');
   if (goalShareFacebookBtn) goalShareFacebookBtn.addEventListener('click', () => {
-    const url = encodeURIComponent(`https://bday.fm//perfil?user=${u.slug}`);
+    const url = encodeURIComponent(`https://bday.fm/${u.slug}`);
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'noopener,noreferrer,width=600,height=600');
   });
   const goalShareLinkedinBtn = document.getElementById('goalShareLinkedin');
   if (goalShareLinkedinBtn) goalShareLinkedinBtn.addEventListener('click', () => {
-    const url = encodeURIComponent(`https://bday.fm//perfil?user=${u.slug}`);
+    const url = encodeURIComponent(`https://bday.fm/${u.slug}`);
     window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank', 'noopener,noreferrer,width=600,height=600');
   });
 
@@ -2145,7 +2145,7 @@
           const freshSession = authGetSession();
           if (freshSession) authSaveSession({ ...freshSession, slug: savedSlug });
         }
-        window.location.href = '/perfil?user=' + encodeURIComponent(savedSlug);
+        window.location.href = '/' + encodeURIComponent(savedSlug);
         return;
       }
 

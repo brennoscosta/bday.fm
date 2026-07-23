@@ -371,9 +371,19 @@ function findAnyUser(slug) {
   return null;
 }
 
+// URL pública amigável: bday.fm/<usuario> — extrai o slug do caminho quando a
+// página não recebeu ?user= (rota /[slug] do servidor serve o perfil).
+function bdaySlugFromPath() {
+  const PAGES = ['perfil', 'feed', 'loja', 'carteira', 'presentes', 'explorar', 'recap',
+    'login', 'cadastro', 'sobre', 'termos', 'privacidade', 'admin', 'index', 'api'];
+  const m = window.location.pathname.match(/^\/([a-z0-9][a-z0-9.\-]{1,29})\/?$/);
+  if (!m || PAGES.indexOf(m[1]) !== -1) return null;
+  return m[1];
+}
+
 function getUserFromQuery() {
   const params = new URLSearchParams(window.location.search);
-  const slug = params.get('user');
+  const slug = params.get('user') || bdaySlugFromPath();
   const found = findAnyUser(slug);
   if (found) return found;
   // Sem ?user= válido na URL: se houver alguém logado, abre o perfil de quem está

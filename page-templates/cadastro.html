@@ -127,7 +127,7 @@
       }
       authLogin(data.slug); // mantém o comportamento visual do header/menus
       showToast(`Conta bday.fm/${data.slug} criada com sucesso!`);
-      setTimeout(() => { window.location.href = `/perfil?user=${data.slug}`; }, 900);
+      setTimeout(() => { window.location.href = `/${data.slug}`; }, 900);
     }).catch(() => {
       showToast('Falha de conexão. Tente novamente.');
       btn.disabled = false;

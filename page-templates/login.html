@@ -80,7 +80,7 @@
       authLogin(data.slug, data.role); // guarda também o papel (ADMIN abre o painel)
       showToast('Login realizado!');
       const next = new URLSearchParams(window.location.search).get('next');
-      let dest = next && /^\/[a-zA-Z0-9_\-]+(\?.*)?$/.test(next) ? next : `/perfil?user=${data.slug}`;
+      let dest = next && /^\/[a-zA-Z0-9_\-]+(\?.*)?$/.test(next) ? next : `/${data.slug}`;
       if (data.role === 'ADMIN') { dest = '/admin'; }   // conta administrativa vai para o painel
       setTimeout(() => { window.location.href = dest; }, 700);
     }).catch(() => {

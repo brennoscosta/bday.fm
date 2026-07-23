@@ -136,8 +136,8 @@ function authRenderHeader() {
   const avatarClass = hasPhoto ? 'bg-cover bg-center' : u.grad;
   const avatarStyle = hasPhoto ? ` style="background-image:url('${photo}')"` : '';
   const avatarInner = hasPhoto ? '' : u.initial;
-  const profileHref = `/perfil?user=${session.slug}&session=${session.slug}`;
-  const walletHref = `/carteira?session=${session.slug}`;
+  const profileHref = `/${session.slug}`;
+  const walletHref = `/carteira`;
 
   const notifItems = (typeof USERS !== 'undefined') ? buildNotifications(u) : [];
   const notifCount = notifItems.length;
@@ -248,6 +248,9 @@ function authRenderHeader() {
 // para o login "atravessar" a navegação mesmo se o armazenamento não for
 // compartilhado entre arquivos (comum ao abrir o protótipo via file://).
 function authCarrySessionInLinks() {
+  // Só é necessária ao abrir o protótipo direto do disco (file://), onde não há
+  // cookies/localStorage compartilhados. No site real as URLs ficam limpas.
+  if (window.location.protocol !== 'file:') return;
   const session = authGetSession();
   if (!session) return;
   document.querySelectorAll('a[href]').forEach(a => {

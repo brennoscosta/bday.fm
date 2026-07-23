@@ -143,8 +143,8 @@
   const firstName = u.name.split(' ')[0];
 
   document.getElementById('pageTitle').textContent = `Recap ${r.year} de ${firstName} — bday.fm`;
-  document.getElementById('pBackLink').href = `/perfil?user=${u.slug}`;
-  document.getElementById('rProfileLink').href = `/perfil?user=${u.slug}`;
+  document.getElementById('pBackLink').href = `/${u.slug}`;
+  document.getElementById('rProfileLink').href = `/${u.slug}`;
 
   const avatar = document.getElementById('rAvatar');
   avatar.textContent = u.initial;

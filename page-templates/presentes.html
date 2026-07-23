@@ -1048,7 +1048,7 @@
       ? `Você tem <b>${pontos} pontos</b> — resgate molduras e acessórios no seu perfil.`
       : 'Você ainda não tem pontos — cada presente enviado vale <b>40 pontos</b>.';
     const linkR = document.getElementById('gmRecompensasLink');
-    if (linkR) { linkR.href = `/perfil?user=${lojaEu.slug}`; linkR.textContent = 'Resgatar no seu perfil →'; }
+    if (linkR) { linkR.href = `/${lojaEu.slug}`; linkR.textContent = 'Resgatar no seu perfil →'; }
     document.getElementById('gmRankingsTxt').innerHTML = envios.length > 0
       ? `Você tem <b>${envios.length} envio${envios.length === 1 ? '' : 's'}</b> este mês — continue presenteando para subir no ranking!`
       : 'Envie seu primeiro presente para entrar no ranking do mês.';
