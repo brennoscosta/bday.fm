@@ -100,14 +100,19 @@ function buildNotifications(u) {
 }
 
 function notifListHTML(items) {
-  return items.map(n => `
-    <div class="flex items-start gap-3 px-4 py-2.5 hover:bg-slate-50${n.unread ? ' bg-purple-50/40' : ''}">
+  // Item clicável quando há um destino (href) — sem isso o sininho mostrava a
+  // notificação mas não dava nenhum jeito de "abrir" (ex.: Torpedo recebido).
+  return items.map(n => {
+    const cls = `flex items-start gap-3 px-4 py-2.5 hover:bg-slate-50 transition${n.unread ? ' bg-purple-50/40' : ''}`;
+    const inner = `
       <div class="w-8 h-8 rounded-full ${n.iconBg} flex items-center justify-center shrink-0">${n.icon}</div>
       <div class="min-w-0">
         <div class="text-sm leading-snug">${n.text}</div>
         <div class="text-xs text-slate-400 mt-0.5">${n.when}</div>
-      </div>
-    </div>`).join('');
+      </div>`;
+    if (n.href) return `<a href="${n.href}" class="${cls}">${inner}</a>`;
+    return `<div class="${cls}">${inner}</div>`;
+  }).join('');
 }
 
 // ---- Notificações REAIS (servidor) — sininho + página /atividades ----
@@ -132,19 +137,32 @@ function bdayTimeAgo(iso) {
 function bdayNotifFormat(n) {
   const who = n.actor ? `<b>${bdaySanitizeText(n.actor.name)}</b>` : 'Alguém';
   const d = n.data || {};
-  const map = {
-    FRIEND_REQUEST: { icon: NOTIF_ICON_USERS, bg: 'bg-emerald-100 text-emerald-600', text: `${who} quer ser seu amigo` },
-    FRIEND_REQUEST_SENT: { icon: NOTIF_ICON_USERS, bg: 'bg-slate-100 text-slate-500', text: `Você enviou um pedido de amizade para ${who}` },
-    FRIEND_ACCEPT: { icon: NOTIF_ICON_USERS, bg: 'bg-emerald-100 text-emerald-600', text: `${who} aceitou seu pedido de amizade` },
-    FRIEND_ACCEPTED_BY_YOU: { icon: NOTIF_ICON_USERS, bg: 'bg-emerald-100 text-emerald-600', text: `Você e ${who} agora são amigos` },
-    GIFT: { icon: NOTIF_ICON_GIFT, bg: 'bg-purple-100 text-purple-600', text: `${who} te enviou ${d.gift ? bdaySanitizeText(d.gift) : 'um presente'}${d.emoji ? ' ' + d.emoji : ''}` },
-    TORPEDO: { icon: NOTIF_ICON_MSG, bg: 'bg-blue-100 text-blue-600', text: `${who} te enviou um Torpedo 💌` },
-    GOAL_CONTRIBUTION: { icon: NOTIF_ICON_SPARKLE, bg: 'bg-amber-100 text-amber-600', text: `${who} contribuiu no seu BDAY${d.amount ? ` (R$ ${Number(d.amount).toFixed(2).replace('.', ',')})` : ''}` },
-    POST_LIKE: { icon: NOTIF_ICON_HEART, bg: 'bg-pink-100 text-pink-600', text: `${who} curtiu sua publicação` },
-    POST_COMMENT: { icon: NOTIF_ICON_MSG, bg: 'bg-blue-100 text-blue-600', text: `${who} comentou na sua publicação${d.excerpt ? `: “${bdaySanitizeText(d.excerpt)}”` : ''}` },
+  // Quem está vendo a notificação (destinatário) — presentes/torpedos aparecem
+  // na lista de "Presentes e Torpedos recebidos" do PRÓPRIO perfil de quem
+  // recebeu, não no perfil de quem enviou. Sem isso, clicar num Torpedo levava
+  // pro perfil do remetente, onde a mensagem não aparece — parecia "quebrado".
+  const own = (typeof authGetSession === 'function') ? authGetSession() : null;
+  const ownHref = own && own.slug ? `/${own.slug}#presentes-recebidos` : null;
+  const actorHref = n.actor ? `/${n.actor.slug}` : null;
+  const excerpt = (t) => {
+    if (!t) return '';
+    const clean = bdaySanitizeText(t);
+    const short = clean.length > 70 ? clean.slice(0, 70) + '…' : clean;
+    return ` — <span class="text-slate-500">“${short}”</span>`;
   };
-  const m = map[n.type] || { icon: NOTIF_ICON_SPARKLE, bg: 'bg-purple-100 text-purple-600', text: 'Nova atividade' };
-  return { icon: m.icon, iconBg: m.bg, text: m.text, when: bdayTimeAgo(n.createdAt), unread: !n.read, actorSlug: n.actor ? n.actor.slug : null };
+  const map = {
+    FRIEND_REQUEST: { icon: NOTIF_ICON_USERS, bg: 'bg-emerald-100 text-emerald-600', text: `${who} quer ser seu amigo`, href: actorHref },
+    FRIEND_REQUEST_SENT: { icon: NOTIF_ICON_USERS, bg: 'bg-slate-100 text-slate-500', text: `Você enviou um pedido de amizade para ${who}`, href: actorHref },
+    FRIEND_ACCEPT: { icon: NOTIF_ICON_USERS, bg: 'bg-emerald-100 text-emerald-600', text: `${who} aceitou seu pedido de amizade`, href: actorHref },
+    FRIEND_ACCEPTED_BY_YOU: { icon: NOTIF_ICON_USERS, bg: 'bg-emerald-100 text-emerald-600', text: `Você e ${who} agora são amigos`, href: actorHref },
+    GIFT: { icon: NOTIF_ICON_GIFT, bg: 'bg-purple-100 text-purple-600', text: `${who} te enviou ${d.gift ? bdaySanitizeText(d.gift) : 'um presente'}${d.emoji ? ' ' + d.emoji : ''}${excerpt(d.message)}`, href: ownHref },
+    TORPEDO: { icon: NOTIF_ICON_MSG, bg: 'bg-blue-100 text-blue-600', text: `${who} te enviou um Torpedo 💌${excerpt(d.message)}`, href: ownHref },
+    GOAL_CONTRIBUTION: { icon: NOTIF_ICON_SPARKLE, bg: 'bg-amber-100 text-amber-600', text: `${who} contribuiu no seu BDAY${d.amount ? ` (R$ ${Number(d.amount).toFixed(2).replace('.', ',')})` : ''}`, href: ownHref },
+    POST_LIKE: { icon: NOTIF_ICON_HEART, bg: 'bg-pink-100 text-pink-600', text: `${who} curtiu sua publicação`, href: '/feed' },
+    POST_COMMENT: { icon: NOTIF_ICON_MSG, bg: 'bg-blue-100 text-blue-600', text: `${who} comentou na sua publicação${d.excerpt ? `: “${bdaySanitizeText(d.excerpt)}”` : ''}`, href: '/feed' },
+  };
+  const m = map[n.type] || { icon: NOTIF_ICON_SPARKLE, bg: 'bg-purple-100 text-purple-600', text: 'Nova atividade', href: null };
+  return { icon: m.icon, iconBg: m.bg, text: m.text, when: bdayTimeAgo(n.createdAt), unread: !n.read, actorSlug: n.actor ? n.actor.slug : null, href: m.href };
 }
 function bdaySanitizeText(s) { return String(s == null ? '' : s).replace(/[<>]/g, ''); }
 window.bdayNotifFormat = bdayNotifFormat;

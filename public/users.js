@@ -376,9 +376,14 @@ function findAnyUser(slug) {
 function bdaySlugFromPath() {
   const PAGES = ['perfil', 'feed', 'loja', 'carteira', 'presentes', 'explorar', 'recap',
     'login', 'cadastro', 'sobre', 'termos', 'privacidade', 'admin', 'index', 'api', 'atividades'];
-  const m = window.location.pathname.match(/^\/([a-z0-9][a-z0-9.\-]{1,29})\/?$/);
-  if (!m || PAGES.indexOf(m[1]) !== -1) return null;
-  return m[1];
+  // Case-insensitive: a URL como /LIONENZO (maiúsculas, digitada ou colada pelo
+  // usuário) precisa resolver para o mesmo slug que /lionenzo — senão cai no
+  // fallback do perfil de quem está logado (bug reportado).
+  const m = window.location.pathname.match(/^\/([a-z0-9][a-z0-9.\-]{1,29})\/?$/i);
+  if (!m) return null;
+  const slug = m[1].toLowerCase();
+  if (PAGES.indexOf(slug) !== -1) return null;
+  return slug;
 }
 
 function getUserFromQuery() {

@@ -320,7 +320,7 @@
       </script>
 
       <div data-tab-panel="geral" data-tab-of="profile" class="mt-6">
-        <div class="card p-6 reveal">
+        <div id="presentes-recebidos" class="card p-6 reveal">
           <h2 class="font-bold text-lg mb-4 flex items-center gap-2">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-purple-600"><rect x="3" y="8" width="18" height="4"/><path d="M12 8v13"/><path d="M19 12v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8"/><path d="M16.5 8a2.5 2.5 0 0 0 0-5C14 3 12 8 12 8"/></svg>
             Presentes e Torpedos recebidos
@@ -1147,10 +1147,39 @@
         <div class="w-10 h-10 rounded-full ${g.value ? 'bg-purple-100 text-purple-600' : 'bg-blue-500 text-white'} flex items-center justify-center shrink-0">${g.value ? ICONS.gift : ICONS.message}</div>
         <div class="flex-1 min-w-0">
           <div class="font-semibold text-sm">${g.who} <span class="font-normal text-slate-500">${g.value ? 'enviou ' + g.item : 'enviou um Torpedo'}</span> ${g.value ? '' : '<span class="ml-1 inline-block bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full align-middle">Torpedo</span>'}</div>
-          <div class="text-xs text-slate-400">"${g.msg}" · ${g.when}</div>
+          <div class="text-xs text-slate-500 mt-0.5 break-words whitespace-pre-wrap">"${g.msg}"</div>
+          <div class="text-xs text-slate-400 mt-1">${g.when}</div>
         </div>
         ${g.value ? `<div class="font-bold text-purple-700 shrink-0">${g.value}</div>` : ''}
+        ${(!g.value && isOwner && g.whoSlug) ? `<button type="button" class="torpedo-reply-btn btn-secondary shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold" data-reply-slug="${g.whoSlug}" data-reply-name="${g.who}">Responder</button>` : ''}
       </div>`).join('');
+
+    // "Responder" num Torpedo recebido: reaproveita o modal de Torpedo, mas
+    // mirando quem enviou a mensagem (não o dono do perfil sendo visto).
+    list.querySelectorAll('.torpedo-reply-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const slug = btn.getAttribute('data-reply-slug');
+        const name = btn.getAttribute('data-reply-name');
+        torpedoTargetSlug = slug;
+        document.getElementById('pTorpedoTitle').lastChild.textContent = ` Responder a ${name}`;
+        document.getElementById('pTorpedoSubtitle').textContent = `Uma mensagem rápida para ${name}, sem valor em dinheiro.`;
+        document.getElementById('torpedoModal').classList.add('open');
+      });
+    });
+  }
+
+  // Clicar num Torpedo/presente no sininho ou em /atividades traz pra cá
+  // (#presentes-recebidos), na aba "Visão geral" — que já é a aba padrão.
+  if (window.location.hash === '#presentes-recebidos') {
+    const target = document.getElementById('presentes-recebidos');
+    if (target && typeof target.scrollIntoView === 'function') {
+      setTimeout(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        target.classList.add('ring-2', 'ring-purple-300');
+        setTimeout(() => target.classList.remove('ring-2', 'ring-purple-300'), 2000);
+      }, 150);
+    }
   }
 
   // Aba "Lembranças": momentos criados, coleção de presentes e conquistas (orgulho do perfil)
@@ -1259,9 +1288,22 @@
   });
 
   // Torpedo modal: character counter + send
+  // torpedoTargetSlug: para quem o próximo envio vai. Por padrão é o dono do
+  // perfil (u.slug); o botão "Responder" de um Torpedo recebido troca isso
+  // temporariamente para o remetente original (ver renderização de u.gifts acima).
+  let torpedoTargetSlug = u.slug;
   const torpedoText = document.getElementById('torpedoText');
   const torpedoCount = document.getElementById('torpedoCount');
   torpedoText.addEventListener('input', () => { torpedoCount.textContent = torpedoText.value.length; });
+  // Abrir pelo botão padrão (ação rápida do perfil) sempre mira o dono do perfil
+  // e restaura o título — evita "vazar" um alvo de resposta de um clique anterior.
+  document.querySelectorAll('[data-open-modal="torpedoModal"]').forEach(openBtn => {
+    openBtn.addEventListener('click', () => {
+      torpedoTargetSlug = u.slug;
+      document.getElementById('pTorpedoTitle').lastChild.textContent = ` Enviar Torpedo para ${firstName}`;
+      document.getElementById('pTorpedoSubtitle').textContent = `Uma mensagem rápida para ${firstName}, sem valor em dinheiro.`;
+    });
+  });
   document.getElementById('confirmTorpedoBtn').addEventListener('click', async () => {
     const btn = document.getElementById('confirmTorpedoBtn');
     if (btn.disabled) return;
@@ -1271,7 +1313,7 @@
       const res = await fetch('/api/gifts/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipientSlug: u.slug, torpedo: true, message })
+        body: JSON.stringify({ recipientSlug: torpedoTargetSlug, torpedo: true, message })
       });
       if (res.status === 401) { bdayGoLogin(); return; }
       const data = await res.json().catch(() => ({}));
@@ -1280,6 +1322,9 @@
       showToast('Torpedo enviado! 💌');
       torpedoText.value = '';
       torpedoCount.textContent = '0';
+      // Volta ao padrão (dono do perfil) depois do envio, pro próximo clique no
+      // botão de ação rápida não continuar mirando quem recebeu a resposta.
+      torpedoTargetSlug = u.slug;
     } catch (e) {
       showToast('Falha de conexão. Tente novamente.');
     } finally {
