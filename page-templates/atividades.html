@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="favicon.png">
+<title>Atividades — bday.fm</title>
+<meta name="description" content="Todas as suas atividades no bday.fm: pedidos de amizade, presentes recebidos, torpedos, curtidas e comentários.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tailwind-prod.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-white">
+
+
+<!-- NAV -->
+<header class="sticky top-0 z-50 bg-white/85 backdrop-blur border-b border-gray-100">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2 font-extrabold text-lg">
+      <img src="logo-full.png" alt="bday.fm" class="h-8 w-auto object-contain">
+    </a>
+    <nav class="hidden md:flex items-center gap-8">
+      <a href="/#como-funciona" class="nav-link">Como Funciona</a>
+      <a href="/explorar" class="nav-link">Explorar Celebrações</a>
+      <a href="/feed" class="nav-link">Feed</a>
+      <a href="/presentes" class="nav-link">Presentes</a>
+      <a href="/carteira" id="navCarteiraD" class="nav-link hidden">Carteira</a>
+    </nav>
+    <div id="authArea" class="hidden md:flex items-center gap-3">
+      <a href="/login" class="btn-secondary px-4 py-2 rounded-xl text-sm">Entrar</a>
+      <a href="/cadastro" class="btn-primary px-4 py-2 rounded-xl text-sm">Criar conta grátis</a>
+    </div>
+    <button id="menuBtn" class="md:hidden p-2" aria-label="Abrir menu" aria-expanded="false">
+      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div id="mobileMenu" class="md:hidden">
+    <div class="px-5 pb-4 flex flex-col gap-3 border-t border-gray-100 pt-3">
+      <a href="/#como-funciona" class="nav-link">Como Funciona</a>
+      <a href="/explorar" class="nav-link">Explorar Celebrações</a>
+      <a href="/feed" class="nav-link">Feed</a>
+      <a href="/presentes" class="nav-link">Presentes</a>
+      <a href="/carteira" id="navCarteiraM" class="nav-link hidden">Carteira</a>
+      <div id="authAreaMobile" class="flex flex-col gap-3">
+        <a href="/login" class="btn-secondary px-4 py-2 rounded-xl text-sm text-center">Entrar</a>
+        <a href="/cadastro" class="btn-primary px-4 py-2 rounded-xl text-sm text-center">Criar conta grátis</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-3xl mx-auto px-5 sm:px-8 py-10">
+  <div class="reveal">
+    <h1 class="text-2xl sm:text-3xl font-extrabold flex items-center gap-2">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-purple-600"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      Atividades
+    </h1>
+    <p class="text-slate-500 mt-1.5 text-sm sm:text-base">Tudo o que aconteceu com você no bday.fm — pedidos de amizade, presentes, torpedos, curtidas e comentários.</p>
+  </div>
+
+  <div class="card mt-8 overflow-hidden reveal">
+    <div id="actList" class="divide-y divide-gray-50">
+      <div class="px-5 py-10 text-center text-sm text-slate-400">Carregando atividades…</div>
+    </div>
+  </div>
+
+  <div id="actPagination" class="hidden mt-6 flex items-center justify-between gap-3 reveal">
+    <button id="actPrevBtn" type="button" class="btn-secondary px-4 py-2 rounded-xl text-sm disabled:opacity-40 disabled:cursor-not-allowed">← Anterior</button>
+    <div id="actPageInfo" class="text-sm text-slate-500 font-semibold">Página 1 de 1</div>
+    <button id="actNextBtn" type="button" class="btn-secondary px-4 py-2 rounded-xl text-sm disabled:opacity-40 disabled:cursor-not-allowed">Próxima →</button>
+  </div>
+</main>
+
+<footer class="border-t border-gray-100 mt-10">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+    <div class="flex items-center gap-2 font-bold text-slate-700">
+      <img src="logo-full.png" alt="bday.fm" class="h-5 w-auto object-contain" loading="lazy">
+    </div>
+    <div>© 2026 bday.fm — protótipo de demonstração</div>
+  </div>
+</footer>
+
+<script src="users.js"></script>
+<script src="auth.js"></script>
+<script src="script.js"></script>
+<script>
+(function () {
+  // Página exige login — sem sessão volta pro login.
+  const session = authGetSession();
+  if (!session) { window.location.href = '/login?next=/atividades'; return; }
+
+  const PER_PAGE = 25;
+  const list = document.getElementById('actList');
+  const pagination = document.getElementById('actPagination');
+  const prevBtn = document.getElementById('actPrevBtn');
+  const nextBtn = document.getElementById('actNextBtn');
+  const pageInfo = document.getElementById('actPageInfo');
+  let currentPage = Math.max(1, parseInt(new URLSearchParams(location.search).get('page') || '1', 10) || 1);
+  let totalPages = 1;
+
+  function itemHTML(n) {
+    const f = window.bdayNotifFormat(n);
+    const inner = `
+      <div class="w-9 h-9 rounded-full ${f.iconBg} flex items-center justify-center shrink-0">${f.icon}</div>
+      <div class="min-w-0 flex-1">
+        <div class="text-sm leading-snug">${f.text}</div>
+        <div class="text-xs text-slate-400 mt-0.5">${f.when}</div>
+      </div>
+      ${f.unread ? '<span class="w-2 h-2 rounded-full bg-pink-500 shrink-0 mt-2"></span>' : ''}`;
+    if (f.actorSlug) {
+      return `<a href="/${f.actorSlug}" class="flex items-start gap-3 px-5 py-3.5 hover:bg-slate-50 transition${f.unread ? ' bg-purple-50/40' : ''}">${inner}</a>`;
+    }
+    return `<div class="flex items-start gap-3 px-5 py-3.5${f.unread ? ' bg-purple-50/40' : ''}">${inner}</div>`;
+  }
+
+  function load(page) {
+    list.innerHTML = '<div class="px-5 py-10 text-center text-sm text-slate-400">Carregando atividades…</div>';
+    fetch(`/api/notifications?page=${page}&perPage=${PER_PAGE}`)
+      .then(async (res) => {
+        if (res.status === 401) { window.location.href = '/login?next=/atividades'; return null; }
+        return res.json();
+      })
+      .then((data) => {
+        if (!data) return;
+        currentPage = data.page;
+        totalPages = data.totalPages;
+        if (!data.notifications.length) {
+          list.innerHTML = '<div class="px-5 py-12 text-center"><div class="text-3xl mb-2">🎈</div><div class="font-semibold text-slate-600">Nenhuma atividade ainda</div><div class="text-sm text-slate-400 mt-1">Compartilhe seu perfil e adicione amigos para começar a receber presentes e novidades.</div></div>';
+        } else {
+          list.innerHTML = data.notifications.map(itemHTML).join('');
+        }
+        pagination.classList.toggle('hidden', data.total <= PER_PAGE);
+        pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
+        prevBtn.disabled = currentPage <= 1;
+        nextBtn.disabled = currentPage >= totalPages;
+        const url = new URL(location.href);
+        url.searchParams.set('page', String(currentPage));
+        history.replaceState(null, '', url.toString());
+        // Chegar na página marca tudo como lido (o sininho zera).
+        if (data.unreadCount > 0) bdayMarkNotificationsRead();
+      })
+      .catch(() => {
+        list.innerHTML = '<div class="px-5 py-10 text-center text-sm text-slate-400">Não foi possível carregar as atividades. Tente novamente.</div>';
+      });
+  }
+
+  prevBtn.addEventListener('click', () => { if (currentPage > 1) load(currentPage - 1); });
+  nextBtn.addEventListener('click', () => { if (currentPage < totalPages) load(currentPage + 1); });
+  load(currentPage);
+})();
+</script>
+</body>
+</html>

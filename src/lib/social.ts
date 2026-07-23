@@ -56,6 +56,31 @@ export function centsToReais(cents: number): number {
   return Math.round(cents) / 100;
 }
 
+// ---------- Notificações / atividades ----------
+
+// Tipos: FRIEND_REQUEST_SENT | FRIEND_REQUEST | FRIEND_ACCEPT | FRIEND_ACCEPTED_BY_YOU
+//        GIFT | TORPEDO | GOAL_CONTRIBUTION | POST_LIKE | POST_COMMENT
+export async function notify(
+  client: Pick<typeof prisma, "notification">,
+  userId: string,
+  type: string,
+  actorId?: string | null,
+  data?: Record<string, unknown>
+) {
+  try {
+    await client.notification.create({
+      data: {
+        userId,
+        type,
+        actorId: actorId || null,
+        data: data ? (data as object) : undefined,
+      },
+    });
+  } catch {
+    // Notificação nunca derruba o fluxo principal.
+  }
+}
+
 // ---------- Amigos ----------
 
 // Lista de amizades ACEITAS de um usuário (em qualquer direção).

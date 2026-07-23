@@ -57,6 +57,8 @@ model User {
   items             UserItem[]
   pointEntries      PointEntry[]
   supportTickets    SupportTicket[]
+  notifications       Notification[] @relation("notifOwner")
+  notificationsCaused Notification[] @relation("notifActor")
 
   @@index([email])
 }
@@ -319,4 +321,20 @@ model Setting {
   key       String   @id
   value     Json
   updatedAt DateTime @updatedAt
+}
+
+// Notificações / atividades do usuário (sininho + página /atividades)
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String   // dono do sininho
+  user      User     @relation("notifOwner", fields: [userId], references: [id], onDelete: Cascade)
+  actorId   String?  // quem causou a atividade
+  actor     User?    @relation("notifActor", fields: [actorId], references: [id], onDelete: SetNull)
+  type      String   // FRIEND_REQUEST_SENT | FRIEND_REQUEST | FRIEND_ACCEPT | FRIEND_ACCEPTED_BY_YOU | GIFT | TORPEDO | GOAL_CONTRIBUTION | POST_LIKE | POST_COMMENT
+  data      Json?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, read])
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma, rateLimit } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
+import { notify } from "@/lib/social";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   }
 
   const { id } = await ctx.params;
-  const post = await prisma.feedPost.findUnique({ where: { id }, select: { id: true } });
+  const post = await prisma.feedPost.findUnique({ where: { id }, select: { id: true, authorId: true } });
   if (!post) return NextResponse.json({ error: "Post não encontrado." }, { status: 404 });
 
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
@@ -47,6 +48,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     data: { postId: id, userId: user.id, text: parsed.data.text },
     include: { user: { select: { slug: true, name: true, avatarUrl: true } } },
   });
+  if (post.authorId !== user.id) {
+    await notify(prisma, post.authorId, "POST_COMMENT", user.id, {
+      postId: id,
+      excerpt: parsed.data.text.slice(0, 80),
+    });
+  }
   const commentCount = await prisma.feedComment.count({ where: { postId: id } });
   return NextResponse.json(
     {

@@ -101,13 +101,71 @@ function buildNotifications(u) {
 
 function notifListHTML(items) {
   return items.map(n => `
-    <div class="flex items-start gap-3 px-4 py-2.5 hover:bg-slate-50">
+    <div class="flex items-start gap-3 px-4 py-2.5 hover:bg-slate-50${n.unread ? ' bg-purple-50/40' : ''}">
       <div class="w-8 h-8 rounded-full ${n.iconBg} flex items-center justify-center shrink-0">${n.icon}</div>
       <div class="min-w-0">
         <div class="text-sm leading-snug">${n.text}</div>
         <div class="text-xs text-slate-400 mt-0.5">${n.when}</div>
       </div>
     </div>`).join('');
+}
+
+// ---- Notificações REAIS (servidor) — sininho + página /atividades ----
+
+const NOTIF_ICON_HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>';
+const NOTIF_ICON_USERS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+
+// Tempo relativo em pt-BR ("agora", "há 5 min", "há 2 h", "ontem", "12/03").
+function bdayTimeAgo(iso) {
+  try {
+    const d = new Date(iso);
+    const s = Math.floor((Date.now() - d.getTime()) / 1000);
+    if (s < 60) return 'agora';
+    if (s < 3600) return `há ${Math.floor(s / 60)} min`;
+    if (s < 86400) return `há ${Math.floor(s / 3600)} h`;
+    if (s < 172800) return 'ontem';
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+  } catch (e) { return ''; }
+}
+
+// Converte uma notificação da API no item visual do sininho/atividades.
+function bdayNotifFormat(n) {
+  const who = n.actor ? `<b>${bdaySanitizeText(n.actor.name)}</b>` : 'Alguém';
+  const d = n.data || {};
+  const map = {
+    FRIEND_REQUEST: { icon: NOTIF_ICON_USERS, bg: 'bg-emerald-100 text-emerald-600', text: `${who} quer ser seu amigo` },
+    FRIEND_REQUEST_SENT: { icon: NOTIF_ICON_USERS, bg: 'bg-slate-100 text-slate-500', text: `Você enviou um pedido de amizade para ${who}` },
+    FRIEND_ACCEPT: { icon: NOTIF_ICON_USERS, bg: 'bg-emerald-100 text-emerald-600', text: `${who} aceitou seu pedido de amizade` },
+    FRIEND_ACCEPTED_BY_YOU: { icon: NOTIF_ICON_USERS, bg: 'bg-emerald-100 text-emerald-600', text: `Você e ${who} agora são amigos` },
+    GIFT: { icon: NOTIF_ICON_GIFT, bg: 'bg-purple-100 text-purple-600', text: `${who} te enviou ${d.gift ? bdaySanitizeText(d.gift) : 'um presente'}${d.emoji ? ' ' + d.emoji : ''}` },
+    TORPEDO: { icon: NOTIF_ICON_MSG, bg: 'bg-blue-100 text-blue-600', text: `${who} te enviou um Torpedo 💌` },
+    GOAL_CONTRIBUTION: { icon: NOTIF_ICON_SPARKLE, bg: 'bg-amber-100 text-amber-600', text: `${who} contribuiu no seu BDAY${d.amount ? ` (R$ ${Number(d.amount).toFixed(2).replace('.', ',')})` : ''}` },
+    POST_LIKE: { icon: NOTIF_ICON_HEART, bg: 'bg-pink-100 text-pink-600', text: `${who} curtiu sua publicação` },
+    POST_COMMENT: { icon: NOTIF_ICON_MSG, bg: 'bg-blue-100 text-blue-600', text: `${who} comentou na sua publicação${d.excerpt ? `: “${bdaySanitizeText(d.excerpt)}”` : ''}` },
+  };
+  const m = map[n.type] || { icon: NOTIF_ICON_SPARKLE, bg: 'bg-purple-100 text-purple-600', text: 'Nova atividade' };
+  return { icon: m.icon, iconBg: m.bg, text: m.text, when: bdayTimeAgo(n.createdAt), unread: !n.read, actorSlug: n.actor ? n.actor.slug : null };
+}
+function bdaySanitizeText(s) { return String(s == null ? '' : s).replace(/[<>]/g, ''); }
+window.bdayNotifFormat = bdayNotifFormat;
+window.bdayTimeAgo = bdayTimeAgo;
+
+// Busca as notificações reais (síncrono, mesmo padrão do users.js).
+function bdayFetchNotifications(perPage) {
+  try {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/notifications?page=1&perPage=' + (perPage || 8), false);
+    xhr.send(null);
+    if (xhr.status !== 200) return null;
+    return JSON.parse(xhr.responseText || 'null');
+  } catch (e) { return null; }
+}
+
+// Marca tudo como lido no servidor (não bloqueia a interface).
+function bdayMarkNotificationsRead() {
+  try {
+    fetch('/api/notifications/read', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => {});
+  } catch (e) {}
 }
 
 // Preenche a área de autenticação do header (desktop #authArea + mobile #authAreaMobile)
@@ -139,8 +197,14 @@ function authRenderHeader() {
   const profileHref = `/${session.slug}`;
   const walletHref = `/carteira`;
 
-  const notifItems = (typeof USERS !== 'undefined') ? buildNotifications(u) : [];
-  const notifCount = notifItems.length;
+  // Notificações reais do servidor; se indisponíveis (ex.: sem cookie), cai no
+  // resumo derivado dos presentes como antes.
+  const notifData = bdayFetchNotifications(8);
+  const notifItems = notifData
+    ? (notifData.notifications.length ? notifData.notifications.map(bdayNotifFormat) : buildNotifications(u))
+    : ((typeof USERS !== 'undefined') ? buildNotifications(u) : []);
+  const notifCount = notifData ? notifData.unreadCount : notifItems.length;
+  const NOTIF_SEE_ALL = '<a href="/atividades" class="block text-center text-sm font-semibold text-purple-600 py-2.5 border-t border-gray-50 hover:bg-purple-50">Ver todas as atividades</a>';
 
   if (desktopArea) {
     desktopArea.innerHTML = `
@@ -155,6 +219,7 @@ function authRenderHeader() {
             <button id="notifMarkAllBtn" type="button" class="text-xs font-semibold text-purple-600 hover:underline">Marcar como lidas</button>
           </div>
           <div id="notifList">${notifListHTML(notifItems)}</div>
+          ${NOTIF_SEE_ALL}
         </div>
       </div>
       <div class="relative">
@@ -182,10 +247,15 @@ function authRenderHeader() {
     const notifBtn = document.getElementById('notifBtn');
     const notifDropdown = document.getElementById('notifDropdown');
     const notifBadge = document.getElementById('notifBadge');
-    notifBtn.addEventListener('click', (e) => { e.stopPropagation(); notifDropdown.classList.toggle('hidden'); dropdown.classList.add('hidden'); });
+    notifBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      notifDropdown.classList.toggle('hidden');
+      dropdown.classList.add('hidden');
+      if (!notifDropdown.classList.contains('hidden')) { bdayMarkNotificationsRead(); notifBadge.classList.add('hidden'); }
+    });
     document.addEventListener('click', () => notifDropdown.classList.add('hidden'));
     notifDropdown.addEventListener('click', (e) => e.stopPropagation());
-    document.getElementById('notifMarkAllBtn').addEventListener('click', () => notifBadge.classList.add('hidden'));
+    document.getElementById('notifMarkAllBtn').addEventListener('click', () => { bdayMarkNotificationsRead(); notifBadge.classList.add('hidden'); });
   }
 
   if (mobileArea) {
@@ -199,7 +269,7 @@ function authRenderHeader() {
         Notificações
         <span id="notifBadgeMobile" class="${notifCount > 0 ? '' : 'hidden'} w-2 h-2 rounded-full bg-pink-500"></span>
       </button>
-      <div id="notifListMobile" class="hidden rounded-xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">${notifListHTML(notifItems)}</div>
+      <div id="notifListMobile" class="hidden rounded-xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">${notifListHTML(notifItems)}${NOTIF_SEE_ALL}</div>
       ${session.slug === 'admin' ? '<a href="/admin" class="btn-primary px-4 py-2 rounded-xl text-sm text-center font-bold">Painel do administrador</a>' : ''}
       <a href="${profileHref}" class="btn-secondary px-4 py-2 rounded-xl text-sm text-center">Meu perfil</a>
       <a href="${walletHref}" class="btn-secondary px-4 py-2 rounded-xl text-sm text-center">Minha carteira</a>
@@ -209,7 +279,9 @@ function authRenderHeader() {
       window.location.href = '/';
     });
     document.getElementById('notifBtnMobile').addEventListener('click', () => {
-      document.getElementById('notifListMobile').classList.toggle('hidden');
+      const list = document.getElementById('notifListMobile');
+      list.classList.toggle('hidden');
+      if (!list.classList.contains('hidden')) bdayMarkNotificationsRead();
       document.getElementById('notifBadgeMobile').classList.add('hidden');
     });
   }
@@ -232,15 +304,20 @@ function authRenderHeader() {
           <button id="notifMarkAllTopBtn" type="button" class="text-xs font-semibold text-purple-600 hover:underline">Marcar como lidas</button>
         </div>
         <div>${notifListHTML(notifItems)}</div>
+        ${NOTIF_SEE_ALL}
       </div>`;
     menuBtn.parentElement.insertBefore(wrap, menuBtn);
     const bTop = document.getElementById('notifBtnTop');
     const ddTop = document.getElementById('notifDropdownTop');
     const badgeTop = document.getElementById('notifBadgeTop');
-    bTop.addEventListener('click', (e) => { e.stopPropagation(); ddTop.classList.toggle('hidden'); });
+    bTop.addEventListener('click', (e) => {
+      e.stopPropagation();
+      ddTop.classList.toggle('hidden');
+      if (!ddTop.classList.contains('hidden')) { bdayMarkNotificationsRead(); badgeTop.classList.add('hidden'); }
+    });
     document.addEventListener('click', () => ddTop.classList.add('hidden'));
     ddTop.addEventListener('click', (e) => e.stopPropagation());
-    document.getElementById('notifMarkAllTopBtn').addEventListener('click', () => badgeTop.classList.add('hidden'));
+    document.getElementById('notifMarkAllTopBtn').addEventListener('click', () => { bdayMarkNotificationsRead(); badgeTop.classList.add('hidden'); });
   }
 }
 

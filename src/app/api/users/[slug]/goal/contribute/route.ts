@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma, rateLimit } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
-import { balanceCents, centsToReais, getSettingNumber } from "@/lib/social";
+import { balanceCents, centsToReais, getSettingNumber, notify } from "@/lib/social";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +60,11 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
     await tx.walletEntry.create({
       data: { userId: target.id, type: "GIFT_RECEIVED", amountCents: creditedCents, reference: `goal:${contribution.id}` },
     });
+  });
+
+  await notify(prisma, target.id, "GOAL_CONTRIBUTION", user.id, {
+    amount: centsToReais(creditedCents),
+    goalTitle: goal.title,
   });
 
   const [current, newBalance] = await Promise.all([

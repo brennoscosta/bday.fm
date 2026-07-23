@@ -873,12 +873,60 @@
   (function () {
     const session = (typeof authGetSession === 'function') ? authGetSession() : null;
     const btn = document.getElementById('pAddFriendBtn');
-    if (btn && session && session.slug === u.slug) btn.classList.add('hidden');
-    // Pedido de amizade real via API (POST /api/friends)
-    if (btn) btn.addEventListener('click', async () => {
-      if (btn.disabled) return;
+    if (!btn) return;
+    if (session && session.slug === u.slug) { btn.classList.add('hidden'); return; }
+
+    const ICON_ADD = btn.querySelector('svg') ? btn.querySelector('svg').outerHTML : '';
+    const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><polyline points="20 6 9 17 4 12"/></svg>';
+    const ICON_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+
+    // Estados: default (Adicionar amigo) | pending (Pedido enviado — inativo até
+    // o outro usuário responder) | incoming (Aceitar pedido) | friends (Amigos — inativo).
+    let friendState = 'default';
+    function applyFriendState(state) {
+      friendState = state;
+      btn.classList.remove('opacity-60', 'cursor-default', 'pointer-events-none');
+      if (state === 'pending') {
+        btn.innerHTML = `${ICON_CLOCK} Pedido de amizade enviado`;
+        btn.classList.add('opacity-60', 'cursor-default', 'pointer-events-none');
+      } else if (state === 'incoming') {
+        btn.innerHTML = `${ICON_CHECK} Aceitar pedido de amizade`;
+      } else if (state === 'friends') {
+        btn.innerHTML = `${ICON_CHECK} Amigos`;
+        btn.classList.add('opacity-60', 'cursor-default', 'pointer-events-none');
+      } else {
+        btn.innerHTML = `${ICON_ADD} Adicionar amigo`;
+      }
+    }
+
+    // Descobre o estado atual da amizade com o dono do perfil.
+    if (session) {
+      fetch('/api/friends').then(r => (r.ok ? r.json() : null)).then((d) => {
+        if (!d) return;
+        if ((d.friends || []).some(f => f.slug === u.slug)) applyFriendState('friends');
+        else if ((d.outgoing || []).some(f => f.slug === u.slug)) applyFriendState('pending');
+        else if ((d.incoming || []).some(f => f.slug === u.slug)) applyFriendState('incoming');
+      }).catch(() => {});
+    }
+
+    btn.addEventListener('click', async () => {
+      if (btn.disabled || friendState === 'pending' || friendState === 'friends') return;
       btn.disabled = true;
       try {
+        if (friendState === 'incoming') {
+          // Aceita o pedido que o dono do perfil me enviou.
+          const res = await fetch('/api/friends', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug: u.slug, action: 'accept' })
+          });
+          if (res.status === 401) { bdayGoLogin(); return; }
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) { showToast(data.error || 'Não foi possível aceitar o pedido.'); return; }
+          applyFriendState('friends');
+          showToast(`Agora você e ${u.name} são amigos! 🎉`);
+          return;
+        }
         const res = await fetch('/api/friends', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -887,6 +935,7 @@
         if (res.status === 401) { bdayGoLogin(); return; }
         const data = await res.json().catch(() => ({}));
         if (!res.ok) { showToast(data.error || 'Não foi possível enviar o pedido de amizade.'); return; }
+        applyFriendState(data.status === 'ACCEPTED' ? 'friends' : 'pending');
         showToast(data.message || 'Pedido de amizade enviado!');
       } catch (e) {
         showToast('Falha de conexão. Tente novamente.');

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma, rateLimit } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
-import { acceptedFriends } from "@/lib/social";
+import { acceptedFriends, notify } from "@/lib/social";
 
 export const dynamic = "force-dynamic";
 
@@ -76,12 +76,16 @@ export async function POST(req: NextRequest) {
     }
     // pedido inverso pendente → aceita
     await prisma.friendship.update({ where: { id: existing.id }, data: { status: "ACCEPTED" } });
+    await notify(prisma, target.id, "FRIEND_ACCEPT", user.id);
+    await notify(prisma, user.id, "FRIEND_ACCEPTED_BY_YOU", target.id);
     return NextResponse.json({ status: "ACCEPTED", message: `Agora você e ${target.name} são amigos!` });
   }
 
   await prisma.friendship.create({
     data: { requesterId: user.id, addresseeId: target.id },
   });
+  await notify(prisma, target.id, "FRIEND_REQUEST", user.id);
+  await notify(prisma, user.id, "FRIEND_REQUEST_SENT", target.id);
   return NextResponse.json({ status: "PENDING", message: "Pedido de amizade enviado!" }, { status: 201 });
 }
 
@@ -106,6 +110,8 @@ export async function PATCH(req: NextRequest) {
 
   if (parsed.data.action === "accept") {
     await prisma.friendship.update({ where: { id: friendship.id }, data: { status: "ACCEPTED" } });
+    await notify(prisma, requester.id, "FRIEND_ACCEPT", user.id);
+    await notify(prisma, user.id, "FRIEND_ACCEPTED_BY_YOU", requester.id);
     return NextResponse.json({ status: "ACCEPTED" });
   }
   await prisma.friendship.delete({ where: { id: friendship.id } });

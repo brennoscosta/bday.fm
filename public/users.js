@@ -375,7 +375,7 @@ function findAnyUser(slug) {
 // página não recebeu ?user= (rota /[slug] do servidor serve o perfil).
 function bdaySlugFromPath() {
   const PAGES = ['perfil', 'feed', 'loja', 'carteira', 'presentes', 'explorar', 'recap',
-    'login', 'cadastro', 'sobre', 'termos', 'privacidade', 'admin', 'index', 'api'];
+    'login', 'cadastro', 'sobre', 'termos', 'privacidade', 'admin', 'index', 'api', 'atividades'];
   const m = window.location.pathname.match(/^\/([a-z0-9][a-z0-9.\-]{1,29})\/?$/);
   if (!m || PAGES.indexOf(m[1]) !== -1) return null;
   return m[1];

@@ -68,7 +68,7 @@ export function slugify(raw: string) {
 const RESERVED_SLUGS = new Set([
   "admin", "api", "login", "cadastro", "perfil", "carteira", "feed",
   "explorar", "presentes", "loja", "recap", "sobre", "termos",
-  "privacidade", "index", "www", "bday", "suporte", "ajuda",
+  "privacidade", "index", "www", "bday", "suporte", "ajuda", "atividades",
 ]);
 
 export function isSlugAllowed(slug: string) {

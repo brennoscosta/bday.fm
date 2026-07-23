@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma, rateLimit } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
-import { balanceCents, centsToReais, getSettingNumber, pointsBalance } from "@/lib/social";
+import { balanceCents, centsToReais, getSettingNumber, notify, pointsBalance } from "@/lib/social";
 
 export const dynamic = "force-dynamic";
 
@@ -126,6 +126,14 @@ export async function POST(req: NextRequest) {
       }
     }
     return sent;
+  });
+
+  // Sininho/atividades do destinatário.
+  await notify(prisma, receiver.id, isTorpedo ? "TORPEDO" : "GIFT", user.id, {
+    gift: gift.name,
+    emoji: gift.emoji,
+    value: centsToReais(gift.priceCents),
+    message: message || null,
   });
 
   const [newBalance, points] = await Promise.all([balanceCents(user.id), pointsBalance(user.id)]);
